@@ -293,8 +293,9 @@ function drawPlaneFlash() {
 }
 
 // ── COMET DRAW ────────────────────────────────────────────────
-function drawComet(wx, wy, wz, alpha, col) {
+function drawComet(wx, wy, wz, alpha, col, sizeMultiplier) {
   col = col || '180,220,255';
+  sizeMultiplier = sizeMultiplier || 1;
   const { sx, sy, depth } = project3(wx, wy, wz);
   if (depth < 5) return;
   const sc = getScale(depth);
@@ -317,7 +318,7 @@ function drawComet(wx, wy, wz, alpha, col) {
     const rotationAngle = screenAngle - imageBaseTailAngle;
     
     // Size of the comet image on screen
-    const cometSize = 80 * sc;
+    const cometSize = 80 * sc * sizeMultiplier;
     
     ctx.save();
     ctx.globalAlpha = alpha;
