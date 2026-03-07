@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3I/ATLAS · Interstellar Journey</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <canvas id="c"></canvas>
+  <div id="sceneLabel">3I/ATLAS APPROACHES</div>
+  <div id="subLabel">Discovered July 1 2025 · 4.5 AU from Sun · 137,000 mph</div>
+  <div id="calendar"></div>
+  <div id="ui">
+    <div id="timelineContainer">
+      <div id="timeIndicator"></div>
+      <div id="timeline">
+        <div id="timelineProgress"></div>
+        <div id="timelineThumb"></div>
+      </div>
+    </div>
+    <div id="controls">
+      <button id="prevBtn">&#9664;</button>
+      <button id="pauseBtn">&#9208; Pause</button>
+      <button id="nextBtn">&#9654;</button>
+    </div>
+  </div>
+  <script src="atlas_data.js"></script>
+  <script src="shared_render.js"></script>
+  <script src="atlas_main.js"></script>
+</body>
+
+</html>

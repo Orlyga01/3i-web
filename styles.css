@@ -1,0 +1,163 @@
+/* 3I/ATLAS · Interstellar Visitor Animation Styles */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #000;
+  overflow: hidden;
+  font-family: 'Georgia', serif;
+}
+
+canvas {
+  display: block;
+}
+
+#ui {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  z-index: 10;
+}
+
+#controls {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+#timelineContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+#timeIndicator {
+  color: rgba(180, 220, 255, .85);
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 12px rgba(100, 180, 255, .6);
+  min-height: 20px;
+}
+
+#calendar {
+  position: fixed;
+  top: 85px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(200, 230, 255, .9);
+  font-size: 16px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 18px rgba(120, 200, 255, .7);
+  font-weight: bold;
+  pointer-events: none;
+}
+
+#timeline {
+  width: 600px;
+  height: 8px;
+  background: rgba(255, 255, 255, .1);
+  border-radius: 4px;
+  position: relative;
+  cursor: pointer;
+}
+
+#timelineProgress {
+  height: 100%;
+  background: linear-gradient(90deg, #4af, #8cf);
+  border-radius: 4px;
+  width: 0%;
+  pointer-events: none;
+}
+
+#timelineThumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  background: rgba(180, 220, 255, .95);
+  border: 2px solid rgba(100, 180, 255, .6);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(100, 180, 255, .8);
+  cursor: grab;
+  pointer-events: none;
+}
+
+.scene-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 12px;
+  background: rgba(150, 190, 255, .4);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.scene-marker-label {
+  position: absolute;
+  top: -12px;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: rgba(180, 220, 255, 0.85);
+  font-family: Georgia;
+  font-weight: bold;
+  pointer-events: none;
+  user-select: none;
+  text-shadow: 0 0 8px rgba(100, 180, 255, 0.6);
+}
+
+#sceneLabel {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(210, 230, 255, .95);
+  font-size: 15px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 0 22px rgba(100, 180, 255, .8);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#subLabel {
+  position: fixed;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(160, 200, 255, .65);
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+button {
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid rgba(255, 255, 255, .22);
+  color: rgba(200, 220, 255, .92);
+  padding: 8px 22px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  letter-spacing: 1px;
+  transition: all .25s;
+}
+
+button:hover {
+  background: rgba(255, 255, 255, .16);
+  border-color: rgba(255, 255, 255, .42);
+}
