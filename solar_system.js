@@ -747,6 +747,33 @@ window.SolarSystem = (() => {
         camera: {
             setPreset: name => CameraController.setPreset(name),
             getState:  ()   => CameraController.getState(),
+
+            /** Returns raw camera angles and zoom levels for serialisation. */
+            getRawState: () => ({
+                el:      CameraController.getElTarget(),
+                az:      CameraController.getAzTarget(),
+                zoomIn:  CameraController.zIn,
+                zoomOut: CameraController.zOut,
+            }),
+
+            /** Restores camera angles and zoom; syncs DOM sliders. */
+            setRawState: (s) => {
+                if (!s) return;
+                if (s.el      != null) CameraController.setElTarget(s.el);
+                if (s.az      != null) CameraController.setAzTarget(s.az);
+                if (s.zoomIn  != null) CameraController.setZoomIn(s.zoomIn);
+                if (s.zoomOut != null) CameraController.setZoomOut(s.zoomOut);
+                const zInEl     = document.getElementById('ss-zoom-in');
+                const zInValEl  = document.getElementById('ss-zin-val');
+                const zOutEl    = document.getElementById('ss-zoom-out');
+                const zOutValEl = document.getElementById('ss-zout-val');
+                const zi = s.zoomIn  ?? 0;
+                const zo = s.zoomOut ?? 0;
+                if (zInEl)     zInEl.value           = zi;
+                if (zInValEl)  zInValEl.textContent  = zi  > 0 ? '+' + Math.round(zi)  : '0';
+                if (zOutEl)    zOutEl.value           = -zo;
+                if (zOutValEl) zOutValEl.textContent  = zo  > 0 ? '-' + Math.round(zo) : '0';
+            },
         },
 
         engine: {

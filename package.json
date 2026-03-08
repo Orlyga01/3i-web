@@ -1,0 +1,26 @@
+{
+  "name": "3i-web",
+  "version": "1.0.0",
+  "description": "A two-part HTML5 canvas animation showcasing our solar system's ecliptic plane and the real interstellar comet **3I/ATLAS** (C/2025 N1), discovered July 1, 2025.",
+  "main": "main.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "jest tests/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Orlyga01/3i-web.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Orlyga01/3i-web/issues"
+  },
+  "homepage": "https://github.com/Orlyga01/3i-web#readme",
+  "devDependencies": {
+    "jest": "^30.2.0"
+  }
+}

@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Object Motion Tracker · 3I/ATLAS</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* ── Canvas — always full-screen background ── */
+    #c {
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 0;
+      cursor: grab;
+    }
+    #c.dragging { cursor: grabbing; }
+    #c.panning  { cursor: move; }
+
+    /* ── Form overlay — sits above the canvas, scrollable ── */
+    #om-form-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      overflow-y: auto;
+      background: rgba(0, 1, 15, 0.84);
+    }
+
+    /* ── Viewer controls wrapper — children are position:fixed ── */
+    #om-viewer-controls { display: none; }
+
+    /* ── Page layout ── */
+    #om-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 40px 20px 60px;
+    }
+
+    /* ── Header ── */
+    #om-header { text-align: center; margin-bottom: 36px; }
+
+    #om-title {
+      font-size: 15px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(210, 230, 255, .95);
+      text-shadow: 0 0 22px rgba(100, 180, 255, .8);
+    }
+
+    #om-subtitle {
+      margin-top: 10px;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(160, 200, 255, .65);
+    }
+
+    #om-back-link {
+      position: fixed;
+      top: 20px; left: 24px;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      color: rgba(160, 200, 255, .7);
+      text-decoration: none;
+      transition: color .2s;
+      z-index: 20;
+    }
+    #om-back-link:hover { color: rgba(200, 230, 255, .95); }
+
+    /* ── Form card ── */
+    #om-form-card {
+      background: rgba(0, 8, 28, 0.72);
+      border: 1px solid rgba(100, 160, 255, 0.22);
+      border-radius: 14px;
+      padding: 32px 36px;
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .om-field { display: flex; flex-direction: column; gap: 7px; }
+
+    .om-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(130, 180, 255, 0.8);
+    }
+
+    .om-input {
+      background: rgba(255, 255, 255, .06);
+      border: 1px solid rgba(255, 255, 255, .18);
+      color: rgba(200, 220, 255, .92);
+      padding: 9px 15px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-family: Georgia, serif;
+      letter-spacing: 0.5px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      width: 100%;
+    }
+    .om-input:focus {
+      border-color: rgba(100, 180, 255, 0.55);
+      box-shadow: 0 0 10px rgba(80, 160, 255, 0.2);
+    }
+    .om-input::placeholder { color: rgba(140, 170, 210, 0.45); }
+    .om-input::-webkit-calendar-picker-indicator { filter: invert(0.65); cursor: pointer; }
+
+    /* ── Search button ── */
+    #om-search-btn {
+      padding: 9px 28px;
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      border-radius: 22px;
+      align-self: center;
+      opacity: 0.38;
+      pointer-events: none;
+      cursor: default;
+      transition: opacity .25s, background .25s;
+    }
+    #om-search-btn.enabled {
+      opacity: 1;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    #om-search-btn.enabled:hover {
+      background: rgba(255, 255, 255, .16);
+      border-color: rgba(255, 255, 255, .42);
+    }
+
+    /* ── Divider ── */
+    .om-divider {
+      border: none;
+      border-top: 1px solid rgba(100, 140, 255, 0.15);
+      margin: 0;
+    }
+
+    /* ── Saved-file found card ── */
+    #om-saved-card {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px 18px;
+      background: rgba(40, 80, 20, 0.25);
+      border: 1px solid rgba(100, 200, 100, 0.3);
+      border-radius: 10px;
+    }
+    #om-saved-card.visible { display: flex; }
+
+    #om-saved-card-msg {
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: rgba(160, 240, 160, 0.95);
+      text-align: center;
+    }
+
+    #om-saved-card-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    #om-load-saved-btn {
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 8px 20px;
+      border-radius: 18px;
+      background: rgba(60, 160, 80, 0.25);
+      border-color: rgba(80, 200, 100, 0.45);
+      color: rgba(160, 240, 160, 0.95);
+    }
+    #om-load-saved-btn:hover { background: rgba(60, 160, 80, 0.45); }
+
+    #om-refetch-btn {
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 8px 20px;
+      border-radius: 18px;
+    }
+
+    /* ── Draft session card ── */
+    #om-draft-card {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px 18px;
+      background: rgba(60, 40, 120, 0.25);
+      border: 1px solid rgba(160, 120, 255, 0.3);
+      border-radius: 10px;
+    }
+    #om-draft-card.visible { display: flex; }
+
+    #om-draft-card-msg {
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: rgba(200, 180, 255, 0.95);
+      text-align: center;
+    }
+
+    #om-draft-card-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    #om-resume-btn {
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 8px 20px;
+      border-radius: 18px;
+      background: rgba(100, 60, 200, 0.25);
+      border-color: rgba(160, 120, 255, 0.45);
+      color: rgba(200, 180, 255, 0.95);
+    }
+    #om-resume-btn:hover { background: rgba(100, 60, 200, 0.45); }
+
+    #om-start-fresh-btn {
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 8px 20px;
+      border-radius: 18px;
+    }
+
+    /* ── Date / step section (hidden until needed) ── */
+    #om-date-section {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+    #om-date-section.visible { display: flex; }
+
+    /* ── Step size row ── */
+    #om-step-row { display: flex; gap: 10px; align-items: stretch; }
+    #om-step-dropdown { flex: 1; }
+    #om-step-custom   { flex: 1; }
+    #om-step-custom::placeholder { font-size: 11px; }
+
+    /* ── Validation message ── */
+    #om-validation-msg {
+      display: none;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: rgba(255, 130, 130, 0.95);
+      padding: 8px 14px;
+      background: rgba(255, 60, 60, 0.08);
+      border: 1px solid rgba(255, 80, 80, 0.25);
+      border-radius: 8px;
+    }
+    #om-validation-msg.visible { display: block; }
+
+    /* ── Status line ── */
+    #om-status {
+      display: none;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-align: center;
+      padding: 8px 14px;
+      border-radius: 8px;
+    }
+    #om-status.loading {
+      display: block;
+      color: rgba(160, 210, 255, 0.9);
+      background: rgba(60, 100, 200, 0.1);
+      border: 1px solid rgba(80, 140, 255, 0.2);
+    }
+    #om-status.success {
+      display: block;
+      color: rgba(120, 255, 180, 0.95);
+      background: rgba(40, 160, 90, 0.1);
+      border: 1px solid rgba(80, 200, 130, 0.25);
+    }
+    #om-status.error {
+      display: block;
+      color: rgba(255, 140, 120, 0.95);
+      background: rgba(180, 50, 40, 0.1);
+      border: 1px solid rgba(220, 80, 70, 0.25);
+    }
+
+    /* ── Fetch Trajectory button ── */
+    #om-fetch-btn {
+      padding: 11px 28px;
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      border-radius: 22px;
+      align-self: center;
+      opacity: 0.38;
+      pointer-events: none;
+      cursor: default;
+      transition: opacity .25s, background .25s;
+    }
+    #om-fetch-btn.enabled {
+      opacity: 1;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    #om-fetch-btn.enabled:hover {
+      background: rgba(255, 255, 255, .16);
+      border-color: rgba(255, 255, 255, .42);
+    }
+
+    /* ── ← New Search button (viewer mode, top-left) ── */
+    #om-new-search-btn {
+      position: fixed;
+      top: 20px; left: 24px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      padding: 6px 16px;
+      border-radius: 16px;
+      z-index: 15;
+      pointer-events: auto;
+    }
+
+    /* ═══════════════════════════════════════════════
+       SIDEBAR — Progress panel (Stories 2.7+)
+    ═══════════════════════════════════════════════ */
+    #om-sidebar {
+      display: none;
+      flex-direction: column;
+      position: fixed;
+      right: 16px;
+      top: 56px;
+      bottom: 130px;
+      width: 244px;
+      background: rgba(0, 6, 22, 0.88);
+      border: 1px solid rgba(80, 120, 200, 0.22);
+      border-radius: 10px;
+      z-index: 12;
+      overflow: hidden;
+    }
+    #om-sidebar.visible { display: flex; }
+
+    #om-sidebar-summary {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(130, 180, 255, 0.8);
+      text-align: center;
+      padding: 11px 14px 9px;
+      border-bottom: 1px solid rgba(80, 120, 200, 0.15);
+      flex-shrink: 0;
+    }
+
+    #om-point-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+    #om-point-list::-webkit-scrollbar { width: 4px; }
+    #om-point-list::-webkit-scrollbar-thumb { background: rgba(80,120,200,0.3); border-radius: 2px; }
+
+    .om-point-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: background .12s;
+      user-select: none;
+    }
+    .om-point-row:hover { background: rgba(80, 120, 255, 0.08); }
+    .om-point-row.active {
+      background: rgba(80, 140, 255, 0.14);
+      border-left-color: rgba(100, 180, 255, 0.75);
+    }
+
+    .om-row-num {
+      font-size: 10px;
+      color: rgba(130, 180, 255, 0.55);
+      min-width: 22px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .om-row-thumb-wrap {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .om-row-thumb {
+      width: 20px;
+      height: 20px;
+      object-fit: cover;
+      display: block;
+    }
+    .om-row-thumb-empty {
+      width: 20px;
+      height: 20px;
+      background: rgba(80, 100, 160, 0.15);
+      border-radius: 3px;
+    }
+
+    .om-row-date {
+      flex: 1;
+      font-size: 11px;
+      color: rgba(200, 220, 255, 0.82);
+      letter-spacing: 0.2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .om-row-badge {
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .om-row-badge.pending { color: rgba(130, 130, 160, 0.6); }
+    .om-row-badge.saved   { color: rgba(100, 220, 140, 0.9); }
+
+    /* ── Annotation panel ── */
+    #om-annot-panel {
+      border-top: 1px solid rgba(80, 120, 200, 0.15);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    #om-drop-zone {
+      border: 1px dashed rgba(100, 160, 255, 0.3);
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .18s, background .18s;
+      position: relative;
+    }
+    #om-drop-zone.drag-over {
+      border-color: rgba(100, 180, 255, 0.75);
+      background: rgba(80, 130, 255, 0.08);
+    }
+
+    #om-img-input { display: none; }
+
+    #om-img-btn {
+      font-size: 11px;
+      letter-spacing: 1px;
+      padding: 5px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .05);
+      border-color: rgba(255, 255, 255, .2);
+    }
+    #om-img-btn:hover { background: rgba(255, 255, 255, .12); }
+
+    #om-img-preview-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    #om-img-preview {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 6px;
+      display: block;
+    }
+
+    #om-img-remove {
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      padding: 3px 10px;
+      border-radius: 10px;
+      background: rgba(200, 60, 60, 0.15);
+      border-color: rgba(200, 80, 80, 0.3);
+      color: rgba(255, 160, 150, 0.9);
+    }
+    #om-img-remove:hover { background: rgba(200, 60, 60, 0.3); }
+
+    #om-img-warn {
+      font-size: 10px;
+      color: rgba(255, 200, 100, 0.85);
+      margin-top: 4px;
+      display: none;
+    }
+
+    #om-description {
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid rgba(255, 255, 255, .13);
+      color: rgba(200, 220, 255, .85);
+      border-radius: 7px;
+      padding: 7px 10px;
+      font-size: 11px;
+      font-family: Georgia, serif;
+      resize: vertical;
+      min-height: 52px;
+      outline: none;
+      width: 100%;
+      box-sizing: border-box;
+      transition: border-color .18s;
+    }
+    #om-description:focus { border-color: rgba(100, 180, 255, 0.4); }
+    #om-description::placeholder { color: rgba(130, 160, 210, 0.4); }
+
+    /* ── Save area (bottom of sidebar) ── */
+    #om-save-area {
+      border-top: 1px solid rgba(80, 120, 200, 0.15);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      flex-shrink: 0;
+    }
+
+    #om-point-counter {
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: rgba(160, 200, 255, 0.7);
+      text-align: center;
+    }
+
+    #om-save-point-btn {
+      padding: 9px 24px;
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      border-radius: 22px;
+      width: 100%;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    #om-save-point-btn:hover { background: rgba(255, 255, 255, .14); }
+
+    #om-all-saved-msg {
+      display: none;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      color: rgba(100, 220, 140, 0.9);
+      text-align: center;
+    }
+
+    #om-save-file-btn,
+    #om-save-dir-btn {
+      font-size: 11px;
+      letter-spacing: 1px;
+      padding: 7px 14px;
+      border-radius: 16px;
+      width: 100%;
+      opacity: 0.38;
+      pointer-events: none;
+      cursor: default;
+      transition: opacity .25s, background .25s;
+    }
+    #om-save-file-btn.enabled,
+    #om-save-dir-btn.enabled {
+      opacity: 1;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    #om-save-file-btn.enabled:hover,
+    #om-save-dir-btn.enabled:hover {
+      background: rgba(255, 255, 255, .12);
+    }
+
+    #om-save-dir-btn { display: none; }
+
+    #om-viewer-status {
+      display: none;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-align: center;
+      padding: 6px 10px;
+      border-radius: 7px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #om-viewer-status.success {
+      display: block;
+      color: rgba(120, 255, 180, 0.95);
+      background: rgba(40, 160, 90, 0.12);
+      border: 1px solid rgba(80, 200, 130, 0.25);
+    }
+    #om-viewer-status.error {
+      display: block;
+      color: rgba(255, 140, 120, 0.95);
+      background: rgba(180, 50, 40, 0.1);
+      border: 1px solid rgba(220, 80, 70, 0.25);
+    }
+
+    /* ── Zoom panel (left side, vertical sliders) ── */
+    #ss-zoom-panel {
+      position: fixed;
+      left: 22px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      z-index: 10;
+      background: rgba(0, 5, 20, 0.65);
+      border: 1px solid rgba(130, 180, 255, 0.25);
+      border-radius: 10px;
+      padding: 12px 10px;
+    }
+
+    .zoom-ruler-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .zoom-ruler-label {
+      color: rgba(130, 180, 255, 0.7);
+      font-family: Georgia, serif;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .zoom-ruler-value {
+      color: rgba(220, 235, 255, 1.0);
+      font-family: Georgia, serif;
+      font-size: 12px;
+      min-width: 28px;
+      text-align: center;
+    }
+
+    input[type="range"].zoom-ruler {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      -webkit-appearance: none;
+      appearance: none;
+      width: 6px;
+      height: 120px;
+      background: rgba(130, 180, 255, 0.18);
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    input[type="range"].zoom-ruler::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(220, 235, 255, 0.95);
+      border: 2px solid rgba(100, 180, 255, 0.7);
+      box-shadow: 0 0 8px rgba(100, 180, 255, 0.7);
+      cursor: grab;
+    }
+
+    input[type="range"].zoom-ruler::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(220, 235, 255, 0.95);
+      border: 2px solid rgba(100, 180, 255, 0.7);
+      box-shadow: 0 0 8px rgba(100, 180, 255, 0.7);
+      cursor: grab;
+    }
+
+    input[type="range"].zoom-ruler::-webkit-slider-runnable-track {
+      background: rgba(100, 180, 255, 0.15);
+      border-radius: 3px;
+    }
+
+    .zoom-axis-divider {
+      width: 1px;
+      height: 12px;
+      background: rgba(130, 180, 255, 0.3);
+      margin: 2px 0;
+    }
+
+    /* ── Bottom controls ── */
+    #ss-controls {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    #ss-presets { display: flex; gap: 7px; }
+
+    #ss-bottom-bar { display: flex; gap: 12px; align-items: center; }
+
+    input[type="date"].ss-input {
+      background: rgba(255, 255, 255, .07);
+      border: 1px solid rgba(255, 255, 255, .22);
+      color: rgba(200, 220, 255, .92);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: Georgia, serif;
+      letter-spacing: 1px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="date"].ss-input::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+
+    select.ss-input {
+      background: rgba(255, 255, 255, .07);
+      border: 1px solid rgba(255, 255, 255, .22);
+      color: rgba(200, 220, 255, .92);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: Georgia, serif;
+      outline: none;
+      cursor: pointer;
+    }
+    select.ss-input option { background: #000d1a; color: rgba(200, 220, 255, .92); }
+
+    /* ── Arcball widget ── */
+    #ss-arcball { cursor: grab; border-radius: 50%; display: block; }
+    #ss-arcball:active { cursor: grabbing; }
+    .arcball-divider { width: 1px; height: 12px; background: rgba(130, 180, 255, 0.3); margin: 4px 0; }
+
+    /* ── Mobile: sidebar collapses to top bar ── */
+    @media (max-width: 767px) {
+      #om-form-card { padding: 22px 18px; }
+
+      #om-sidebar {
+        right: 0; left: 0;
+        top: 56px; bottom: auto;
+        width: 100%;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        flex-direction: row;
+        align-items: center;
+        padding: 0;
+        height: auto;
+        flex-wrap: wrap;
+      }
+      #om-sidebar-summary {
+        flex: 1;
+        border-bottom: none;
+        border-right: 1px solid rgba(80, 120, 200, 0.15);
+        padding: 8px 14px;
+        text-align: left;
+      }
+      #om-point-list, #om-annot-panel { display: none; }
+      #om-save-area {
+        flex-direction: row;
+        gap: 8px;
+        padding: 6px 12px;
+        border-top: none;
+        align-items: center;
+        flex: 2;
+      }
+      #om-all-saved-msg, #om-viewer-status { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background 3D canvas — solar_system.js renders into this from page load -->
+  <canvas id="c"></canvas>
+
+  <!-- Form overlay — visible initially, hidden once trajectory data loads -->
+  <div id="om-form-overlay">
+    <a href="solar_system.html" id="om-back-link">← Solar System</a>
+
+    <div id="om-page">
+      <div id="om-header">
+        <div id="om-title">Object Motion Tracker</div>
+        <div id="om-subtitle">Fetch &amp; annotate a heliocentric trajectory</div>
+      </div>
+
+      <!-- Main form card -->
+      <div id="om-form-card">
+
+        <!-- Step 1: Designation + Search -->
+        <div class="om-field">
+          <label class="om-label" for="om-designation">Object Designation</label>
+          <input
+            id="om-designation"
+            class="om-input"
+            type="text"
+            placeholder="e.g. 3I, C/2025 N1, 2017 U1"
+            required
+            autocomplete="off"
+            spellcheck="false"
+          >
+        </div>
+
+        <button id="om-search-btn" type="button">Search</button>
+
+        <!-- Status line -->
+        <div id="om-status" aria-live="polite"></div>
+
+        <!-- Draft session found card -->
+        <div id="om-draft-card" role="region" aria-label="Draft session found">
+          <div id="om-draft-card-msg"></div>
+          <div id="om-draft-card-btns">
+            <button id="om-resume-btn"      type="button">Resume Session</button>
+            <button id="om-start-fresh-btn" type="button">Start Fresh</button>
+          </div>
+        </div>
+
+        <!-- Saved-file found card -->
+        <div id="om-saved-card" role="region" aria-label="Saved trajectory found">
+          <div id="om-saved-card-msg"></div>
+          <div id="om-saved-card-btns">
+            <button id="om-load-saved-btn" type="button">Load Saved Data</button>
+            <button id="om-refetch-btn"    type="button">Re-fetch from Horizons</button>
+          </div>
+        </div>
+
+        <!-- Step 2: Date range + step (shown when no saved file exists) -->
+        <div id="om-date-section">
+          <hr class="om-divider">
+
+          <div class="om-field">
+            <label class="om-label" for="om-start-date">Start Date</label>
+            <input
+              id="om-start-date"
+              class="om-input"
+              type="date"
+              required
+              min="1900-01-01"
+              max="2099-12-31"
+            >
+          </div>
+
+          <div class="om-field">
+            <label class="om-label" for="om-end-date">End Date</label>
+            <input
+              id="om-end-date"
+              class="om-input"
+              type="date"
+              required
+              min="1900-01-01"
+              max="2099-12-31"
+            >
+          </div>
+
+          <div class="om-field">
+            <label class="om-label">Step Size</label>
+            <div id="om-step-row">
+              <select id="om-step-dropdown" class="om-input" aria-label="Step size preset">
+                <option value="1d" selected>1d — daily</option>
+                <option value="7d">7d — weekly</option>
+                <option value="14d">14d — fortnightly</option>
+                <option value="1mo">1mo — monthly</option>
+              </select>
+              <input
+                id="om-step-custom"
+                class="om-input"
+                type="text"
+                placeholder="Custom (overrides ↑)"
+                autocomplete="off"
+              >
+            </div>
+          </div>
+
+          <!-- Inline date-validation message -->
+          <div id="om-validation-msg" role="alert"></div>
+
+          <button id="om-fetch-btn" type="button">Fetch Trajectory</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Viewer controls — hidden initially, revealed once trajectory data loads -->
+  <div id="om-viewer-controls" aria-hidden="true">
+
+    <!-- Return to form -->
+    <button id="om-new-search-btn" type="button">← New Search</button>
+
+    <!-- Zoom panel — left side, two vertical rulers + arcball -->
+    <div id="ss-zoom-panel">
+      <div class="zoom-ruler-wrap">
+        <span class="zoom-ruler-label">In</span>
+        <span class="zoom-ruler-value" id="ss-zin-val">0</span>
+        <input type="range" class="zoom-ruler" id="ss-zoom-in"
+               min="0" max="100" value="0" aria-label="Zoom In (0–100)">
+      </div>
+      <div class="zoom-axis-divider"></div>
+      <div class="zoom-ruler-wrap">
+        <input type="range" class="zoom-ruler" id="ss-zoom-out"
+               min="-100" max="0" value="0" aria-label="Zoom Out (0 to -100)">
+        <span class="zoom-ruler-value" id="ss-zout-val">0</span>
+        <span class="zoom-ruler-label">Out</span>
+      </div>
+      <div class="arcball-divider"></div>
+      <canvas id="ss-arcball" width="90" height="90"
+              aria-label="Camera orientation — drag to rotate view"></canvas>
+    </div>
+
+    <!-- Bottom controls — presets + date + speed + pause + reset -->
+    <div id="ss-controls">
+      <div id="ss-presets">
+        <button class="ss-preset" data-preset="topdown">Top-Down</button>
+        <button class="ss-preset" data-preset="ecliptic">Ecliptic</button>
+        <button class="ss-preset" data-preset="side">Side View</button>
+        <button class="ss-preset" data-preset="iso">Isometric</button>
+        <button class="ss-preset" data-preset="below">From Below</button>
+      </div>
+      <div id="ss-bottom-bar">
+        <input type="date" id="ss-date" class="ss-input"
+               min="1900-01-01" max="2099-12-31" aria-label="Simulation date">
+        <select id="ss-speed" class="ss-input" aria-label="Simulation speed">
+          <option value="visual" selected>Live view</option>
+          <option value="1">×1 day/s</option>
+          <option value="7">×7 days/s</option>
+          <option value="30">×30 days/s</option>
+          <option value="365">×365 days/s</option>
+        </select>
+        <button id="ss-pause">❚❚ Pause</button>
+        <button id="ss-reset">⌂ Reset View</button>
+      </div>
+    </div>
+
+    <!-- Progress sidebar — Stories 2.7–2.12 -->
+    <div id="om-sidebar" aria-label="Progress panel">
+      <div id="om-sidebar-summary">0 of 0 saved</div>
+      <div id="om-point-list" role="list"></div>
+
+      <!-- Annotation panel — Stories 2.9 + 2.10 -->
+      <div id="om-annot-panel">
+        <div id="om-drop-zone" role="button" tabindex="0"
+             aria-label="Upload or drop image for this point">
+          <input type="file" id="om-img-input"
+                 accept="image/jpeg,image/png,image/webp,image/gif">
+          <button id="om-img-btn" type="button">Upload Image</button>
+          <div id="om-img-preview-wrap">
+            <img id="om-img-preview" alt="Point image preview">
+            <button id="om-img-remove" type="button">× Remove</button>
+          </div>
+          <div id="om-img-warn"></div>
+        </div>
+        <textarea id="om-description"
+                  placeholder="Add a note for this date… (optional)"></textarea>
+      </div>
+
+      <!-- Save area — Stories 2.8 + 2.12 -->
+      <div id="om-save-area">
+        <div id="om-point-counter">Point 1 of 0</div>
+        <button id="om-save-point-btn" type="button">Save Point →</button>
+        <div id="om-all-saved-msg">All points saved — ready to export ✓</div>
+        <button id="om-save-file-btn" type="button">⬇ Save to File</button>
+        <button id="om-save-dir-btn"  type="button">⬇ Save to Project Folder</button>
+        <div id="om-viewer-status" aria-live="polite"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="shared_render.js"></script>
+  <script src="solar_system.js"></script>
+  <script src="object_motion.js"></script>
+</body>
+</html>
