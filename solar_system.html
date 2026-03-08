@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar System · Interactive Viewer</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* ── Zoom panel (left side, vertical sliders) ── */
+    #ss-zoom-panel {
+      position: fixed;
+      left: 22px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      z-index: 10;
+      background: rgba(0, 5, 20, 0.65);
+      border: 1px solid rgba(130, 180, 255, 0.25);
+      border-radius: 10px;
+      padding: 12px 10px;
+    }
+
+    .zoom-ruler-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .zoom-ruler-label {
+      color: rgba(130, 180, 255, 0.7);
+      font-family: Georgia, serif;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .zoom-ruler-value {
+      color: rgba(220, 235, 255, 1.0);
+      font-family: Georgia, serif;
+      font-size: 12px;
+      min-width: 28px;
+      text-align: center;
+    }
+
+    /* Vertical range slider — cross-browser */
+    input[type="range"].zoom-ruler {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      -webkit-appearance: none;
+      appearance: none;
+      width: 6px;
+      height: 120px;
+      background: rgba(130, 180, 255, 0.18);
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    input[type="range"].zoom-ruler::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(220, 235, 255, 0.95);
+      border: 2px solid rgba(100, 180, 255, 0.7);
+      box-shadow: 0 0 8px rgba(100, 180, 255, 0.7);
+      cursor: grab;
+    }
+
+    input[type="range"].zoom-ruler::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(220, 235, 255, 0.95);
+      border: 2px solid rgba(100, 180, 255, 0.7);
+      box-shadow: 0 0 8px rgba(100, 180, 255, 0.7);
+      cursor: grab;
+    }
+
+    input[type="range"].zoom-ruler::-webkit-slider-runnable-track {
+      background: rgba(100, 180, 255, 0.15);
+      border-radius: 3px;
+    }
+
+    .zoom-axis-divider {
+      width: 1px;
+      height: 12px;
+      background: rgba(130, 180, 255, 0.3);
+      margin: 2px 0;
+    }
+
+    /* ── Bottom controls ── */
+    #ss-controls {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    #ss-presets {
+      display: flex;
+      gap: 7px;
+    }
+
+    #ss-bottom-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    input[type="date"].ss-input {
+      background: rgba(255, 255, 255, .07);
+      border: 1px solid rgba(255, 255, 255, .22);
+      color: rgba(200, 220, 255, .92);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: Georgia, serif;
+      letter-spacing: 1px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="date"].ss-input::-webkit-calendar-picker-indicator {
+      filter: invert(0.7);
+      cursor: pointer;
+    }
+
+    select.ss-input {
+      background: rgba(255, 255, 255, .07);
+      border: 1px solid rgba(255, 255, 255, .22);
+      color: rgba(200, 220, 255, .92);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: Georgia, serif;
+      outline: none;
+      cursor: pointer;
+    }
+
+    select.ss-input option {
+      background: #000d1a;
+      color: rgba(200, 220, 255, .92);
+    }
+
+    /* ── Arcball widget — lives inside #ss-zoom-panel ── */
+    #ss-arcball {
+      cursor: grab;
+      border-radius: 50%;
+      display: block;
+    }
+
+    #ss-arcball:active { cursor: grabbing; }
+
+    .arcball-divider {
+      width: 1px;
+      height: 12px;
+      background: rgba(130, 180, 255, 0.3);
+      margin: 4px 0;
+    }
+
+    /* ── Canvas cursor ── */
+    #c { cursor: grab; }
+    #c.dragging { cursor: grabbing; }
+    #c.panning  { cursor: move; }
+  </style>
+</head>
+<body>
+  <!-- Main 3D canvas (shared_render.js attaches to #c) -->
+  <canvas id="c"></canvas>
+
+  <!-- Title (reuses existing CSS #sceneLabel / #subLabel) -->
+  <div id="sceneLabel">SOLAR SYSTEM</div>
+  <div id="subLabel">Drag to rotate · Scroll to zoom · Pick a date</div>
+
+  <!-- Zoom panel — left side, two vertical rulers -->
+  <div id="ss-zoom-panel">
+    <div class="zoom-ruler-wrap">
+      <span class="zoom-ruler-label">In</span>
+      <span class="zoom-ruler-value" id="ss-zin-val">0</span>
+      <input type="range" class="zoom-ruler" id="ss-zoom-in"
+             min="0" max="100" value="0" aria-label="Zoom In (0–100)">
+    </div>
+    <div class="zoom-axis-divider"></div>
+    <div class="zoom-ruler-wrap">
+      <input type="range" class="zoom-ruler" id="ss-zoom-out"
+             min="-100" max="0" value="0" aria-label="Zoom Out (0 to -100)">
+      <span class="zoom-ruler-value" id="ss-zout-val">0</span>
+      <span class="zoom-ruler-label">Out</span>
+    </div>
+    <div class="arcball-divider"></div>
+    <canvas id="ss-arcball" width="90" height="90" aria-label="Camera orientation — drag to rotate view"></canvas>
+  </div>
+
+  <!-- Bottom controls — presets + date + speed + pause -->
+  <div id="ss-controls">
+    <div id="ss-presets">
+      <button class="ss-preset" data-preset="topdown">Top-Down</button>
+      <button class="ss-preset" data-preset="ecliptic">Ecliptic</button>
+      <button class="ss-preset" data-preset="side">Side View</button>
+      <button class="ss-preset" data-preset="iso">Isometric</button>
+      <button class="ss-preset" data-preset="below">From Below</button>
+    </div>
+    <div id="ss-bottom-bar">
+      <input type="date" id="ss-date" class="ss-input"
+             min="1900-01-01" max="2099-12-31" aria-label="Simulation date">
+      <select id="ss-speed" class="ss-input" aria-label="Simulation speed">
+        <option value="visual" selected>Live view</option>
+        <option value="1">×1 day/s</option>
+        <option value="7">×7 days/s</option>
+        <option value="30">×30 days/s</option>
+        <option value="365">×365 days/s</option>
+      </select>
+      <button id="ss-pause">❚❚ Pause</button>
+      <button id="ss-reset">⌂ Reset View</button>
+    </div>
+  </div>
+
+  <script src="shared_render.js"></script>
+  <script src="solar_system.js"></script>
+</body>
+</html>

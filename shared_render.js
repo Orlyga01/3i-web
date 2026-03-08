@@ -81,9 +81,9 @@ const planets = [
   { name: 'Mercury', color: '#c0b0a0', r: 5, orbit: 72, speed: .047, angle: .5 },
   { name: 'Venus', color: '#e8c87a', r: 8, orbit: 118, speed: .035, angle: 1.2 },
   { name: 'Earth', color: '#4488cc', r: 9, orbit: 170, speed: .029, angle: 2.1, texture: 'assets/earth.png' },
-  { name: 'Mars', color: '#dd5533', r: 7, orbit: 235, speed: .024, angle: 3.4 },
+  { name: 'Mars', color: '#dd5533', r: 7, orbit: 235, speed: .024, angle: 3.4, texture: 'assets/mars.png' },
   { name: 'Jupiter', color: '#c8a060', r: 44, orbit: 365, speed: .013, angle: .8, texture: 'assets/jupiter.gif' },
-  { name: 'Saturn', color: '#d4b870', r: 18, orbit: 488, speed: .009, angle: 4.2, ring: true },
+  { name: 'Saturn', color: '#d4b870', r: 18, orbit: 488, speed: .009, angle: 4.2, ring: true, texture: 'assets/saturn.webp' },
   { name: 'Uranus', color: '#88ddee', r: 13, orbit: 608, speed: .006, angle: 1.9 },
 ];
 const N_PLANETS = planets.length;
@@ -128,36 +128,38 @@ function drawPlanet(p, showLabel) {
     const img = planetTextures[p.name];
     const imgW = img.naturalWidth || img.width;
     const imgH = img.naturalHeight || img.height;
-    
-    // Draw glow
-    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, pr * 2.5);
-    g.addColorStop(0, p.color + '44');
-    g.addColorStop(1, p.color + '00');
-    ctx.beginPath();
-    ctx.arc(sx, sy, pr * 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = g;
-    ctx.fill();
-    
-    // Draw planet with texture - use a smaller clip circle to avoid black edges
-    const clipRadius = pr * 0.95; // Clip slightly smaller
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(sx, sy, clipRadius, 0, Math.PI * 2);
-    ctx.clip();
-    
-    // Calculate how much to crop from left and right to make it square
     const squareSize = Math.min(imgW, imgH);
     const cropX = (imgW - squareSize) / 2;
     const cropY = (imgH - squareSize) / 2;
-    
-    // Draw texture at full size
-    ctx.drawImage(
-      img,
-      cropX, cropY, squareSize, squareSize,  // source: center square crop
-      sx - pr, sy - pr, pr * 2, pr * 2       // destination: fit to planet
-    );
-    
-    ctx.restore();
+
+    if (p.ring) {
+      // Ringed planet (Saturn): texture is landscape — rings extend left/right.
+      // Draw at full aspect ratio using planet diameter as height,
+      // so planet body stays at original size and rings show in full width.
+      const drawH = pr * 2;
+      const drawW = drawH * (imgW / imgH); // preserves aspect ratio
+      ctx.save();
+      ctx.drawImage(img, 0, 0, imgW, imgH,
+                    sx - drawW / 2, sy - drawH / 2, drawW, drawH);
+      ctx.restore();
+    } else {
+      // Spherical planet: subtle glow + circular clip to hide texture edges.
+      const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, pr * 2.5);
+      g.addColorStop(0, p.color + '44');
+      g.addColorStop(1, p.color + '00');
+      ctx.beginPath();
+      ctx.arc(sx, sy, pr * 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = g;
+      ctx.fill();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(sx, sy, pr * 0.95, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(img, cropX, cropY, squareSize, squareSize,
+                    sx - pr, sy - pr, pr * 2, pr * 2);
+      ctx.restore();
+    }
   } else {
     // Procedural rendering for planets without textures
     const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, pr * 3);
@@ -176,7 +178,7 @@ function drawPlanet(p, showLabel) {
     ctx.fill();
   }
   
-  if (p.ring && pr > 3) {
+  if (p.ring && pr > 3 && !p.texture) {
     const N2 = 80, rIn = pr * 1.4, rOut = pr * 2.2;
     for (let ri = 0; ri < 2; ri++) {
       const rr = ri ? rOut : rIn;
@@ -196,7 +198,9 @@ function drawPlanet(p, showLabel) {
     ctx.fillStyle = 'rgba(215,230,255,.9)';
     ctx.font = Math.max(9, 10 * sc) + 'px Georgia';
     ctx.textAlign = 'center';
-    ctx.fillText(p.name, sx, sy - pr - 5);
+    // Ringed textured planets: label clears the planet body (rings extend sideways)
+    const labelOffset = pr + 5;
+    ctx.fillText(p.name, sx, sy - labelOffset);
   }
 }
 

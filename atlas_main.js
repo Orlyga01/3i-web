@@ -422,86 +422,30 @@ function frame() {
         const progress = clamp(t3 / 180, 0, 1); // 3 seconds
         const ap3 = atlasPos(atlasFrac);
 
-        // Keep SAME zoom as Scene 2 (no zoom change)
         const p3 = eio(progress);
-        elTgt = lerp(8, 12, p3); // Gradually tilt up
-        azTgt = 1.57; // Keep edge-on view
-        distTgt = 30; // SAME distance as Scene 2 - NO ZOOM
-        txTgt = ap3.wx; // Track 3I's actual moving position
-        tyTgt = ap3.wy; // Track 3I's Y position
-        tzTgt = ap3.wz * 0.6; // Track near 3I's height
+        elTgt = lerp(8, 12, p3);
+        azTgt = 1.57;
+        distTgt = 30;
+        txTgt = ap3.wx;
+        tyTgt = ap3.wy;
+        tzTgt = ap3.wz * 0.6;
     }
 
-    // ── Scene 4: Entering the system — 3I/ATLAS POV ──
-    else if (currentScene === 4) {
-        const ap2 = atlasPos(atlasFrac);
-        elTgt = 5;
-        azTgt = 5.24;
-        const perihelionFrac = (atlasFrac - SC_FRAC[4][0]) / (SC_FRAC[4][1] - SC_FRAC[4][0]);
-        distTgt = lerp(1100, 700, clamp(perihelionFrac, 0, 1));
-        txTgt = lerp(ap2.wx, 0, .45);
-        tyTgt = lerp(ap2.wy, 0, .45);
-        tzTgt = ap2.wz * .3;
-    }
+    // ── Scenes 4–7: velocity-driven camera — always behind Atlas facing forward, fixed distance ──
+    else if (currentScene >= 4) {
+        const apV = atlasPos(atlasFrac);
+        const velV = atlasVelocity(atlasFrac);
+        const vLenV = Math.sqrt(velV.vx * velV.vx + velV.vy * velV.vy + velV.vz * velV.vz) || 1;
+        const vxV = velV.vx / vLenV, vyV = velV.vy / vLenV, vzV = velV.vz / vLenV;
 
-    // ── Scene 5: Near Mars → Perihelion ──
-    else if (currentScene === 5) {
-        const ap5 = atlasPos(atlasFrac);
-        const mwx = Math.cos(planets[3].angle) * 235, mwy = Math.sin(planets[3].angle) * 235;
-        const ewx = Math.cos(planets[2].angle) * 170, ewy = Math.sin(planets[2].angle) * 170;
+        // Camera sits directly behind the comet along its velocity vector
+        // azTgt = Math.atan2(-vxV, vyV);
+        // elTgt = Math.atan2(-vzV, Math.sqrt(vxV * vxV + vyV * vyV)) * 180 / Math.PI;
+        // distTgt = 800; // fixed — no zoom ever
 
-        const sf = clamp((atlasFrac - AT_MARS) / (AT_PERIHELION - AT_MARS), 0, 1);
-
-        if (sf < 0.4) {
-            const vel = atlasVelocity(atlasFrac);
-            const vLen = Math.sqrt(vel.vx * vel.vx + vel.vy * vel.vy + vel.vz * vel.vz) || 1;
-            const vx = vel.vx / vLen, vy = vel.vy / vLen, vz = vel.vz / vLen;
-
-            txTgt = mwx;
-            tyTgt = mwy;
-            tzTgt = 0;
-
-            const backDist = 220;
-            const camX = ap5.wx - vx * backDist;
-            const camY = ap5.wy - vy * backDist;
-            const camZ = ap5.wz - vz * backDist;
-
-            const dx = camX - txTgt, dy = camY - tyTgt, dz = camZ - tzTgt;
-            distTgt = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            azTgt = Math.atan2(dx, -dy);
-            elTgt = Math.atan2(dz, Math.sqrt(dx * dx + dy * dy)) * 180 / Math.PI;
-        } else {
-            const earthAz = Math.atan2(ewx, -ewy);
-            azTgt = earthAz;
-            elTgt = lerp(18, 25, eio((sf - 0.4) / 0.6));
-            distTgt = lerp(520, 650, eio((sf - 0.4) / 0.6));
-            txTgt = 0;
-            tyTgt = 0;
-            tzTgt = 0;
-        }
-    }
-
-    // ── Scene 6: Dec 19 — Earth tail alignment ──
-    else if (currentScene === 6) {
-        const ap6 = atlasPos(atlasFrac);
-        const ewx = Math.cos(planets[2].angle) * 170, ewy = Math.sin(planets[2].angle) * 170;
-        elTgt = 25;
-        azTgt = 4.7;
-        distTgt = 900;
-        txTgt = (ap6.wx + ewx) * .4;
-        tyTgt = (ap6.wy + ewy) * .4;
-    }
-
-    // ── Scene 7: Jupiter flyby ──
-    else if (currentScene === 7) {
-        const ap7 = atlasPos(atlasFrac);
-        const jx = planets[4].orbit * Math.cos(planets[4].angle);
-        const jy = planets[4].orbit * Math.sin(planets[4].angle);
-        elTgt = 32;
-        azTgt = 4.5;
-        distTgt = lerp(900, 1200, clamp((atlasFrac - .88) / .12, 0, 1));
-        txTgt = lerp(jx, ap7.wx, .4);
-        tyTgt = lerp(jy, ap7.wy, .4);
+        txTgt = apV.wx;
+        tyTgt = apV.wy;
+        tzTgt = apV.wz;
     }
 
     // ── SMOOTH CAMERA ──
