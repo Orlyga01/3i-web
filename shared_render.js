@@ -77,14 +77,16 @@ function drawStars() {
 }
 
 // ── PLANETS ───────────────────────────────────────────────────
+// Orbit radii at real scale: 1 AU = 175 px.
+// Uranus kept at compressed value (background only).
 const planets = [
-  { name: 'Mercury', color: '#c0b0a0', r: 5, orbit: 72, speed: .047, angle: .5 },
-  { name: 'Venus', color: '#e8c87a', r: 8, orbit: 118, speed: .035, angle: 1.2 },
-  { name: 'Earth', color: '#4488cc', r: 9, orbit: 170, speed: .029, angle: 2.1, texture: 'assets/earth.png' },
-  { name: 'Mars', color: '#dd5533', r: 7, orbit: 235, speed: .024, angle: 3.4, texture: 'assets/mars.png' },
-  { name: 'Jupiter', color: '#c8a060', r: 44, orbit: 365, speed: .013, angle: .8, texture: 'assets/jupiter.gif' },
-  { name: 'Saturn', color: '#d4b870', r: 18, orbit: 488, speed: .009, angle: 4.2, ring: true, texture: 'assets/saturn.webp' },
-  { name: 'Uranus', color: '#88ddee', r: 13, orbit: 608, speed: .006, angle: 1.9 },
+  { name: 'Mercury', color: '#c0b0a0', r: 5,  orbit:   68, speed: .047, angle: .5 },  // 0.387 AU
+  { name: 'Venus',   color: '#e8c87a', r: 8,  orbit:  127, speed: .035, angle: 1.2 },  // 0.723 AU
+  { name: 'Earth',   color: '#4488cc', r: 9,  orbit:  175, speed: .029, angle: 2.1, texture: 'assets/earth.png' },  // 1.000 AU
+  { name: 'Mars',    color: '#dd5533', r: 7,  orbit:  267, speed: .024, angle: 3.4, texture: 'assets/mars.png' },   // 1.524 AU
+  { name: 'Jupiter', color: '#c8a060', r: 44, orbit:  910, speed: .013, angle: .8,  texture: 'assets/jupiter.gif' }, // 5.203 AU
+  { name: 'Saturn',  color: '#d4b870', r: 18, orbit: 1669, speed: .009, angle: 4.2, ring: true, texture: 'assets/saturn.webp' }, // 9.537 AU
+  { name: 'Uranus',  color: '#88ddee', r: 13, orbit:  608, speed: .006, angle: 1.9 }, // compressed (background)
 ];
 const N_PLANETS = planets.length;
 
@@ -234,7 +236,7 @@ function drawEclipticPlane() {
   const elAbs = Math.abs(aEl);
   const showFactor = clamp((90 - elAbs) / 75, 0, 1);
   if (showFactor < 0.01) return;
-  const outerR = planets[N_PLANETS - 1].orbit;
+  const outerR = Math.max(...planets.map(p => p.orbit)) * 1.15;
   const N = 200;
   const pts = [];
   for (let i = 0; i < N; i++) {

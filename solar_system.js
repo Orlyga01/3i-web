@@ -148,8 +148,7 @@ window.SolarSystem = (() => {
 
         let _elTgt   = 5;           // default: slight ecliptic tilt
         let _azTgt   = 0;
-        let _zIn     = 0;           // 0..100  (zoom in ruler)
-        let _zOut    = 0;           // 0..100  (zoom out ruler, internally positive)
+        let _zoom    = 0;           // -100..100 (negative = zoom out, positive = zoom in)
 
         // Arcball rotate drag
         let _dragging = false;
@@ -171,11 +170,10 @@ window.SolarSystem = (() => {
             below:    { el: -89,  az: 0              },
         };
 
-        // Compute target camera distance from both ruler values — direct, no lerp
+        // Compute target camera distance from single zoom value — direct, no lerp
         function _targetDist() {
-            const inDist  = lerp(BASE_DIST, 80,   _zIn  / 100);  // 1200 → 80
-            const outDist = lerp(BASE_DIST, 6000, _zOut / 100);  // 1200 → 6000
-            return inDist + (outDist - BASE_DIST);                // additive combination
+            if (_zoom >= 0) return lerp(BASE_DIST, 80,   _zoom / 100);   // 1200 → 80
+            return             lerp(BASE_DIST, 6000, -_zoom / 100);      // 1200 → 6000
         }
 
         // Called every frame — writes to shared_render.js globals
@@ -221,9 +219,8 @@ window.SolarSystem = (() => {
         function getElTarget()  { return _elTgt; }
         function getAzTarget()  { return _azTgt; }
 
-        // ── Zoom rulers ──
-        function setZoomIn(v)  { _zIn  = clamp(v,    0, 100); }
-        function setZoomOut(v) { _zOut = clamp(v,    0, 100); }
+        // ── Zoom ruler ──
+        function setZoom(v) { _zoom = clamp(v, -100, 100); }
 
         // ── Pan drag API (right-click drag) ──
         function startPan(x, y) {
@@ -252,7 +249,7 @@ window.SolarSystem = (() => {
         // ── Reset — returns all camera state to default ecliptic view ──
         function resetAll() {
             _elTgt = 5;  _azTgt = 0;
-            _zIn   = 0;  _zOut  = 0;
+            _zoom  = 0;
             _txTgt = 0;  _tyTgt = 0;  _tzTgt = 0;
         }
 
@@ -264,10 +261,10 @@ window.SolarSystem = (() => {
 
         // ── State for HUD ──
         function getState() {
-            const zVal = _zIn > 0
-                ? '+' + Math.round(_zIn)
-                : _zOut > 0
-                    ? '-' + Math.round(_zOut)
+            const zVal = _zoom > 0
+                ? '+' + Math.round(_zoom)
+                : _zoom < 0
+                    ? String(Math.round(_zoom))
                     : '0';
             const azDeg = Math.round(((aAz * 180 / Math.PI) % 360 + 360) % 360);
             return {
@@ -283,13 +280,12 @@ window.SolarSystem = (() => {
             startPan,  movePan,  endPan,
             resetAll,
             setElTarget, setAzTarget, getElTarget, getAzTarget,
-            setZoomIn, setZoomOut,
+            setZoom,
             setPreset,
             getState,
             get isDragging() { return _dragging; },
             get isPanning()  { return _panning;  },
-            get zIn()  { return _zIn;  },
-            get zOut() { return _zOut; },
+            get zoom() { return _zoom; },
         };
     })();
 
@@ -560,22 +556,13 @@ window.SolarSystem = (() => {
                 }
             });
 
-            // ── Zoom In ruler (0–100) — input fires on every pixel of drag ──
-            const zInSlider  = document.getElementById('ss-zoom-in');
-            const zInVal     = document.getElementById('ss-zin-val');
-            zInSlider.addEventListener('input', () => {
-                const v = parseInt(zInSlider.value);
-                CameraController.setZoomIn(v);
-                zInVal.textContent = v > 0 ? '+' + v : '0';
-            });
-
-            // ── Zoom Out ruler (0 to -100) — input fires on every pixel of drag ──
-            const zOutSlider = document.getElementById('ss-zoom-out');
-            const zOutVal    = document.getElementById('ss-zout-val');
-            zOutSlider.addEventListener('input', () => {
-                const v = parseInt(zOutSlider.value); // -100..0
-                CameraController.setZoomOut(-v);       // store as 0..100 internally
-                zOutVal.textContent = v < 0 ? String(v) : '0';
+            // ── Single zoom ruler (−100 → 0 → +100, 0 = neutral) ──
+            const zoomSlider = document.getElementById('ss-zoom');
+            const zoomVal    = document.getElementById('ss-zoom-val');
+            zoomSlider.addEventListener('input', () => {
+                const v = parseInt(zoomSlider.value);
+                CameraController.setZoom(v);
+                zoomVal.textContent = v > 0 ? '+' + v : String(v);
             });
 
             // ── Preset buttons ──
@@ -624,23 +611,18 @@ window.SolarSystem = (() => {
             // ── Reset View button ──
             document.getElementById('ss-reset').addEventListener('click', () => {
                 CameraController.resetAll();
-                // Sync zoom rulers back to 0 visually
-                document.getElementById('ss-zoom-in').value  = 0;
-                document.getElementById('ss-zoom-out').value = 0;
-                document.getElementById('ss-zin-val').textContent  = '0';
-                document.getElementById('ss-zout-val').textContent = '0';
+                document.getElementById('ss-zoom').value        = 0;
+                document.getElementById('ss-zoom-val').textContent = '0';
             });
 
-            // ── Scroll wheel → Zoom In ruler ──
+            // ── Scroll wheel → zoom ruler ──
             canvas.addEventListener('wheel', e => {
                 e.preventDefault();
                 const delta  = e.deltaY > 0 ? -5 : 5;
-                const newVal = clamp((CameraController.zIn) + delta, 0, 100);
-                CameraController.setZoomIn(newVal);
-
-                // Sync the DOM slider visually
-                zInSlider.value    = newVal;
-                zInVal.textContent = newVal > 0 ? '+' + newVal : '0';
+                const newVal = clamp(CameraController.zoom + delta, -100, 100);
+                CameraController.setZoom(newVal);
+                zoomSlider.value       = newVal;
+                zoomVal.textContent    = newVal > 0 ? '+' + newVal : String(newVal);
             }, { passive: false });
         }
 
@@ -748,31 +730,29 @@ window.SolarSystem = (() => {
             setPreset: name => CameraController.setPreset(name),
             getState:  ()   => CameraController.getState(),
 
-            /** Returns raw camera angles and zoom levels for serialisation. */
+            /** Returns raw camera angles and zoom level for serialisation. */
             getRawState: () => ({
-                el:      CameraController.getElTarget(),
-                az:      CameraController.getAzTarget(),
-                zoomIn:  CameraController.zIn,
-                zoomOut: CameraController.zOut,
+                el:   CameraController.getElTarget(),
+                az:   CameraController.getAzTarget(),
+                zoom: CameraController.zoom,
             }),
 
-            /** Restores camera angles and zoom; syncs DOM sliders. */
+            /** Restores camera angles and zoom; syncs DOM slider.
+             *  Accepts both new { zoom } and legacy { zoomIn, zoomOut } formats. */
             setRawState: (s) => {
                 if (!s) return;
-                if (s.el      != null) CameraController.setElTarget(s.el);
-                if (s.az      != null) CameraController.setAzTarget(s.az);
-                if (s.zoomIn  != null) CameraController.setZoomIn(s.zoomIn);
-                if (s.zoomOut != null) CameraController.setZoomOut(s.zoomOut);
-                const zInEl     = document.getElementById('ss-zoom-in');
-                const zInValEl  = document.getElementById('ss-zin-val');
-                const zOutEl    = document.getElementById('ss-zoom-out');
-                const zOutValEl = document.getElementById('ss-zout-val');
-                const zi = s.zoomIn  ?? 0;
-                const zo = s.zoomOut ?? 0;
-                if (zInEl)     zInEl.value           = zi;
-                if (zInValEl)  zInValEl.textContent  = zi  > 0 ? '+' + Math.round(zi)  : '0';
-                if (zOutEl)    zOutEl.value           = -zo;
-                if (zOutValEl) zOutValEl.textContent  = zo  > 0 ? '-' + Math.round(zo) : '0';
+                if (s.el != null) CameraController.setElTarget(s.el);
+                if (s.az != null) CameraController.setAzTarget(s.az);
+                let z = 0;
+                if (s.zoom    != null) { z = s.zoom; }
+                else if (s.zoomIn != null || s.zoomOut != null) {
+                    z = (s.zoomIn ?? 0) - (s.zoomOut ?? 0);
+                }
+                CameraController.setZoom(z);
+                const zoomEl    = document.getElementById('ss-zoom');
+                const zoomValEl = document.getElementById('ss-zoom-val');
+                if (zoomEl)    zoomEl.value          = z;
+                if (zoomValEl) zoomValEl.textContent = z > 0 ? '+' + Math.round(z) : String(Math.round(z));
             },
         },
 

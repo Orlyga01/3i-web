@@ -1,0 +1,474 @@
+{
+  "object": "3I",
+  "designation": "3I",
+  "createdAt": "2026-03-08T00:00:00Z",
+  "updatedAt": "2026-03-09T06:50:45.070Z",
+  "source": "JPL Horizons VECTORS",
+  "dateRange": "2024-10-01 → 2026-03-16",
+  "scale": {
+    "auToPx": 175
+  },
+  "points": [
+    {
+      "jd": 2460584.5,
+      "date": "2024-10-01",
+      "au": {
+        "x": 4.0194,
+        "y": -13.1399,
+        "z": 0.6763
+      },
+      "px": {
+        "wx": 703,
+        "wy": -2299,
+        "wz": 118
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": {
+        "el": 5,
+        "az": 0,
+        "zoomIn": 0,
+        "zoomOut": 0
+      },
+      "description": "Pre-discovery — 13.8 AU from Sun, between Saturn and Uranus orbits, approaching inner solar system",
+      "image": null
+    },
+    {
+      "jd": 2460697.5,
+      "date": "2025-01-22",
+      "au": {
+        "x": 2.477,
+        "y": -9.5961,
+        "z": 0.518
+      },
+      "px": {
+        "wx": 433,
+        "wy": -1679,
+        "wz": 91
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": "Pre-discovery — 9.9 AU from Sun, near Saturn's orbit, approaching inner solar system",
+      "image": null
+    },
+    {
+      "jd": 2460796.5,
+      "date": "2025-05-01",
+      "au": {
+        "x": 1.1177,
+        "y": -6.4599,
+        "z": 0.3775
+      },
+      "px": {
+        "wx": 196,
+        "wy": -1130,
+        "wz": 66
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": "Pre-discovery — 6.6 AU from Sun, incoming from outer solar system",
+      "image": null
+    },
+    {
+      "jd": 2460857.5,
+      "date": "2025-07-01",
+      "au": {
+        "x": 0.2743,
+        "y": -4.4971,
+        "z": 0.2914
+      },
+      "px": {
+        "wx": 48,
+        "wy": -787,
+        "wz": 51
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": "Discovery — 4.5 AU from Sun",
+      "image": null
+    },
+    {
+      "jd": 2460872.5,
+      "date": "2025-07-16",
+      "au": {
+        "x": 0.0686,
+        "y": -4.0057,
+        "z": 0.2686
+      },
+      "px": {
+        "wx": 12,
+        "wy": -701,
+        "wz": 47
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2460887.5,
+      "date": "2025-07-31",
+      "au": {
+        "x": -0.1429,
+        "y": -3.5143,
+        "z": 0.2457
+      },
+      "px": {
+        "wx": -25,
+        "wy": -615,
+        "wz": 43
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2460902.5,
+      "date": "2025-08-15",
+      "au": {
+        "x": -0.3486,
+        "y": -3.0114,
+        "z": 0.2229
+      },
+      "px": {
+        "wx": -61,
+        "wy": -527,
+        "wz": 39
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2460917.5,
+      "date": "2025-08-30",
+      "au": {
+        "x": -0.5543,
+        "y": -2.5086,
+        "z": 0.2
+      },
+      "px": {
+        "wx": -97,
+        "wy": -439,
+        "wz": 35
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2460932.5,
+      "date": "2025-09-14",
+      "au": {
+        "x": -0.76,
+        "y": -1.9886,
+        "z": 0.1714
+      },
+      "px": {
+        "wx": -133,
+        "wy": -348,
+        "wz": 30
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2460947.5,
+      "date": "2025-09-29",
+      "au": {
+        "x": -0.96,
+        "y": -1.4629,
+        "z": 0.1486
+      },
+      "px": {
+        "wx": -168,
+        "wy": -256,
+        "wz": 26
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2460951.5,
+      "date": "2025-10-03",
+      "au": {
+        "x": -1.0102,
+        "y": -1.3164,
+        "z": 0.1419
+      },
+      "px": {
+        "wx": -177,
+        "wy": -230,
+        "wz": 25
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": "Mars close approach — ~0.194 AU from Mars",
+      "image": null
+    },
+    {
+      "jd": 2460962.5,
+      "date": "2025-10-14",
+      "au": {
+        "x": -1.1486,
+        "y": -0.9143,
+        "z": 0.12
+      },
+      "px": {
+        "wx": -201,
+        "wy": -160,
+        "wz": 21
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2460977.5,
+      "date": "2025-10-29",
+      "au": {
+        "x": -1.3082,
+        "y": -0.3469,
+        "z": 0.092
+      },
+      "px": {
+        "wx": -229,
+        "wy": -61,
+        "wz": 16
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": "Perihelion — closest approach to Sun, 1.356 AU. Peak brightness.",
+      "image": null
+    },
+    {
+      "jd": 2460992.5,
+      "date": "2025-11-13",
+      "au": {
+        "x": -1.44,
+        "y": 0.2286,
+        "z": 0.0571
+      },
+      "px": {
+        "wx": -252,
+        "wy": 40,
+        "wz": 10
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2461007.5,
+      "date": "2025-11-28",
+      "au": {
+        "x": -1.5371,
+        "y": 0.8,
+        "z": 0.0286
+      },
+      "px": {
+        "wx": -269,
+        "wy": 140,
+        "wz": 5
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2461022.5,
+      "date": "2025-12-13",
+      "au": {
+        "x": -1.6171,
+        "y": 1.36,
+        "z": -0.0057
+      },
+      "px": {
+        "wx": -283,
+        "wy": 238,
+        "wz": -1
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2461037.5,
+      "date": "2025-12-28",
+      "au": {
+        "x": -1.68,
+        "y": 1.9086,
+        "z": -0.04
+      },
+      "px": {
+        "wx": -294,
+        "wy": 334,
+        "wz": -7
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": "Earth closest approach — ~1.8 AU. Earth enters ion tail.",
+      "image": null
+    },
+    {
+      "jd": 2461052.5,
+      "date": "2026-01-12",
+      "au": {
+        "x": -1.7429,
+        "y": 2.4514,
+        "z": -0.0743
+      },
+      "px": {
+        "wx": -305,
+        "wy": 429,
+        "wz": -13
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2461061.5,
+      "date": "2026-01-21",
+      "au": {
+        "x": -1.7762,
+        "y": 2.7778,
+        "z": -0.0944
+      },
+      "px": {
+        "wx": -311,
+        "wy": 486,
+        "wz": -17
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2461067.5,
+      "date": "2026-01-27",
+      "au": {
+        "x": -1.8,
+        "y": 2.9943,
+        "z": -0.1086
+      },
+      "px": {
+        "wx": -315,
+        "wy": 524,
+        "wz": -19
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2461082.5,
+      "date": "2026-02-11",
+      "au": {
+        "x": -1.8514,
+        "y": 3.5257,
+        "z": -0.1429
+      },
+      "px": {
+        "wx": -324,
+        "wy": 617,
+        "wz": -25
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2461097.5,
+      "date": "2026-02-26",
+      "au": {
+        "x": -1.9029,
+        "y": 4.0571,
+        "z": -0.1714
+      },
+      "px": {
+        "wx": -333,
+        "wy": 710,
+        "wz": -30
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2461112.5,
+      "date": "2026-03-13",
+      "au": {
+        "x": -1.9543,
+        "y": 4.5829,
+        "z": -0.2057
+      },
+      "px": {
+        "wx": -342,
+        "wy": 802,
+        "wz": -36
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2461115.5,
+      "date": "2026-03-16",
+      "au": {
+        "x": -2.0571,
+        "y": 5.2571,
+        "z": -0.2571
+      },
+      "px": {
+        "wx": -360,
+        "wy": 920,
+        "wz": -45
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": "Jupiter flyby — 0.36 AU from Jupiter. Exits solar system permanently. (Extrapolated point)",
+      "image": null
+    }
+  ]
+}

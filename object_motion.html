@@ -631,7 +631,7 @@
       -webkit-appearance: none;
       appearance: none;
       width: 6px;
-      height: 120px;
+      height: 180px;
       background: rgba(130, 180, 255, 0.18);
       border-radius: 3px;
       outline: none;
@@ -665,11 +665,20 @@
       border-radius: 3px;
     }
 
-    .zoom-axis-divider {
-      width: 1px;
-      height: 12px;
-      background: rgba(130, 180, 255, 0.3);
-      margin: 2px 0;
+    /* Center-zero tick mark */
+    .zoom-ruler-track-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .zoom-center-tick {
+      position: absolute;
+      left: -5px;
+      right: -5px;
+      top: 50%;
+      height: 1px;
+      background: rgba(130, 180, 255, 0.55);
+      pointer-events: none;
     }
 
     /* ── Bottom controls ── */
@@ -720,6 +729,192 @@
     #ss-arcball { cursor: grab; border-radius: 50%; display: block; }
     #ss-arcball:active { cursor: grabbing; }
     .arcball-divider { width: 1px; height: 12px; background: rgba(130, 180, 255, 0.3); margin: 4px 0; }
+
+    /* ── Duration & stoppable controls (Story 2.14) ── */
+    #om-point-settings {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    #om-duration-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #om-duration-label {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(130, 180, 255, 0.7);
+      flex-shrink: 0;
+    }
+
+    #om-duration-pct {
+      width: 54px;
+      background: rgba(255, 255, 255, .06);
+      border: 1px solid rgba(255, 255, 255, .18);
+      color: rgba(200, 220, 255, .92);
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-family: Georgia, serif;
+      outline: none;
+      text-align: center;
+      -moz-appearance: textfield;
+    }
+    #om-duration-pct::-webkit-outer-spin-button,
+    #om-duration-pct::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    #om-duration-pct:focus { border-color: rgba(100, 180, 255, 0.55); }
+
+    #om-duration-unit {
+      font-size: 11px;
+      color: rgba(160, 200, 255, 0.6);
+      flex-shrink: 0;
+    }
+
+    #om-settings-btn {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 10px;
+      margin-left: auto;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid rgba(255, 255, 255, .18);
+      cursor: pointer;
+      color: rgba(160, 200, 255, 0.7);
+      line-height: 1.4;
+    }
+    #om-settings-btn:hover { background: rgba(255, 255, 255, .10); }
+
+    #om-stoppable-label {
+      font-size: 11px;
+      color: rgba(180, 210, 255, 0.75);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+    #om-stoppable {
+      width: 13px;
+      height: 13px;
+      cursor: pointer;
+      accent-color: rgba(100, 180, 255, 0.9);
+    }
+
+    /* ── Settings modal (Story 2.14) ── */
+    #om-settings-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      background: rgba(0, 1, 15, 0.72);
+      align-items: center;
+      justify-content: center;
+    }
+    #om-settings-modal.visible { display: flex; }
+
+    #om-settings-modal-content {
+      background: rgba(5, 12, 38, 0.97);
+      border: 1px solid rgba(100, 160, 255, 0.28);
+      border-radius: 12px;
+      padding: 28px 32px;
+      max-width: 380px;
+      width: 90%;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      text-align: center;
+    }
+    #om-settings-modal-content p {
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: rgba(180, 210, 255, 0.8);
+      line-height: 1.6;
+    }
+    #om-settings-modal-close {
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 7px 22px;
+      border-radius: 16px;
+      align-self: center;
+    }
+
+    /* ── Play Video button (Story 2.15) ── */
+    #om-play-video-btn {
+      font-size: 11px;
+      letter-spacing: 1px;
+      padding: 7px 14px;
+      border-radius: 16px;
+      width: 100%;
+      opacity: 0.38;
+      pointer-events: none;
+      cursor: default;
+      transition: opacity .25s, background .25s;
+      background: rgba(40, 110, 20, 0.18);
+      border: 1px solid rgba(100, 200, 80, 0.35);
+      color: rgba(160, 240, 130, 0.9);
+    }
+    #om-play-video-btn.enabled {
+      opacity: 1;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    #om-play-video-btn.enabled:hover { background: rgba(40, 130, 20, 0.32); }
+
+    /* ── Play Video confirm modal (Story 2.15) ── */
+    #om-play-confirm-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      background: rgba(0, 1, 15, 0.72);
+      align-items: center;
+      justify-content: center;
+    }
+    #om-play-confirm-modal.visible { display: flex; }
+
+    #om-play-confirm-content {
+      background: rgba(5, 12, 38, 0.97);
+      border: 1px solid rgba(100, 160, 255, 0.28);
+      border-radius: 12px;
+      padding: 28px 32px;
+      max-width: 420px;
+      width: 90%;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      text-align: center;
+    }
+    #om-play-confirm-msg {
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: rgba(180, 210, 255, 0.85);
+      line-height: 1.6;
+    }
+    #om-play-confirm-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    #om-play-save-first-btn {
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 8px 20px;
+      border-radius: 18px;
+      background: rgba(40, 100, 200, 0.22);
+      border: 1px solid rgba(80, 160, 255, 0.4);
+      color: rgba(160, 210, 255, 0.95);
+    }
+    #om-play-save-first-btn:hover { background: rgba(40, 100, 200, 0.42); }
+    #om-play-anyway-btn {
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 8px 20px;
+      border-radius: 18px;
+    }
 
     /* ── Mobile: sidebar collapses to top bar ── */
     @media (max-width: 767px) {
@@ -875,20 +1070,17 @@
     <!-- Return to form -->
     <button id="om-new-search-btn" type="button">← New Search</button>
 
-    <!-- Zoom panel — left side, two vertical rulers + arcball -->
+    <!-- Zoom panel — left side, single centred ruler (+ = in, − = out) -->
     <div id="ss-zoom-panel">
       <div class="zoom-ruler-wrap">
-        <span class="zoom-ruler-label">In</span>
-        <span class="zoom-ruler-value" id="ss-zin-val">0</span>
-        <input type="range" class="zoom-ruler" id="ss-zoom-in"
-               min="0" max="100" value="0" aria-label="Zoom In (0–100)">
-      </div>
-      <div class="zoom-axis-divider"></div>
-      <div class="zoom-ruler-wrap">
-        <input type="range" class="zoom-ruler" id="ss-zoom-out"
-               min="-100" max="0" value="0" aria-label="Zoom Out (0 to -100)">
-        <span class="zoom-ruler-value" id="ss-zout-val">0</span>
-        <span class="zoom-ruler-label">Out</span>
+        <span class="zoom-ruler-label">+</span>
+        <div class="zoom-ruler-track-wrap">
+          <input type="range" class="zoom-ruler" id="ss-zoom"
+                 min="-100" max="100" value="0" aria-label="Zoom (−100 to +100, 0 = neutral)">
+          <div class="zoom-center-tick"></div>
+        </div>
+        <span class="zoom-ruler-value" id="ss-zoom-val">0</span>
+        <span class="zoom-ruler-label">−</span>
       </div>
       <div class="arcball-divider"></div>
       <canvas id="ss-arcball" width="90" height="90"
@@ -937,6 +1129,26 @@
           </div>
           <div id="om-img-warn"></div>
         </div>
+        <!-- Story 2.14: Duration & stoppable controls -->
+        <div id="om-point-settings">
+          <div id="om-duration-row">
+            <span id="om-duration-label">Duration</span>
+            <input type="number" id="om-duration-pct"
+                   min="1" max="1000" value="100" step="1"
+                   title="Duration as % of 1 second (base). 100 = 1s, 200 = 2s, 50 = 0.5s. Use the speed ruler in the player to scale the whole video."
+                   aria-label="Duration percent">
+            <span id="om-duration-unit">%</span>
+            <button id="om-settings-btn" type="button" title="Point settings">⚙</button>
+          </div>
+          <div id="om-stoppable-row">
+            <label id="om-stoppable-label" for="om-stoppable">
+              <input type="checkbox" id="om-stoppable"
+                     title="When 'Pause at stoppable points' is enabled in the player, the video will pause here and show this point's annotation.">
+              Stoppable point
+            </label>
+          </div>
+        </div>
+
         <textarea id="om-description"
                   placeholder="Add a note for this date… (optional)"></textarea>
       </div>
@@ -948,10 +1160,31 @@
         <div id="om-all-saved-msg">All points saved — ready to export ✓</div>
         <button id="om-save-file-btn" type="button">⬇ Save to File</button>
         <button id="om-save-dir-btn"  type="button">⬇ Save to Project Folder</button>
+        <!-- Story 2.15: Play Video button -->
+        <button id="om-play-video-btn" type="button">▶ Play Video</button>
         <div id="om-viewer-status" aria-live="polite"></div>
       </div>
     </div>
 
+  </div>
+
+  <!-- Settings modal (Story 2.14) -->
+  <div id="om-settings-modal" role="dialog" aria-modal="true" aria-label="Point settings">
+    <div id="om-settings-modal-content">
+      <p>Additional per-point parameters will appear here in future updates.</p>
+      <button id="om-settings-modal-close" type="button">Close</button>
+    </div>
+  </div>
+
+  <!-- Play Video confirm modal (Story 2.15) -->
+  <div id="om-play-confirm-modal" role="dialog" aria-modal="true" aria-label="Play Video confirmation">
+    <div id="om-play-confirm-content">
+      <p id="om-play-confirm-msg"></p>
+      <div id="om-play-confirm-btns">
+        <button id="om-play-save-first-btn" type="button">Save to File First</button>
+        <button id="om-play-anyway-btn"     type="button">Open Player Anyway</button>
+      </div>
+    </div>
   </div>
 
   <script src="shared_render.js"></script>

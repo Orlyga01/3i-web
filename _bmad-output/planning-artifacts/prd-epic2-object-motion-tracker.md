@@ -247,16 +247,16 @@ The camera retains its current view when advancing to a new point — no auto-re
 
 A prominent **"Save Point →"** button (keyboard shortcut: `Space` or `Enter`) shall:
 
-1. Capture the current camera state: `{ el, az, zoomIn, zoomOut }`
+1. Capture the current camera state: `{ el, az, zoom }`
 2. Mark the current point as `✓ saved` in the progress indicator
 3. Auto-advance to the next unsaved point
-4. When all points are saved, enable the **"Save to File"** button
+4. Enable the **"Save to File"** button (enabled as soon as at least one point is saved)
 
 The user may re-save a point at any time by returning to it and clicking "Save Point →" again.
 
 #### FR-3.6 — Save to File
 
-Once all points have been saved at least once, a **"Save to File"** button becomes active. Clicking it:
+As soon as at least one point has been saved, a **"Save to File"** button becomes active. Points with no saved camera state are written to the JSON with `camera: null` and are skipped or interpolated by the player. Clicking it:
 
 1. Serialises the full annotated trajectory to `trajectory.json` (see Section 10)
 2. Triggers a browser **file download** of `trajectory.json`
@@ -438,7 +438,7 @@ SolarSystem.camera.setDate(point.date);
 
 // Read current camera state for saving
 const camState = SolarSystem.camera.getState();
-// returns { el, az, zoomIn, zoomOut }
+// returns { el, az, zoom }
 ```
 
 No modifications to `solar_system.js` are required unless `getState()` was not fully implemented in Epic 1, in which case it is a minor additive change only.
@@ -468,7 +468,6 @@ No modifications to `solar_system.js` are required unless `getState()` was not f
   "scale": "1 AU = 175 px",
   "points": [
     {
-      "index": 0,
       "date": "2025-07-01",
       "jd": 2461223.5,
       "au": { "x": 0.274, "y": -4.497, "z": 0.291 },
@@ -476,14 +475,12 @@ No modifications to `solar_system.js` are required unless `getState()` was not f
       "camera": {
         "el": 45.0,
         "az": 0.0,
-        "zoomIn": 0,
-        "zoomOut": 0
+        "zoom": 0
       },
       "image": "point_0.jpg",
       "description": "Discovery observation — 4.5 AU from Sun"
     },
     {
-      "index": 1,
       "date": "2025-07-02",
       "jd": 2461224.5,
       "au": { "x": 0.268, "y": -4.451, "z": 0.288 },
@@ -491,8 +488,7 @@ No modifications to `solar_system.js` are required unless `getState()` was not f
       "camera": {
         "el": 45.0,
         "az": 0.0,
-        "zoomIn": 0,
-        "zoomOut": 0
+        "zoom": 0
       },
       "image": null,
       "description": null

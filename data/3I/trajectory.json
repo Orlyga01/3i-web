@@ -2,23 +2,49 @@
   "object": "3I/ATLAS",
   "designation": "3I",
   "createdAt": "2026-03-08T00:00:00Z",
-  "updatedAt": "2026-03-08T00:00:00Z",
+  "updatedAt": "2026-03-09T00:00:00Z",
   "source": {
     "api": "JPL Horizons System",
     "retrievedAt": "2026-03-06",
     "ephem_type": "VECTORS",
     "center": "500@10",
     "step": "~15d",
-    "note": "Manually sourced from JPL Horizons (2026-Mar-06). Orbital elements: e=6.14, q=1.356 AU, i=175.1° (retrograde). Last point (Mar 16) is extrapolated."
+    "note": "Manually sourced from JPL Horizons (2026-Mar-06). Orbital elements: e=6.14, q=1.356 AU, i=175.1° (retrograde). Points 0, 1, 9, 11, 17 added/updated from raw Horizons VECTORS km output. Point 0 updated 2026-Mar-09 to 2024-Oct-01 (JD 2460584.5). Last point (Mar 16) is extrapolated."
   },
   "dateRange": {
-    "start": "2025-07-01",
+    "start": "2024-10-01",
     "end": "2026-03-16"
   },
   "scale": "1 AU = 175 px",
   "points": [
     {
-      "index": 0,
+      "date": "2024-10-01",
+      "jd": 2460584.5,
+      "au": { "x": 4.0194, "y": -13.1399, "z": 0.6763 },
+      "px": { "wx": 703, "wy": -2299, "wz": 118 },
+      "camera": null,
+      "image": null,
+      "description": "Pre-discovery — 13.8 AU from Sun, between Saturn and Uranus orbits, approaching inner solar system"
+    },
+    {
+      "date": "2025-01-22",
+      "jd": 2460697.5,
+      "au": { "x": 2.4770, "y": -9.5961, "z": 0.5180 },
+      "px": { "wx": 433, "wy": -1679, "wz": 91 },
+      "camera": null,
+      "image": null,
+      "description": "Pre-discovery — 9.9 AU from Sun, near Saturn's orbit, approaching inner solar system"
+    },
+    {
+      "date": "2025-05-01",
+      "jd": 2460796.5,
+      "au": { "x": 1.1177, "y": -6.4599, "z": 0.3775 },
+      "px": { "wx": 196, "wy": -1130, "wz": 66 },
+      "camera": null,
+      "image": null,
+      "description": "Pre-discovery — 6.6 AU from Sun, incoming from outer solar system"
+    },
+    {
       "date": "2025-07-01",
       "jd": 2460857.5,
       "au": { "x": 0.2743, "y": -4.4971, "z": 0.2914 },
@@ -28,7 +54,6 @@
       "description": "Discovery — 4.5 AU from Sun"
     },
     {
-      "index": 1,
       "date": "2025-07-16",
       "jd": 2460872.5,
       "au": { "x": 0.0686, "y": -4.0057, "z": 0.2686 },
@@ -38,7 +63,6 @@
       "description": null
     },
     {
-      "index": 2,
       "date": "2025-07-31",
       "jd": 2460887.5,
       "au": { "x": -0.1429, "y": -3.5143, "z": 0.2457 },
@@ -48,7 +72,6 @@
       "description": null
     },
     {
-      "index": 3,
       "date": "2025-08-15",
       "jd": 2460902.5,
       "au": { "x": -0.3486, "y": -3.0114, "z": 0.2229 },
@@ -58,7 +81,6 @@
       "description": null
     },
     {
-      "index": 4,
       "date": "2025-08-30",
       "jd": 2460917.5,
       "au": { "x": -0.5543, "y": -2.5086, "z": 0.2 },
@@ -68,7 +90,6 @@
       "description": null
     },
     {
-      "index": 5,
       "date": "2025-09-14",
       "jd": 2460932.5,
       "au": { "x": -0.76, "y": -1.9886, "z": 0.1714 },
@@ -78,7 +99,6 @@
       "description": null
     },
     {
-      "index": 6,
       "date": "2025-09-29",
       "jd": 2460947.5,
       "au": { "x": -0.96, "y": -1.4629, "z": 0.1486 },
@@ -88,7 +108,15 @@
       "description": null
     },
     {
-      "index": 7,
+      "date": "2025-10-03",
+      "jd": 2460951.5,
+      "au": { "x": -1.0102, "y": -1.3164, "z": 0.1419 },
+      "px": { "wx": -177, "wy": -230, "wz": 25 },
+      "camera": null,
+      "image": null,
+      "description": "Mars close approach — ~0.194 AU from Mars"
+    },
+    {
       "date": "2025-10-14",
       "jd": 2460962.5,
       "au": { "x": -1.1486, "y": -0.9143, "z": 0.12 },
@@ -98,17 +126,15 @@
       "description": null
     },
     {
-      "index": 8,
       "date": "2025-10-29",
       "jd": 2460977.5,
-      "au": { "x": -1.3086, "y": -0.3486, "z": 0.0914 },
+      "au": { "x": -1.3082, "y": -0.3469, "z": 0.0920 },
       "px": { "wx": -229, "wy": -61, "wz": 16 },
       "camera": null,
       "image": null,
       "description": "Perihelion — closest approach to Sun, 1.356 AU. Peak brightness."
     },
     {
-      "index": 9,
       "date": "2025-11-13",
       "jd": 2460992.5,
       "au": { "x": -1.44, "y": 0.2286, "z": 0.0571 },
@@ -118,7 +144,6 @@
       "description": null
     },
     {
-      "index": 10,
       "date": "2025-11-28",
       "jd": 2461007.5,
       "au": { "x": -1.5371, "y": 0.8, "z": 0.0286 },
@@ -128,7 +153,6 @@
       "description": null
     },
     {
-      "index": 11,
       "date": "2025-12-13",
       "jd": 2461022.5,
       "au": { "x": -1.6171, "y": 1.36, "z": -0.0057 },
@@ -138,7 +162,6 @@
       "description": null
     },
     {
-      "index": 12,
       "date": "2025-12-28",
       "jd": 2461037.5,
       "au": { "x": -1.68, "y": 1.9086, "z": -0.04 },
@@ -148,7 +171,6 @@
       "description": "Earth closest approach — ~1.8 AU. Earth enters ion tail."
     },
     {
-      "index": 13,
       "date": "2026-01-12",
       "jd": 2461052.5,
       "au": { "x": -1.7429, "y": 2.4514, "z": -0.0743 },
@@ -158,7 +180,15 @@
       "description": null
     },
     {
-      "index": 14,
+      "date": "2026-01-21",
+      "jd": 2461061.5,
+      "au": { "x": -1.7762, "y": 2.7778, "z": -0.0944 },
+      "px": { "wx": -311, "wy": 486, "wz": -17 },
+      "camera": null,
+      "image": null,
+      "description": null
+    },
+    {
       "date": "2026-01-27",
       "jd": 2461067.5,
       "au": { "x": -1.8, "y": 2.9943, "z": -0.1086 },
@@ -168,7 +198,6 @@
       "description": null
     },
     {
-      "index": 15,
       "date": "2026-02-11",
       "jd": 2461082.5,
       "au": { "x": -1.8514, "y": 3.5257, "z": -0.1429 },
@@ -178,7 +207,6 @@
       "description": null
     },
     {
-      "index": 16,
       "date": "2026-02-26",
       "jd": 2461097.5,
       "au": { "x": -1.9029, "y": 4.0571, "z": -0.1714 },
@@ -188,7 +216,6 @@
       "description": null
     },
     {
-      "index": 17,
       "date": "2026-03-13",
       "jd": 2461112.5,
       "au": { "x": -1.9543, "y": 4.5829, "z": -0.2057 },
@@ -198,7 +225,6 @@
       "description": null
     },
     {
-      "index": 18,
       "date": "2026-03-16",
       "jd": 2461115.5,
       "au": { "x": -2.0571, "y": 5.2571, "z": -0.2571 },

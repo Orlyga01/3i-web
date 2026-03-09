@@ -12,18 +12,21 @@
 
 | Story | Title | Status |
 |---|---|---|
-| [2.1](#story-21--page-shell--input-form) | Page Shell & Input Form | Pending |
-| [2.2](#story-22--horizons-api-client) | Horizons API Client | Pending |
-| [2.3](#story-23--api-error-handling) | API Error Handling | Pending |
-| [2.4](#story-24--existing-file-detection--update-mode) | Existing File Detection & Update Mode | Pending |
-| [2.5](#story-25--solar-system-viewer-integration) | Solar System Viewer Integration | Pending |
-| [2.6](#story-26--object-marker-layer) | Object Marker Layer | Pending |
-| [2.7](#story-27--progress-sidebar) | Progress Sidebar | Pending |
-| [2.8](#story-28--point-by-point-camera-annotation) | Point-by-Point Camera Annotation | Pending |
-| [2.9](#story-29--per-point-image-upload) | Per-Point Image Upload | Pending |
-| [2.10](#story-210--per-point-text-description) | Per-Point Text Description | Pending |
-| [2.11](#story-211--localstorage-draft--auto-save) | LocalStorage Draft & Auto-save | Pending |
-| [2.12](#story-212--json-serialisation--file-save) | JSON Serialisation & File Save | Pending |
+| [2.1](#story-21--page-shell--input-form) | Page Shell & Input Form | ✅ Done |
+| [2.2](#story-22--horizons-api-client) | Horizons API Client | ✅ Done |
+| [2.3](#story-23--api-error-handling) | API Error Handling | ✅ Done |
+| [2.4](#story-24--existing-file-detection--update-mode) | Existing File Detection & Update Mode | ✅ Done |
+| [2.5](#story-25--solar-system-viewer-integration) | Solar System Viewer Integration | ✅ Done |
+| [2.6](#story-26--object-marker-layer) | Object Marker Layer | ✅ Done |
+| [2.7](#story-27--progress-sidebar) | Progress Sidebar | ✅ Done |
+| [2.8](#story-28--point-by-point-camera-annotation) | Point-by-Point Camera Annotation | ✅ Done |
+| [2.9](#story-29--per-point-image-upload) | Per-Point Image Upload | ✅ Done |
+| [2.10](#story-210--per-point-text-description) | Per-Point Text Description | ✅ Done |
+| [2.11](#story-211--localstorage-draft--auto-save) | LocalStorage Draft & Auto-save | ✅ Done |
+| [2.12](#story-212--json-serialisation--file-save) | JSON Serialisation & File Save | ✅ Done |
+| [2.13](#story-213--deep-link-via-url-parameter) | Deep-Link via URL Parameter | ✅ Done |
+| [2.14](#story-214--per-point-duration--stoppable-flag) | Per-Point Duration & Stoppable Flag | 🔲 Pending |
+| [2.15](#story-215--play-video-button--player-handoff) | "Play Video" Button & Player Handoff | 🔲 Pending |
 
 ---
 
@@ -188,7 +191,7 @@
 
 ### Technical Notes
 
-- If `SolarSystem.camera.getState()` does not yet return `{ el, az, zoomIn, zoomOut }` (depends on Epic 1 implementation), add this as a minimal additive change to `solar_system.js`
+- If `SolarSystem.camera.getRawState()` does not yet return `{ el, az, zoom }` (depends on Epic 1 implementation), add this as a minimal additive change to `solar_system.js`
 - The `SolarSystem.engine.pause()` call must be made before the first frame renders to prevent any simulation ticks
 
 ### Dependencies
@@ -268,14 +271,14 @@
 - [ ] When the viewer is active, a prominent **"Save Point →"** button is shown below (or beside) the canvas
 - [ ] Pressing `Space` or `Enter` (when the canvas or save button is focused) triggers the same action as clicking "Save Point →"
 - [ ] On "Save Point →":
-  1. The current camera state is captured: `SolarSystem.camera.getState()` → `{ el, az, zoomIn, zoomOut }`
+  1. The current camera state is captured: `SolarSystem.camera.getRawState()` → `{ el, az, zoom }`
   2. The state is stored in `TrajectoryStore` for the current point index
   3. The current point row in the sidebar updates from `· pending` to `✓ saved`
   4. The viewer advances to the **next unsaved** point (skipping already-saved points); if none remain, stays on the current point
   5. The sidebar scrolls the next point into view
 - [ ] The user can navigate to any row in the sidebar and re-save — re-saving a point overwrites its previous camera state
 - [ ] A counter near the save button shows: `"Point [current] of [total]"`
-- [ ] Once **all** points have a saved camera state, the **"Save to File"** button (Story 2.12) becomes enabled; a visual indicator confirms: `"All points saved — ready to export"`
+- [ ] Once **at least one** point has a saved camera state, the **"Save to File"** button (Story 2.12) becomes enabled; a visual indicator `"All points saved — ready to export ✓"` appears only when every point is annotated
 - [ ] While navigating forward/backward through points, the simulation date updates to each point's date: `SolarSystem.camera.setDate(point.date)` — planet positions reflect the correct date
 
 ### Technical Notes
@@ -382,7 +385,7 @@
 
 ### Acceptance Criteria
 
-- [ ] The **"Save to File"** button is enabled only after all points have a saved camera state (Story 2.8)
+- [ ] The **"Save to File"** button is enabled as soon as at least one point has a saved camera state; points with `camera: null` are written to JSON as-is (the player skips or interpolates them)
 - [ ] Clicking "Save to File" serialises `TrajectoryStore` to a JSON object matching the schema in PRD Section 10.1:
   - `object`, `designation`, `createdAt`, `updatedAt`, `source`, `dateRange`, `scale`, `points[]`
   - Camera values rounded to 2 decimal places
@@ -411,6 +414,123 @@
 
 ---
 
+---
+
+## Story 2.13 — Deep-Link via URL Parameter
+
+**As a** user linking to the Object Motion Tracker from another page or external source,
+**I want** to open the tracker with an object designation pre-filled in the URL,
+**so that** the correct trajectory loads automatically without manually typing the designation.
+
+### Acceptance Criteria
+
+- [ ] On page load, the system reads `?designation=` (or the short alias `?d=`) from the URL query string using `URLSearchParams(location.search)`
+- [ ] If a value is found it is URL-decoded and set as the value of the designation input (`#om-designation`)
+- [ ] The search button is enabled immediately (same as if the user had typed the value)
+- [ ] The normal search flow is triggered automatically — in the same order as a manual click:
+  1. Check `localStorage` for a draft matching the designation
+  2. If draft found → show the draft-resume card (user still chooses Resume / Start Fresh)
+  3. If no draft → HEAD-check `data/{sanitized}/trajectory.json`
+  4. If saved file found → show the saved-data card (user still chooses Load / Re-fetch)
+  5. If neither → reveal the date section so the user can fetch from Horizons
+- [ ] Supported URL formats:
+  - `object_motion.html?designation=3I`
+  - `object_motion.html?designation=C%2F2025%20N1` (URL-encoded special chars)
+  - `object_motion.html?d=3I` (short alias)
+- [ ] If no parameter is present the page behaves exactly as before — no change to normal flow
+- [ ] The URL parameter does not bypass any existing confirmation cards (draft / saved-file) — the user still sees them
+
+### Technical Notes
+
+- Added at the **end of `initUI()`**, after all event listeners are wired, so it runs after the DOM is fully set up
+- Reuses the existing `searchBtn.click()` path — no duplicate logic
+- Uses `decodeURIComponent` on the raw param value before setting the input
+
+### Dependencies
+- Story 2.1 (form must exist), Story 2.4 (saved-file card), Story 2.11 (draft card)
+
+---
+
+## Story 2.14 — Per-Point Duration & Stoppable Flag
+
+**As a** trajectory author,
+**I want** to set how long the video spends on each segment and mark key points where the player should pause,
+**so that** the cinematic playback has intentional pacing and can stop to tell the story at important moments.
+
+### Acceptance Criteria
+
+- [ ] Near the "Save Point →" button, two new inline controls are displayed:
+  - `Duration: [___] %` — a `<input type="number">` field, default `100`, min `1`, max `1000`, integer only; a `%` label appears beside the field
+  - `☐ Stoppable point` — a checkbox, unchecked by default
+- [ ] A small **`⚙`** icon button beside these controls opens a modal; the modal currently shows only: `"Additional per-point parameters will appear here in future updates."` It establishes the extensibility slot for future epics
+- [ ] When "Save Point →" is clicked, the current values of `durationPct` and `stoppable` are captured and stored in `TrajectoryStore` for that point alongside the camera state
+- [ ] When navigating to a different point:
+  - If that point has been saved: `durationPct` and `stoppable` controls update to reflect the saved values
+  - If that point has not been saved: controls reset to defaults (`100`, unchecked)
+- [ ] `durationPct` and `stoppable` are serialised to `trajectory.json` in Story 2.12:
+  - `durationPct` as an integer
+  - `stoppable` as a boolean
+  - Both are omitted (not written as `null`) for points where the user never changed them from defaults, OR written as their actual values — either approach is acceptable; the player defaults absent fields to `100` / `false`
+- [ ] A tooltip on the duration field reads: `"Duration as % of 1 second (base). 100 = 1s, 200 = 2s, 50 = 0.5s. Use the speed ruler in the player to scale the whole video."`
+- [ ] A tooltip on the stoppable checkbox reads: `"When 'Pause at stoppable points' is enabled in the player, the video will pause here and show this point's annotation."`
+
+### Technical Notes
+
+- Capture both values inside `WorkflowController` at the moment "Save Point →" is triggered — same as camera state capture
+- Store as `TrajectoryStore.points[i].durationPct` and `TrajectoryStore.points[i].stoppable`
+- In `FileIO.serialize()` (Story 2.12): write both fields to the JSON; they appear alongside `camera`, `image`, `description`
+
+### Schema Change
+
+```json
+{
+  "date": "2025-10-29",
+  "durationPct": 150,
+  "stoppable": true,
+  "camera": { ... },
+  "image": "point_11.jpg",
+  "description": "Perihelion — closest approach to Sun."
+}
+```
+
+Existing files without these fields remain valid — the player defaults absent fields to `durationPct: 100`, `stoppable: false`.
+
+### Dependencies
+- Story 2.8 (Save Point workflow), Story 2.12 (serialisation)
+
+---
+
+## Story 2.15 — "Play Video" Button & Player Handoff
+
+**As a** trajectory author,
+**I want** a button that opens the trajectory player for the current trajectory in a new tab,
+**so that** I can preview the cinematic playback without leaving the annotation page.
+
+### Acceptance Criteria
+
+- [ ] A **"▶ Play Video"** button is shown in the annotation toolbar, visually grouped near the "Save to File" button
+- [ ] The button is **enabled** as soon as at least one point has a saved camera state (same condition as "Save to File")
+- [ ] When the button is enabled and clicked:
+  - It constructs the URL: `trajectory_player.html?designation={sanitized_name}`
+  - It opens this URL in a **new browser tab** (`window.open(url, '_blank')`)
+- [ ] If the trajectory has **unsaved changes** since the last "Save to File" (i.e., the user annotated or re-annotated points after the last export), a confirmation dialog is shown first:
+  - Message: `"Your latest annotations haven't been saved to file yet. The player will show the last saved version."`
+  - Two buttons: **"Save to File First"** | **"Open Player Anyway"**
+  - "Save to File First" triggers the normal save flow and, on success, then opens the player
+  - "Open Player Anyway" opens the player immediately using whatever is currently on disk
+- [ ] If the trajectory has **never been saved** (no file exists on disk), the dialog message changes to: `"This trajectory hasn't been saved to file yet. Save it first so the player can load it."` — in this case only **"Save to File"** is offered (no "Open Player Anyway")
+- [ ] The `sanitized_name` in the URL follows the same convention as Epic 2: spaces and `/` replaced by `_`
+
+### Technical Notes
+
+- "Unsaved changes" detection: track a `hasUnsavedChanges` flag in `WorkflowController`; set to `true` whenever a point is saved (Story 2.8); cleared to `false` after a successful "Save to File" (Story 2.12)
+- "Never been saved" detection: tracked by a `hasSavedFile` flag set when Update Mode is entered (Story 2.4) or when "Save to File" completes (Story 2.12)
+
+### Dependencies
+- Story 2.8, Story 2.12, Story 2.13 (sanitized_name convention)
+
+---
+
 ## Implementation Order (Suggested)
 
 ```
@@ -426,13 +546,16 @@
 2.10 Per-Point Text Description
 2.11 LocalStorage Draft & Auto-save
 2.12 JSON Serialisation & File Save      ← full feature complete here
+2.13 Deep-Link via URL Parameter         ← additive enhancement
+2.14 Per-Point Duration & Stoppable Flag ← Epic 3 data input
+2.15 "Play Video" Button & Player Handoff ← Epic 3 handoff
 ```
 
-Stories 2.1–2.8 form the **minimum working product** — object lookup, trajectory display, and camera annotation with export. Stories 2.9–2.12 add media, descriptions, draft protection, and robust file saving.
+Stories 2.1–2.8 form the **minimum working product** — object lookup, trajectory display, and camera annotation with export. Stories 2.9–2.12 add media, descriptions, draft protection, and robust file saving. Story 2.13 adds deep-linking support. Stories 2.14–2.15 are Epic 3 prerequisites — they extend the annotation UI with pacing controls and the handoff button to the player.
 
 ---
 
 *End of Stories — Epic 2: Object Motion Tracker*
 
-**Document version:** 1.0
+**Document version:** 1.2
 **Epic PRD:** `prd-epic2-object-motion-tracker.md`

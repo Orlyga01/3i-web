@@ -270,22 +270,20 @@ The two rulers are **independent** — both can hold non-zero values simultaneou
 
 The camera `dist` is computed **every frame** directly from the current ruler positions. No lerp is applied to ruler-driven distance changes.
 
-Let `zIn` = Zoom In ruler value (0 to 100), `zOut` = Zoom Out ruler value (−100 to 0):
+Let `zoom` = single ruler value (−100 to +100, 0 = neutral centre):
 
 ```
 baseNeutral = 1200
 
-zoomInDist  = lerp(baseNeutral, 80,   zIn  / 100)   // zIn  drives dist: 1200 → 80
-zoomOutDist = lerp(baseNeutral, 6000, -zOut / 100)   // zOut drives dist: 1200 → 6000
-
-dist = zoomInDist + (zoomOutDist - baseNeutral)
+dist = zoom >= 0
+     ? lerp(baseNeutral, 80,   zoom  / 100)   //  0..+100 → 1200 → 80   (zoom in)
+     : lerp(baseNeutral, 6000, -zoom / 100)   // -100..0  → 1200 → 6000 (zoom out)
 ```
 
 This means:
-- Both rulers at `0`: `dist = 1200` — full solar system view (Uranus visible)
-- Zoom In at `100`, Zoom Out at `0`: `dist = 80` — inner planets fill the screen
-- Zoom In at `0`, Zoom Out at `−100`: `dist = 6000` — entire solar system is a small cluster
-- Both non-zero simultaneously: effects combine additively
+- Ruler at `0`: `dist = 1200` — full solar system view (Uranus visible)
+- Ruler at `+100`: `dist = 80` — inner planets fill the screen
+- Ruler at `−100`: `dist = 6000` — entire solar system is a small cluster
 
 #### FR-3.3 — Ruler Interaction Rules
 

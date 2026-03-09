@@ -1,0 +1,84 @@
+---
+description: Story status tracking rule — always update story-status.md when implementation changes
+globs: ["**/*.js", "**/*.html", "**/*.css", "_bmad-output/**/*.md"]
+alwaysApply: true
+---
+
+# Story Status Management Rule
+
+## MANDATORY: Update `_bmad-output/story-status.md` on every development session
+
+The file `_bmad-output/story-status.md` is the **single source of truth** for story implementation status across the 3i-web project. It must be kept accurate at all times.
+
+---
+
+## When to Update
+
+You **MUST** update `_bmad-output/story-status.md` whenever any of the following happen:
+
+| Trigger | Required action |
+|---|---|
+| A story's acceptance criteria are fully met in code | Change status to `✅ Done` |
+| Development has started on a story but is not complete | Change status to `🚧 In Progress` |
+| A story is started and then paused mid-implementation | Keep as `🚧 In Progress`; add a note |
+| A story cannot proceed due to a missing dependency or blocker | Change status to `❌ Blocked`; add blocker detail in Notes column |
+| A story is removed from scope | Change status to `🚫 Cancelled` |
+| A previously marked "Done" story is found to be incomplete | Revert to `🚧 In Progress` or `🔲 Pending` with a note |
+
+---
+
+## How to Update
+
+1. Open `_bmad-output/story-status.md`
+2. Find the row for the story in its Epic table
+3. Update the **Status** column using the correct symbol and label (see Status Key in the file)
+4. Update the **Notes** column with a brief one-line description of what changed or what remains
+5. Update the **"Progress: N / M stories complete"** count below the table
+6. Update the **Overall Project Progress** summary table at the bottom
+7. Add a row to the **Change Log** at the bottom: `| YYYY-MM-DD | What changed | dev agent |`
+
+---
+
+## Status Symbols
+
+| Symbol | Label | Meaning |
+|---|---|---|
+| ✅ | Done | All acceptance criteria verified in code |
+| 🚧 | In Progress | Development started, not all AC met |
+| 🔲 | Pending | Not yet started |
+| ❌ | Blocked | Cannot proceed — note blocker |
+| 🚫 | Cancelled | Removed from scope |
+
+---
+
+## What Counts as "Done"
+
+A story is `✅ Done` only when **all** of its acceptance criteria (listed in the story's `### Acceptance Criteria` section in the stories file) are met by the actual code in the repository. Do not mark a story Done based on partial implementation.
+
+If in doubt, check the story's AC list in:
+- `_bmad-output/planning-artifacts/stories-epic2-object-motion-tracker.md`
+- `_bmad-output/planning-artifacts/stories-epic3-trajectory-player.md`
+
+---
+
+## Story Implementation Order
+
+Follow the suggested implementation order from each stories file. Do not start a story that has unfulfilled dependencies.
+
+**Current next stories to implement (in order):**
+1. Story **2.14** — Per-Point Duration & Stoppable Flag (`object_motion.js` + `object_motion.html`)
+2. Story **2.15** — "Play Video" Button & Player Handoff (`object_motion.html`)
+3. Story **3.1** — Player Page Shell & URL Loading (new files: `trajectory_player.html`, `trajectory_player.js`)
+4. Stories **3.2 → 3.10** — in order per the Epic 3 implementation order
+
+---
+
+## Files Involved
+
+| Story group | Primary files |
+|---|---|
+| Epic 2 (2.14, 2.15) | `object_motion.html`, `object_motion.js` |
+| Epic 3 (all) | `trajectory_player.html`, `trajectory_player.js` |
+| Shared render utilities | `shared_render.js` |
+| Solar system viewer | `solar_system.js` |
+| Data files | `data/{designation}/trajectory.json` |

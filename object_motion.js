@@ -209,6 +209,17 @@ const TrajectoryStore = (() => {
         if (_points[index]) _points[index].image = file;
     }
 
+    function saveDurationPct(index, val) {
+        if (_points[index]) {
+            const n = Math.round(val);
+            _points[index].durationPct = (isNaN(n) || n < 1) ? 100 : Math.min(n, 1000);
+        }
+    }
+
+    function saveStoppable(index, val) {
+        if (_points[index]) _points[index].stoppable = Boolean(val);
+    }
+
     function toPlainObject() {
         const now = new Date().toISOString();
         const pts = _points;
@@ -221,7 +232,6 @@ const TrajectoryStore = (() => {
             dateRange:   pts.length ? `${pts[0].date} \u2192 ${pts[pts.length - 1].date}` : '',
             scale:       { auToPx: AU_TO_PX },
             points:      pts.map((p, i) => ({
-                index:       i,
                 jd:          p.jd,
                 date:        p.date,
                 au:          p.au,
@@ -230,6 +240,8 @@ const TrajectoryStore = (() => {
                     wy: p.wy,
                     wz: p.wz,
                 },
+                durationPct: p.durationPct ?? 100,
+                stoppable:   p.stoppable   ?? false,
                 camera:      p.camera,
                 description: p.description,
                 image:       p.image instanceof File ? p.image.name : p.image,
@@ -242,7 +254,7 @@ const TrajectoryStore = (() => {
         getPoints, getDesignation, getPoint,
         isUpdateMode, getCreatedAt,
         savedCount, allSaved,
-        saveCamera, saveDescription, saveImage,
+        saveCamera, saveDescription, saveImage, saveDurationPct, saveStoppable,
         toPlainObject,
     };
 })();
@@ -253,13 +265,21 @@ const TrajectoryStore = (() => {
 // ─────────────────────────────────────────────────────────────
 
 const WorkflowController = (() => {
-    let _currentIndex = 0;
+    let _currentIndex      = 0;
+    let _hasUnsavedChanges = false;
+    let _hasSavedFile      = false;
 
     function start(points) {
-        _currentIndex = 0;
+        _currentIndex      = 0;
+        _hasUnsavedChanges = false;
     }
 
     function getCurrent() { return _currentIndex; }
+
+    function hasUnsavedChanges()     { return _hasUnsavedChanges; }
+    function setUnsavedChanges(val)  { _hasUnsavedChanges = Boolean(val); }
+    function hasSavedFile()          { return _hasSavedFile; }
+    function setHasSavedFile(val)    { _hasSavedFile = Boolean(val); }
 
     function advanceToNextUnsaved(points) {
         for (let i = _currentIndex + 1; i < points.length; i++) {
@@ -273,7 +293,11 @@ const WorkflowController = (() => {
 
     function goTo(index) { _currentIndex = index; return _currentIndex; }
 
-    return { start, getCurrent, advanceToNextUnsaved, goTo };
+    return {
+        start, getCurrent, advanceToNextUnsaved, goTo,
+        hasUnsavedChanges, setUnsavedChanges,
+        hasSavedFile, setHasSavedFile,
+    };
 })();
 
 
@@ -627,6 +651,9 @@ const FileIO = (() => {
                     zoomOut: _round2(p.camera.zoomOut),
                 };
             }
+            // Ensure durationPct is a valid integer, stoppable is boolean
+            p.durationPct = Math.round(p.durationPct ?? 100);
+            p.stoppable   = Boolean(p.stoppable);
             // Resolve image filename
             const raw = pts[i]?.image;
             if (raw instanceof File) {
@@ -777,6 +804,20 @@ function formatTrajDate(str) {
     const imgRemoveBtn   = document.getElementById('om-img-remove');
     const dropZone       = document.getElementById('om-drop-zone');
 
+    // Story 2.14
+    const durationPctEl      = document.getElementById('om-duration-pct');
+    const stoppableEl        = document.getElementById('om-stoppable');
+    const settingsBtn        = document.getElementById('om-settings-btn');
+    const settingsModal      = document.getElementById('om-settings-modal');
+    const settingsCloseBtn   = document.getElementById('om-settings-modal-close');
+
+    // Story 2.15
+    const playVideoBtn       = document.getElementById('om-play-video-btn');
+    const playConfirmModal   = document.getElementById('om-play-confirm-modal');
+    const playConfirmMsg     = document.getElementById('om-play-confirm-msg');
+    const playSaveFirstBtn   = document.getElementById('om-play-save-first-btn');
+    const playAnywayBtn      = document.getElementById('om-play-anyway-btn');
+
     // ── Form status helpers ───────────────────────────────────
 
     function setStatus(mode, text) {
@@ -839,6 +880,11 @@ function formatTrajDate(str) {
     // ── Viewer activation / deactivation ─────────────────────
 
     function activateViewer(points) {
+        // Story 2.15: a saved file exists when entering Update Mode
+        if (TrajectoryStore.isUpdateMode()) {
+            WorkflowController.setHasSavedFile(true);
+        }
+
         if (window.SolarSystem) {
             SolarSystem.engine.pause();
             SolarSystem.engine.setDate(parseTrajDate(points[0].date));
@@ -895,10 +941,16 @@ function formatTrajDate(str) {
 
         if (window.SolarSystem) {
             SolarSystem.engine.setDate(parseTrajDate(p.date));
+            if (p.camera) SolarSystem.camera.setRawState(p.camera);
         }
 
         ProgressPanel.setActive(index);
         MediaAnnotator.loadAnnotationPanel(index);
+
+        // Story 2.14: reflect saved (or default) duration & stoppable
+        if (durationPctEl) durationPctEl.value = p.durationPct ?? 100;
+        if (stoppableEl)   stoppableEl.checked  = p.stoppable   ?? false;
+
         updateCounter();
         clearViewerStatus();
     }
@@ -913,11 +965,13 @@ function formatTrajDate(str) {
     }
 
     function updateSaveButtons() {
-        const allDone = TrajectoryStore.allSaved();
-        const msg     = document.getElementById('om-all-saved-msg');
-        if (msg)      msg.style.display = allDone ? '' : 'none';
-        if (saveFileBtn) saveFileBtn.classList.toggle('enabled', allDone);
-        if (saveDirBtn)  saveDirBtn.classList.toggle('enabled', allDone);
+        const anySaved = TrajectoryStore.savedCount() > 0;
+        const allDone  = TrajectoryStore.allSaved();
+        const msg      = document.getElementById('om-all-saved-msg');
+        if (msg)         msg.style.display = allDone ? '' : 'none';
+        if (saveFileBtn)  saveFileBtn.classList.toggle('enabled', anySaved);
+        if (saveDirBtn)   saveDirBtn.classList.toggle('enabled', anySaved);
+        if (playVideoBtn) playVideoBtn.classList.toggle('enabled', anySaved);
     }
 
     // ── Save current point (Story 2.8) ────────────────────────
@@ -931,6 +985,14 @@ function formatTrajDate(str) {
 
         const textarea = document.getElementById('om-description');
         TrajectoryStore.saveDescription(idx, textarea ? textarea.value : '');
+
+        // Story 2.14: capture duration and stoppable
+        const durVal = parseInt(durationPctEl ? durationPctEl.value : '100', 10);
+        TrajectoryStore.saveDurationPct(idx, isNaN(durVal) ? 100 : durVal);
+        TrajectoryStore.saveStoppable(idx, stoppableEl ? stoppableEl.checked : false);
+
+        // Story 2.15: mark unsaved changes since last file save
+        WorkflowController.setUnsavedChanges(true);
 
         // Auto-save draft to localStorage (Story 2.11)
         _saveDraft();
@@ -998,6 +1060,8 @@ function formatTrajDate(str) {
         const json     = FileIO.serialize(TrajectoryStore);
         const imgCount = FileIO.download(json, TrajectoryStore.getPoints());
         _clearDraft();
+        WorkflowController.setHasSavedFile(true);
+        WorkflowController.setUnsavedChanges(false);
         setViewerStatus(
             'success',
             `Saved \u2014 ${TrajectoryStore.getPoints().length} points \u00B7 ${imgCount} image${imgCount !== 1 ? 's' : ''} \u00B7 trajectory.json`
@@ -1014,6 +1078,8 @@ function formatTrajDate(str) {
                 const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
                 const imgCount  = await FileIO.saveToDirectory(dirHandle, name, json, points);
                 _clearDraft();
+                WorkflowController.setHasSavedFile(true);
+                WorkflowController.setUnsavedChanges(false);
                 setViewerStatus(
                     'success',
                     `Saved to folder \u2014 ${points.length} points \u00B7 ${imgCount} image${imgCount !== 1 ? 's' : ''}`
@@ -1023,6 +1089,77 @@ function formatTrajDate(str) {
                     setViewerStatus('error', `Save failed: ${err.message}`);
                 }
             }
+        });
+    }
+
+    // ── Settings modal (Story 2.14) ───────────────────────────
+
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => settingsModal.classList.add('visible'));
+    }
+    if (settingsCloseBtn) {
+        settingsCloseBtn.addEventListener('click', () => settingsModal.classList.remove('visible'));
+    }
+    if (settingsModal) {
+        settingsModal.addEventListener('click', e => {
+            if (e.target === settingsModal) settingsModal.classList.remove('visible');
+        });
+    }
+
+    // ── Play Video button & confirm modal (Story 2.15) ────────
+
+    function _openPlayer() {
+        const name = sanitize(TrajectoryStore.getDesignation());
+        window.open(`trajectory_player.html?designation=${encodeURIComponent(name)}`, '_blank');
+    }
+
+    if (playVideoBtn) {
+        playVideoBtn.addEventListener('click', () => {
+            if (!playVideoBtn.classList.contains('enabled')) return;
+
+            if (!WorkflowController.hasSavedFile()) {
+                playConfirmMsg.textContent =
+                    "This trajectory hasn\u2019t been saved to file yet. Save it first so the player can load it.";
+                if (playAnywayBtn) playAnywayBtn.style.display = 'none';
+                playConfirmModal.classList.add('visible');
+            } else if (WorkflowController.hasUnsavedChanges()) {
+                playConfirmMsg.textContent =
+                    "Your latest annotations haven\u2019t been saved to file yet. The player will show the last saved version.";
+                if (playAnywayBtn) playAnywayBtn.style.display = '';
+                playConfirmModal.classList.add('visible');
+            } else {
+                _openPlayer();
+            }
+        });
+    }
+
+    if (playSaveFirstBtn) {
+        playSaveFirstBtn.addEventListener('click', () => {
+            playConfirmModal.classList.remove('visible');
+            if (!saveFileBtn.classList.contains('enabled')) return;
+            const json     = FileIO.serialize(TrajectoryStore);
+            const imgCount = FileIO.download(json, TrajectoryStore.getPoints());
+            _clearDraft();
+            WorkflowController.setHasSavedFile(true);
+            WorkflowController.setUnsavedChanges(false);
+            setViewerStatus(
+                'success',
+                `Saved \u2014 ${TrajectoryStore.getPoints().length} points \u00B7 ${imgCount} image${imgCount !== 1 ? 's' : ''} \u00B7 trajectory.json`
+            );
+            _openPlayer();
+        });
+    }
+
+    if (playAnywayBtn) {
+        playAnywayBtn.addEventListener('click', () => {
+            playConfirmModal.classList.remove('visible');
+            _openPlayer();
+        });
+    }
+
+    if (playConfirmModal) {
+        playConfirmModal.addEventListener('click', e => {
+            if (e.target === playConfirmModal) playConfirmModal.classList.remove('visible');
         });
     }
 
@@ -1148,6 +1285,8 @@ function formatTrajDate(str) {
             camera:      p.camera      ?? null,
             description: p.description ?? null,
             image:       p.image       ?? null,
+            durationPct: p.durationPct ?? 100,
+            stoppable:   p.stoppable   ?? false,
         }));
 
         if (points.length === 0) {
@@ -1267,5 +1406,34 @@ function formatTrajDate(str) {
     fetchBtn.addEventListener('keydown', e => {
         if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); fetchBtn.click(); }
     });
+
+    // ── Story 2.13: Deep-link via URL parameter ───────────────
+    // Supports ?designation=3I  or  ?d=3I
+    // Always loads from trajectory.json (authoritative source) so
+    // the latest file data is shown, not a potentially stale draft.
+    // Falls back to the normal search flow if no saved file exists.
+    (async function _applyUrlParam() {
+        const params = new URLSearchParams(location.search);
+        const raw    = params.get('designation') || params.get('d');
+        if (!raw) return;
+        const value = decodeURIComponent(raw).trim();
+        if (!value) return;
+        designationEl.value = value;
+        updateSearchButton();
+
+        // Load directly from trajectory.json — skip draft to always show fresh data
+        const name = sanitize(value);
+        try {
+            const res = await window.fetch(`data/${name}/trajectory.json`);
+            if (res.ok) {
+                const json = await res.json();
+                loadTrajectoryFromData(json);
+                return;
+            }
+        } catch (_) {}
+
+        // No saved file — show normal search form (date section)
+        searchBtn.click();
+    })();
 
 })();
