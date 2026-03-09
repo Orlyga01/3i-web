@@ -10,6 +10,8 @@ const {
     readDesignationFromUrl,
     sanitize,
     buildPath,
+    buildObjectMotionHref,
+    buildTrajectoryPlayerHref,
     normalizePoint,
     catmullRom,
     getSegmentDurationMs,
@@ -43,9 +45,8 @@ describe('readDesignationFromUrl', () => {
         expect(readDesignationFromUrl('?designation=C%2F2025%20N1')).toBe('C/2025 N1');
     });
 
-    test('throws friendly error when designation is missing', () => {
-        expect(() => readDesignationFromUrl('?foo=bar')).toThrow(TrajectoryLoadError);
-        expect(() => readDesignationFromUrl('?foo=bar')).toThrow(/\?designation=/);
+    test('defaults to 3I when designation is missing', () => {
+        expect(readDesignationFromUrl('?foo=bar')).toBe('3I');
     });
 });
 
@@ -59,6 +60,14 @@ describe('sanitize and buildPath', () => {
             sanitizedName: 'C_2025_N1',
             path: 'data/C_2025_N1/trajectory.json',
         });
+    });
+
+    test('builds object motion back link with designation', () => {
+        expect(buildObjectMotionHref('3I')).toBe('object_motion?designation=3I');
+    });
+
+    test('builds trajectory player link with designation', () => {
+        expect(buildTrajectoryPlayerHref('3I')).toBe('trajectory_player?designation=3I');
     });
 });
 

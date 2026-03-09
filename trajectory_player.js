@@ -13,14 +13,7 @@ class TrajectoryLoader {
     const rawValue = params.get('designation') ?? params.get('d');
     const designation = this.decodeDesignation(rawValue);
 
-    if (!designation) {
-      throw new TrajectoryLoadError(
-        'missing-designation',
-        'Open this page with a ?designation= URL parameter, or use the ▶ Play Video button from the Object Motion Tracker.'
-      );
-    }
-
-    return designation;
+    return designation || '3I';
   }
 
   static decodeDesignation(value) {
@@ -69,24 +62,24 @@ class TrajectoryLoader {
     const durationPct = Number(point.durationPct);
     const camera = point.camera && typeof point.camera === 'object'
       ? {
-          el: Number(point.camera.el ?? 5),
-          az: Number(point.camera.az ?? 0),
-          zoom: Number(
-            point.camera.zoom ??
-            ((point.camera.zoomIn ?? 0) - (point.camera.zoomOut ?? 0))
-          ) || 0,
-          tx: Number(point.camera.tx ?? 0) || 0,
-          ty: Number(point.camera.ty ?? 0) || 0,
-          tz: Number(point.camera.tz ?? 0) || 0,
-        }
+        el: Number(point.camera.el ?? 5),
+        az: Number(point.camera.az ?? 0),
+        zoom: Number(
+          point.camera.zoom ??
+          ((point.camera.zoomIn ?? 0) - (point.camera.zoomOut ?? 0))
+        ) || 0,
+        tx: Number(point.camera.tx ?? 0) || 0,
+        ty: Number(point.camera.ty ?? 0) || 0,
+        tz: Number(point.camera.tz ?? 0) || 0,
+      }
       : null;
 
     const au = point.au && typeof point.au === 'object'
       ? {
-          x: Number(point.au.x ?? 0) || 0,
-          y: Number(point.au.y ?? 0) || 0,
-          z: Number(point.au.z ?? 0) || 0,
-        }
+        x: Number(point.au.x ?? 0) || 0,
+        y: Number(point.au.y ?? 0) || 0,
+        z: Number(point.au.z ?? 0) || 0,
+      }
       : { x: 0, y: 0, z: 0 };
 
     return {
@@ -327,7 +320,7 @@ class PlaybackController {
     const maxSegmentIndex = Math.max(0, this.points.length - 2);
     const segmentIndex = Math.max(0, Math.min(maxSegmentIndex, this.segmentIndex));
     const segmentMs = this.getCurrentSegmentDurationMs();
-    const t = segmentMs === Number.POSITIVE_INFINITY ? 1 : clamp(this.segmentElapsedMs / segmentMs, 0, 1);
+    const t = segmentMs === Number.POSITIVE_INFINITY ? 1 : tpClamp(this.segmentElapsedMs / segmentMs, 0, 1);
     const startPoint = this.points[segmentIndex];
 
     this.currentPointIndex = segmentIndex;
@@ -565,15 +558,15 @@ class StatsDisplay {
   }
 }
 
-function lerp(a, b, t) {
+function tpLerp(a, b, t) {
   return a + (b - a) * t;
 }
 
-function clamp(v, lo, hi) {
+function tpClamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 
-function catmullRom(p0, p1, p2, p3, t) {
+function tpCatmullRom(p0, p1, p2, p3, t) {
   return 0.5 * (
     (2 * p1) +
     (-p0 + p2) * t +
@@ -602,30 +595,30 @@ function getSegmentDurationMs(points, segmentIndex, speedMultiplier = 1) {
 }
 
 function interpolateWorldPosition(points, segmentIndex, t) {
-  const i0 = clamp(segmentIndex - 1, 0, points.length - 1);
-  const i1 = clamp(segmentIndex, 0, points.length - 1);
-  const i2 = clamp(segmentIndex + 1, 0, points.length - 1);
-  const i3 = clamp(segmentIndex + 2, 0, points.length - 1);
+  const i0 = tpClamp(segmentIndex - 1, 0, points.length - 1);
+  const i1 = tpClamp(segmentIndex, 0, points.length - 1);
+  const i2 = tpClamp(segmentIndex + 1, 0, points.length - 1);
+  const i3 = tpClamp(segmentIndex + 2, 0, points.length - 1);
 
   return {
-    wx: catmullRom(points[i0].px.wx, points[i1].px.wx, points[i2].px.wx, points[i3].px.wx, t),
-    wy: catmullRom(points[i0].px.wy, points[i1].px.wy, points[i2].px.wy, points[i3].px.wy, t),
-    wz: catmullRom(points[i0].px.wz, points[i1].px.wz, points[i2].px.wz, points[i3].px.wz, t),
+    wx: tpCatmullRom(points[i0].px.wx, points[i1].px.wx, points[i2].px.wx, points[i3].px.wx, t),
+    wy: tpCatmullRom(points[i0].px.wy, points[i1].px.wy, points[i2].px.wy, points[i3].px.wy, t),
+    wz: tpCatmullRom(points[i0].px.wz, points[i1].px.wz, points[i2].px.wz, points[i3].px.wz, t),
   };
 }
 
 function interpolateDateValue(points, segmentIndex, t) {
   const start = parseTrajectoryDate(points[segmentIndex].date);
   const end = parseTrajectoryDate(points[segmentIndex + 1].date);
-  return new Date(lerp(start.getTime(), end.getTime(), t));
+  return new Date(tpLerp(start.getTime(), end.getTime(), t));
 }
 
 function interpolateSunDistanceValue(points, segmentIndex, t) {
   const startAu = points[segmentIndex].au;
   const endAu = points[segmentIndex + 1].au;
-  const x = lerp(startAu.x, endAu.x, t);
-  const y = lerp(startAu.y, endAu.y, t);
-  const z = lerp(startAu.z, endAu.z, t);
+  const x = tpLerp(startAu.x, endAu.x, t);
+  const y = tpLerp(startAu.y, endAu.y, t);
+  const z = tpLerp(startAu.z, endAu.z, t);
   return Math.sqrt(x * x + y * y + z * z);
 }
 
@@ -651,12 +644,12 @@ function lerpCameraState(current, target, sp = 0.022) {
   if (!target) return current;
   const base = current || target;
   return {
-    el: lerp(base.el ?? target.el ?? 0, target.el ?? base.el ?? 0, sp),
-    az: lerp(base.az ?? target.az ?? 0, target.az ?? base.az ?? 0, sp * 0.75),
-    zoom: lerp(base.zoom ?? target.zoom ?? 0, target.zoom ?? base.zoom ?? 0, sp * 0.65),
-    tx: lerp(base.tx ?? target.tx ?? 0, target.tx ?? base.tx ?? 0, sp),
-    ty: lerp(base.ty ?? target.ty ?? 0, target.ty ?? base.ty ?? 0, sp),
-    tz: lerp(base.tz ?? target.tz ?? 0, target.tz ?? base.tz ?? 0, sp),
+    el: tpLerp(base.el ?? target.el ?? 0, target.el ?? base.el ?? 0, sp),
+    az: tpLerp(base.az ?? target.az ?? 0, target.az ?? base.az ?? 0, sp * 0.75),
+    zoom: tpLerp(base.zoom ?? target.zoom ?? 0, target.zoom ?? base.zoom ?? 0, sp * 0.65),
+    tx: tpLerp(base.tx ?? target.tx ?? 0, target.tx ?? base.tx ?? 0, sp),
+    ty: tpLerp(base.ty ?? target.ty ?? 0, target.ty ?? base.ty ?? 0, sp),
+    tz: tpLerp(base.tz ?? target.tz ?? 0, target.tz ?? base.tz ?? 0, sp),
   };
 }
 
@@ -674,6 +667,27 @@ function formatDisplayDate(value) {
 function setSubtitle(text) {
   const el = document.getElementById('tp-subtitle');
   if (el) el.textContent = text;
+}
+
+function buildObjectMotionHref(designation) {
+  return `object_motion?designation=${encodeURIComponent(designation || '3I')}`;
+}
+
+function buildTrajectoryPlayerHref(designation) {
+  return `trajectory_player?designation=${encodeURIComponent(designation || '3I')}`;
+}
+
+function syncPlayerUrl(designation) {
+  if (!window.history?.replaceState) return;
+  window.history.replaceState(null, '', buildTrajectoryPlayerHref(designation));
+}
+
+function updateObjectMotionLinks(designation) {
+  const href = buildObjectMotionHref(designation);
+  const backLink = document.getElementById('tp-back-link');
+  const errorLink = document.getElementById('tp-error-link');
+  if (backLink) backLink.href = href;
+  if (errorLink) errorLink.href = href;
 }
 
 function hideLoadingCard() {
@@ -703,6 +717,8 @@ async function bootstrapTrajectoryPlayer() {
 
   try {
     const designation = TrajectoryLoader.readDesignationFromUrl();
+    syncPlayerUrl(designation);
+    updateObjectMotionLinks(designation);
     setSubtitle(`Loading ${designation}`);
 
     const result = await TrajectoryLoader.load(designation);
@@ -733,11 +749,13 @@ async function bootstrapTrajectoryPlayer() {
     requestAnimationFrame(() => controller.bootstrap());
   } catch (error) {
     if (error instanceof TrajectoryLoadError) {
+      updateObjectMotionLinks(error.details?.designation || '3I');
       showError(error);
       return;
     }
 
     console.error(error);
+    updateObjectMotionLinks('3I');
     showError(
       new TrajectoryLoadError(
         'network',

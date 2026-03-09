@@ -30,15 +30,7 @@ function readDesignationFromUrl(search = '') {
     const params = new URLSearchParams(search);
     const rawValue = params.get('designation') ?? params.get('d');
     const designation = decodeDesignation(rawValue);
-
-    if (!designation) {
-        throw new TrajectoryLoadError(
-            'missing-designation',
-            'Open this page with a ?designation= URL parameter, or use the ▶ Play Video button from the Object Motion Tracker.'
-        );
-    }
-
-    return designation;
+    return designation || '3I';
 }
 
 function sanitize(name) {
@@ -106,6 +98,14 @@ function normalizePoint(point, index, designation) {
         description: point.description ?? null,
         image: point.image ?? null,
     };
+}
+
+function buildObjectMotionHref(designation) {
+    return `object_motion?designation=${encodeURIComponent(designation || '3I')}`;
+}
+
+function buildTrajectoryPlayerHref(designation) {
+    return `trajectory_player?designation=${encodeURIComponent(designation || '3I')}`;
 }
 
 function lerp(a, b, t) {
@@ -205,6 +205,8 @@ module.exports = {
     readDesignationFromUrl,
     sanitize,
     buildPath,
+    buildObjectMotionHref,
+    buildTrajectoryPlayerHref,
     normalizePoint,
     lerp,
     catmullRom,

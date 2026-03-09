@@ -597,6 +597,7 @@ window.SolarSystem = (() => {
 
         function init() {
             _canvas = document.getElementById('ss-arcball');
+            if (!_canvas) return;
             _canvas.width  = SIZE;
             _canvas.height = SIZE;
             _ctx = _canvas.getContext('2d');
@@ -705,45 +706,54 @@ window.SolarSystem = (() => {
         function init() {
             // ── Date picker ──
             const dateInput = document.getElementById('ss-date');
-            dateInput.value = _toInputDate(new Date());
-            dateInput.addEventListener('input', () => {
-                if (!dateInput.value) return;
-                const d = new Date(dateInput.value + 'T12:00:00');
-                PlanetaryEngine.setDate(d); // snaps planet positions to this date
-                // Stay in whatever mode we're in; visual mode will continue animating
-                // from the snapped positions; simulation mode will advance from this date
-            });
+            if (dateInput) {
+                dateInput.value = _toInputDate(new Date());
+                dateInput.addEventListener('input', () => {
+                    if (!dateInput.value) return;
+                    const d = new Date(dateInput.value + 'T12:00:00');
+                    PlanetaryEngine.setDate(d); // snaps planet positions to this date
+                    // Stay in whatever mode we're in; visual mode will continue animating
+                    // from the snapped positions; simulation mode will advance from this date
+                });
+            }
 
             // ── Pause / play ──
             const pauseBtn = document.getElementById('ss-pause');
-            pauseBtn.addEventListener('click', () => {
-                if (PlanetaryEngine.paused) {
-                    PlanetaryEngine.resume();
-                    pauseBtn.textContent = '❚❚ Pause';
-                } else {
-                    PlanetaryEngine.pause();
-                    pauseBtn.textContent = '▶ Play';
-                }
-            });
+            if (pauseBtn) {
+                pauseBtn.addEventListener('click', () => {
+                    if (PlanetaryEngine.paused) {
+                        PlanetaryEngine.resume();
+                        pauseBtn.textContent = '❚❚ Pause';
+                    } else {
+                        PlanetaryEngine.pause();
+                        pauseBtn.textContent = '▶ Play';
+                    }
+                });
+            }
 
             // ── Speed selector ──
-            document.getElementById('ss-speed').addEventListener('change', e => {
-                if (e.target.value === 'visual') {
-                    PlanetaryEngine.setVisualMode(true);
-                } else {
-                    PlanetaryEngine.setVisualMode(false);
-                    PlanetaryEngine.speed = parseFloat(e.target.value);
-                }
-            });
+            const speedSelect = document.getElementById('ss-speed');
+            if (speedSelect) {
+                speedSelect.addEventListener('change', e => {
+                    if (e.target.value === 'visual') {
+                        PlanetaryEngine.setVisualMode(true);
+                    } else {
+                        PlanetaryEngine.setVisualMode(false);
+                        PlanetaryEngine.speed = parseFloat(e.target.value);
+                    }
+                });
+            }
 
             // ── Single zoom ruler (−100 → 0 → +100, 0 = neutral) ──
             const zoomSlider = document.getElementById('ss-zoom');
             const zoomVal    = document.getElementById('ss-zoom-val');
-            zoomSlider.addEventListener('input', () => {
-                const v = parseInt(zoomSlider.value);
-                CameraController.setZoom(v);
-                zoomVal.textContent = v > 0 ? '+' + v : String(v);
-            });
+            if (zoomSlider && zoomVal) {
+                zoomSlider.addEventListener('input', () => {
+                    const v = parseInt(zoomSlider.value);
+                    CameraController.setZoom(v);
+                    zoomVal.textContent = v > 0 ? '+' + v : String(v);
+                });
+            }
 
             // ── Preset buttons ──
             document.querySelectorAll('.ss-preset').forEach(btn => {
@@ -758,9 +768,11 @@ window.SolarSystem = (() => {
             canvas.addEventListener('contextmenu', e => e.preventDefault());
 
             canvas.addEventListener('mousedown', e => {
-                const r = arcballEl.getBoundingClientRect();
-                const overWidget = e.clientX >= r.left && e.clientX <= r.right &&
-                                   e.clientY >= r.top  && e.clientY <= r.bottom;
+                const r = arcballEl ? arcballEl.getBoundingClientRect() : null;
+                const overWidget = r
+                    ? e.clientX >= r.left && e.clientX <= r.right &&
+                      e.clientY >= r.top  && e.clientY <= r.bottom
+                    : false;
 
                 if (e.button === 2) {
                     // Right-click: pan
@@ -789,11 +801,16 @@ window.SolarSystem = (() => {
             });
 
             // ── Reset View button ──
-            document.getElementById('ss-reset').addEventListener('click', () => {
-                CameraController.resetAll();
-                document.getElementById('ss-zoom').value        = 0;
-                document.getElementById('ss-zoom-val').textContent = '0';
-            });
+            const resetBtn = document.getElementById('ss-reset');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    CameraController.resetAll();
+                    const zoomEl = document.getElementById('ss-zoom');
+                    const zoomLabelEl = document.getElementById('ss-zoom-val');
+                    if (zoomEl) zoomEl.value = 0;
+                    if (zoomLabelEl) zoomLabelEl.textContent = '0';
+                });
+            }
 
             // ── Scroll wheel → zoom ruler ──
             canvas.addEventListener('wheel', e => {
@@ -801,8 +818,8 @@ window.SolarSystem = (() => {
                 const delta  = e.deltaY > 0 ? -5 : 5;
                 const newVal = clamp(CameraController.zoom + delta, -100, 100);
                 CameraController.setZoom(newVal);
-                zoomSlider.value       = newVal;
-                zoomVal.textContent    = newVal > 0 ? '+' + newVal : String(newVal);
+                if (zoomSlider) zoomSlider.value = newVal;
+                if (zoomVal) zoomVal.textContent = newVal > 0 ? '+' + newVal : String(newVal);
             }, { passive: false });
         }
 
@@ -810,6 +827,7 @@ window.SolarSystem = (() => {
         // but only when the input is not being actively edited by the user.
         function syncDateDisplay() {
             const el = document.getElementById('ss-date');
+            if (!el) return;
             if (document.activeElement === el) return;
             el.value = _toInputDate(PlanetaryEngine.date);
         }

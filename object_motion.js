@@ -28,9 +28,9 @@ const HORIZONS_BASE_URL = 'https://ssd.jpl.nasa.gov/api/horizons.api';
 // MODULE: HorizonsClient
 // ─────────────────────────────────────────────────────────────
 
-class NotFoundError  extends Error { constructor(msg) { super(msg); this.name = 'NotFoundError';  } }
+class NotFoundError extends Error { constructor(msg) { super(msg); this.name = 'NotFoundError'; } }
 class AmbiguousError extends Error { constructor(msg) { super(msg); this.name = 'AmbiguousError'; } }
-class NetworkError   extends Error { constructor(msg) { super(msg); this.name = 'NetworkError';   } }
+class NetworkError extends Error { constructor(msg) { super(msg); this.name = 'NetworkError'; } }
 class EmptyDataError extends Error { constructor(msg) { super(msg); this.name = 'EmptyDataError'; } }
 
 const HorizonsClient = (() => {
@@ -85,18 +85,18 @@ const HorizonsClient = (() => {
             );
         }
 
-        const lines  = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         const points = [];
 
         for (let i = 0; i < lines.length; i += 3) {
-            const jdLine  = lines[i];
+            const jdLine = lines[i];
             const xyzLine = lines[i + 1];
             if (!jdLine || !xyzLine) break;
 
             const jdMatch = jdLine.match(/^([\d.]+)\s*=\s*A\.D\.\s*(\d{4}-\w{3}-\d{2})/);
             if (!jdMatch) continue;
 
-            const jd   = parseFloat(jdMatch[1]);
+            const jd = parseFloat(jdMatch[1]);
             const date = jdMatch[2];
 
             const xMatch = xyzLine.match(/X\s*=\s*([-+]?\d+\.?\d*[Ee][-+]?\d+)/);
@@ -112,13 +112,13 @@ const HorizonsClient = (() => {
             points.push({
                 jd,
                 date,
-                au:          { x: auX, y: auY, z: auZ },
-                wx:          auX * AU_TO_PX,
-                wy:          auY * AU_TO_PX,
-                wz:          auZ * AU_TO_PX,
-                camera:      null,
+                au: { x: auX, y: auY, z: auZ },
+                wx: auX * AU_TO_PX,
+                wy: auY * AU_TO_PX,
+                wz: auZ * AU_TO_PX,
+                camera: null,
                 description: null,
-                image:       null,
+                image: null,
             });
         }
 
@@ -164,30 +164,30 @@ const HorizonsClient = (() => {
 // ─────────────────────────────────────────────────────────────
 
 const TrajectoryStore = (() => {
-    let _designation  = '';
-    let _points       = [];
+    let _designation = '';
+    let _points = [];
     let _isUpdateMode = false;
-    let _createdAt    = null;
+    let _createdAt = null;
 
     function init(designation, points) {
-        _designation  = designation;
-        _points       = points;
+        _designation = designation;
+        _points = points;
         _isUpdateMode = false;
-        _createdAt    = null;
+        _createdAt = null;
     }
 
     function initFromSaved(designation, points, createdAt) {
-        _designation  = designation;
-        _points       = points;
+        _designation = designation;
+        _points = points;
         _isUpdateMode = true;
-        _createdAt    = createdAt || null;
+        _createdAt = createdAt || null;
     }
 
-    function getPoints()      { return _points; }
+    function getPoints() { return _points; }
     function getDesignation() { return _designation; }
-    function getPoint(i)      { return _points[i] || null; }
-    function isUpdateMode()   { return _isUpdateMode; }
-    function getCreatedAt()   { return _createdAt; }
+    function getPoint(i) { return _points[i] || null; }
+    function isUpdateMode() { return _isUpdateMode; }
+    function getCreatedAt() { return _createdAt; }
 
     function savedCount() {
         return _points.filter(p => p.camera !== null).length;
@@ -229,27 +229,27 @@ const TrajectoryStore = (() => {
         const now = new Date().toISOString();
         const pts = _points;
         return {
-            object:      _designation,
+            object: _designation,
             designation: _designation,
-            createdAt:   _createdAt || now,
-            updatedAt:   now,
-            source:      'JPL Horizons VECTORS',
-            dateRange:   pts.length ? `${pts[0].date} \u2192 ${pts[pts.length - 1].date}` : '',
-            scale:       { auToPx: AU_TO_PX },
-            points:      pts.map((p, i) => ({
-                jd:          p.jd,
-                date:        p.date,
-                au:          p.au,
+            createdAt: _createdAt || now,
+            updatedAt: now,
+            source: 'JPL Horizons VECTORS',
+            dateRange: pts.length ? `${pts[0].date} \u2192 ${pts[pts.length - 1].date}` : '',
+            scale: { auToPx: AU_TO_PX },
+            points: pts.map((p, i) => ({
+                jd: p.jd,
+                date: p.date,
+                au: p.au,
                 px: {
                     wx: p.wx,
                     wy: p.wy,
                     wz: p.wz,
                 },
                 durationPct: p.durationPct ?? 100,
-                stoppable:   p.stoppable   ?? false,
-                camera:      normalizeCameraState(p.camera),
+                stoppable: p.stoppable ?? false,
+                camera: normalizeCameraState(p.camera),
                 description: p.description,
-                image:       p.image instanceof File ? p.image.name : p.image,
+                image: p.image instanceof File ? p.image.name : p.image,
             })),
         };
     }
@@ -270,21 +270,21 @@ const TrajectoryStore = (() => {
 // ─────────────────────────────────────────────────────────────
 
 const WorkflowController = (() => {
-    let _currentIndex      = 0;
+    let _currentIndex = 0;
     let _hasUnsavedChanges = false;
-    let _hasSavedFile      = false;
+    let _hasSavedFile = false;
 
     function start(points) {
-        _currentIndex      = 0;
+        _currentIndex = 0;
         _hasUnsavedChanges = false;
     }
 
     function getCurrent() { return _currentIndex; }
 
-    function hasUnsavedChanges()     { return _hasUnsavedChanges; }
-    function setUnsavedChanges(val)  { _hasUnsavedChanges = Boolean(val); }
-    function hasSavedFile()          { return _hasSavedFile; }
-    function setHasSavedFile(val)    { _hasSavedFile = Boolean(val); }
+    function hasUnsavedChanges() { return _hasUnsavedChanges; }
+    function setUnsavedChanges(val) { _hasUnsavedChanges = Boolean(val); }
+    function hasSavedFile() { return _hasSavedFile; }
+    function setHasSavedFile(val) { _hasSavedFile = Boolean(val); }
 
     function advanceToNextUnsaved(points) {
         for (let i = _currentIndex + 1; i < points.length; i++) {
@@ -327,12 +327,12 @@ const WorkflowController = (() => {
 
 const ObjectMarker = (() => {
     let _point = null;
-    let _name  = '';
+    let _name = '';
     let _frame = 0;
 
     function setPoint(point, name) {
         _point = point;
-        _name  = name || '';
+        _name = name || '';
     }
 
     function draw() {
@@ -355,7 +355,7 @@ const ObjectMarker = (() => {
         ctx.beginPath();
         ctx.arc(sx, sy, pulse, 0, Math.PI * 2);
         ctx.strokeStyle = 'rgba(120,255,200,0.35)';
-        ctx.lineWidth   = 1.5;
+        ctx.lineWidth = 1.5;
         ctx.stroke();
 
         // Inner filled dot
@@ -366,15 +366,15 @@ const ObjectMarker = (() => {
 
         // Label above the dot
         const label = `${_point.date} \u00B7 ${_name}`;
-        ctx.font         = '11px Georgia';
-        ctx.textAlign    = 'center';
+        ctx.font = '11px Georgia';
+        ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillStyle    = 'rgba(200,235,255,0.9)';
+        ctx.fillStyle = 'rgba(200,235,255,0.9)';
         ctx.fillText(label, sx, sy - 18);
     }
 
     function _drawOffScreenArrow(sx, sy) {
-        const cx = canvas.width  / 2;
+        const cx = canvas.width / 2;
         const cy = canvas.height / 2;
         const dx = sx - cx;
         const dy = sy - cy;
@@ -382,7 +382,7 @@ const ObjectMarker = (() => {
 
         const margin = 24;
         // Use a wider right margin when the sidebar is open so the arrow is never hidden behind it
-        const sidebarEl  = document.getElementById('om-sidebar');
+        const sidebarEl = document.getElementById('om-sidebar');
         const rightMargin = (sidebarEl && sidebarEl.classList.contains('visible')) ? 268 : margin;
         let ex, ey;
         if (Math.abs(dx) * canvas.height >= Math.abs(dy) * canvas.width) {
@@ -393,7 +393,7 @@ const ObjectMarker = (() => {
             ex = cx + (ey - cy) * (dx / (dy || 0.001));
         }
         ey = Math.max(margin, Math.min(canvas.height - margin, ey));
-        ex = Math.max(margin, Math.min(canvas.width  - rightMargin, ex));
+        ex = Math.max(margin, Math.min(canvas.width - rightMargin, ex));
 
         // Equilateral triangle arrow (10 px)
         ctx.save();
@@ -402,17 +402,17 @@ const ObjectMarker = (() => {
         ctx.beginPath();
         ctx.moveTo(10, 0);
         ctx.lineTo(-5, -6);
-        ctx.lineTo(-5,  6);
+        ctx.lineTo(-5, 6);
         ctx.closePath();
         ctx.fillStyle = 'rgba(120,255,200,1.0)';
         ctx.fill();
         ctx.restore();
 
         const label = `${_point.date} \u00B7 ${_name}`;
-        ctx.font         = '11px Georgia';
-        ctx.textAlign    = 'center';
+        ctx.font = '11px Georgia';
+        ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle    = 'rgba(200,235,255,0.9)';
+        ctx.fillStyle = 'rgba(200,235,255,0.9)';
         ctx.fillText(label, ex, ey - 16);
     }
 
@@ -427,13 +427,13 @@ const ObjectMarker = (() => {
 
 const ProgressPanel = (() => {
     let _onNavigate = null;
-    let _onDelete   = null;
+    let _onDelete = null;
 
     function setNavigateCallback(fn) { _onNavigate = fn; }
-    function setDeleteCallback(fn)   { _onDelete = fn; }
+    function setDeleteCallback(fn) { _onDelete = fn; }
 
     function render(points, activeIndex) {
-        const list    = document.getElementById('om-point-list');
+        const list = document.getElementById('om-point-list');
         const summary = document.getElementById('om-sidebar-summary');
         if (!list || !summary) return;
 
@@ -444,13 +444,13 @@ const ProgressPanel = (() => {
 
         points.forEach((p, i) => {
             const row = document.createElement('div');
-            row.className    = 'om-point-row' + (i === activeIndex ? ' active' : '');
+            row.className = 'om-point-row' + (i === activeIndex ? ' active' : '');
             row.dataset.index = i;
             row.setAttribute('role', 'listitem');
 
             // Row number
             const num = document.createElement('span');
-            num.className   = 'om-row-num';
+            num.className = 'om-row-num';
             num.textContent = i + 1;
 
             // Thumbnail
@@ -460,12 +460,12 @@ const ProgressPanel = (() => {
 
             // Date
             const dateEl = document.createElement('span');
-            dateEl.className   = 'om-row-date';
+            dateEl.className = 'om-row-date';
             dateEl.textContent = formatTrajDate(p.date);
 
             // Save badge
             const badge = document.createElement('span');
-            badge.className   = 'om-row-badge ' + (p.camera !== null ? 'saved' : 'pending');
+            badge.className = 'om-row-badge ' + (p.camera !== null ? 'saved' : 'pending');
             badge.textContent = p.camera !== null ? '\u2713' : '\u00B7';
 
             const deleteBtn = document.createElement('button');
@@ -492,27 +492,27 @@ const ProgressPanel = (() => {
         const activeRow = document.querySelector('.om-point-row.active');
         if (activeRow) activeRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
-        const points  = TrajectoryStore.getPoints();
-        const saved   = points.filter(p => p.camera !== null).length;
+        const points = TrajectoryStore.getPoints();
+        const saved = points.filter(p => p.camera !== null).length;
         const summary = document.getElementById('om-sidebar-summary');
         if (summary) summary.textContent = `${saved} of ${points.length} saved`;
     }
 
     function updateRowBadge(index) {
         const rows = document.querySelectorAll('.om-point-row');
-        const row  = rows[index];
+        const row = rows[index];
         if (!row) return;
         const badge = row.querySelector('.om-row-badge');
         if (!badge) return;
         const p = TrajectoryStore.getPoint(index);
         if (!p) return;
-        badge.className   = 'om-row-badge ' + (p.camera !== null ? 'saved' : 'pending');
+        badge.className = 'om-row-badge ' + (p.camera !== null ? 'saved' : 'pending');
         badge.textContent = p.camera !== null ? '\u2713' : '\u00B7';
     }
 
     function updateRowThumb(index, url) {
         const rows = document.querySelectorAll('.om-point-row');
-        const row  = rows[index];
+        const row = rows[index];
         if (!row) return;
         const wrap = row.querySelector('.om-row-thumb-wrap');
         if (!wrap) return;
@@ -539,7 +539,7 @@ const ProgressPanel = (() => {
             wrap.appendChild(img);
         } else if (typeof p.image === 'string' && p.image) {
             const name = sanitize(TrajectoryStore.getDesignation());
-            const img  = document.createElement('img');
+            const img = document.createElement('img');
             img.className = 'om-row-thumb';
             img.src = `data/${name}/${p.image}`;
             img.alt = '';
@@ -564,9 +564,9 @@ const ProgressPanel = (() => {
 const MediaAnnotator = (() => {
     const _MIME_EXT = {
         'image/jpeg': '.jpg',
-        'image/png':  '.png',
+        'image/png': '.png',
         'image/webp': '.webp',
-        'image/gif':  '.gif',
+        'image/gif': '.gif',
     };
     const _objectUrls = {};
 
@@ -611,7 +611,7 @@ const MediaAnnotator = (() => {
 
     /** Populate the annotation panel for the given point index. */
     function loadAnnotationPanel(pointIndex) {
-        const p        = TrajectoryStore.getPoint(pointIndex);
+        const p = TrajectoryStore.getPoint(pointIndex);
         const textarea = document.getElementById('om-description');
 
         if (textarea) textarea.value = p ? (p.description || '') : '';
@@ -637,21 +637,21 @@ const MediaAnnotator = (() => {
     }
 
     function _showPreview(url) {
-        const preview    = document.getElementById('om-img-preview');
+        const preview = document.getElementById('om-img-preview');
         const previewWrap = document.getElementById('om-img-preview-wrap');
-        const btn        = document.getElementById('om-img-btn');
-        if (preview)     preview.src              = url;
+        const btn = document.getElementById('om-img-btn');
+        if (preview) preview.src = url;
         if (previewWrap) previewWrap.style.display = 'flex';
-        if (btn)         btn.style.display         = 'none';
+        if (btn) btn.style.display = 'none';
     }
 
     function _hidePreview() {
-        const preview    = document.getElementById('om-img-preview');
+        const preview = document.getElementById('om-img-preview');
         const previewWrap = document.getElementById('om-img-preview-wrap');
-        const btn        = document.getElementById('om-img-btn');
-        if (preview)     preview.src               = '';
-        if (previewWrap) previewWrap.style.display  = 'none';
-        if (btn)         btn.style.display           = '';
+        const btn = document.getElementById('om-img-btn');
+        if (preview) preview.src = '';
+        if (previewWrap) previewWrap.style.display = 'none';
+        if (btn) btn.style.display = '';
     }
 
     function _updateSizeWarning(file) {
@@ -659,7 +659,7 @@ const MediaAnnotator = (() => {
         if (!warnEl) return;
         if (file.size > 5 * 1024 * 1024) {
             const mb = (file.size / (1024 * 1024)).toFixed(1);
-            warnEl.textContent  = `Large image (${mb} MB) — this will increase your saved data size.`;
+            warnEl.textContent = `Large image (${mb} MB) — this will increase your saved data size.`;
             warnEl.style.display = '';
         } else {
             warnEl.style.display = 'none';
@@ -678,9 +678,9 @@ const MediaAnnotator = (() => {
 const FileIO = (() => {
     const _MIME_EXT = {
         'image/jpeg': '.jpg',
-        'image/png':  '.png',
+        'image/png': '.png',
         'image/webp': '.webp',
-        'image/gif':  '.gif',
+        'image/gif': '.gif',
     };
 
     /**
@@ -691,28 +691,28 @@ const FileIO = (() => {
      */
     function serialize(store) {
         const plain = store.toPlainObject();
-        const pts   = store.getPoints();
+        const pts = store.getPoints();
 
         plain.points.forEach((p, i) => {
             // Round camera to 2 dp
             if (p.camera) {
                 p.camera = {
-                    el:   _round2(p.camera.el),
-                    az:   _round2(p.camera.az),
+                    el: _round2(p.camera.el),
+                    az: _round2(p.camera.az),
                     zoom: _round2(p.camera.zoom),
-                    tx:   _round2(p.camera.tx ?? 0),
-                    ty:   _round2(p.camera.ty ?? 0),
-                    tz:   _round2(p.camera.tz ?? 0),
+                    tx: _round2(p.camera.tx ?? 0),
+                    ty: _round2(p.camera.ty ?? 0),
+                    tz: _round2(p.camera.tz ?? 0),
                 };
             }
             // Ensure durationPct is a valid integer, stoppable is boolean
             p.durationPct = Math.round(p.durationPct ?? 100);
-            p.stoppable   = Boolean(p.stoppable);
+            p.stoppable = Boolean(p.stoppable);
             // Resolve image filename
             const raw = pts[i]?.image;
             if (raw instanceof File) {
                 const ext = _MIME_EXT[raw.type] || '.bin';
-                p.image   = `point_${i}${ext}`;
+                p.image = `point_${i}${ext}`;
             }
         });
 
@@ -750,7 +750,7 @@ const FileIO = (() => {
         for (let i = 0; i < points.length; i++) {
             const p = points[i];
             if (p.image instanceof File) {
-                const ext  = _MIME_EXT[p.image.type] || '.bin';
+                const ext = _MIME_EXT[p.image.type] || '.bin';
                 const imgWS = await (await subDir.getFileHandle(`point_${i}${ext}`, { create: true })).createWritable();
                 await imgWS.write(p.image);
                 await imgWS.close();
@@ -765,7 +765,7 @@ const FileIO = (() => {
 
     function _triggerDownload(blobOrFile, filename) {
         const url = URL.createObjectURL(blobOrFile);
-        const a   = Object.assign(document.createElement('a'), { href: url, download: filename });
+        const a = Object.assign(document.createElement('a'), { href: url, download: filename });
         a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
@@ -783,6 +783,12 @@ const FileIO = (() => {
 
 function sanitize(name) { return name.replace(/[\s/]/g, '_'); }
 
+function syncObjectMotionUrl(designation) {
+    const value = (designation || '').trim();
+    if (!value || !window.history?.replaceState) return;
+    window.history.replaceState(null, '', `object_motion?designation=${encodeURIComponent(value)}`);
+}
+
 function normalizeCameraState(camera) {
     if (!camera) return null;
     return {
@@ -799,10 +805,10 @@ function resolveStep(dropdownEl, customEl) {
 }
 
 const _MONTH_ABBR = {
-    Jan:'01', Feb:'02', Mar:'03', Apr:'04', May:'05', Jun:'06',
-    Jul:'07', Aug:'08', Sep:'09', Oct:'10', Nov:'11', Dec:'12',
+    Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
+    Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12',
 };
-const _MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const _MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** Parse "2025-Jul-01" or "2025-07-01" → Date object (noon UTC). */
 function parseTrajDate(str) {
@@ -832,66 +838,66 @@ function formatTrajDate(str) {
 (function initUI() {
 
     // ── Element refs ─────────────────────────────────────────
-    const designationEl  = document.getElementById('om-designation');
-    const searchBtn      = document.getElementById('om-search-btn');
-    const statusEl       = document.getElementById('om-status');
+    const designationEl = document.getElementById('om-designation');
+    const searchBtn = document.getElementById('om-search-btn');
+    const statusEl = document.getElementById('om-status');
 
-    const draftCard      = document.getElementById('om-draft-card');
-    const draftCardMsg   = document.getElementById('om-draft-card-msg');
-    const resumeBtn      = document.getElementById('om-resume-btn');
-    const startFreshBtn  = document.getElementById('om-start-fresh-btn');
+    const draftCard = document.getElementById('om-draft-card');
+    const draftCardMsg = document.getElementById('om-draft-card-msg');
+    const resumeBtn = document.getElementById('om-resume-btn');
+    const startFreshBtn = document.getElementById('om-start-fresh-btn');
 
     const jsonUploadInput = document.getElementById('om-json-upload-input');
-    const jsonUploadBtn   = document.getElementById('om-json-upload-btn');
-    const jsonUploadName  = document.getElementById('om-json-upload-name');
+    const jsonUploadBtn = document.getElementById('om-json-upload-btn');
+    const jsonUploadName = document.getElementById('om-json-upload-name');
 
-    const dateSection    = document.getElementById('om-date-section');
-    const startDateEl    = document.getElementById('om-start-date');
-    const endDateEl      = document.getElementById('om-end-date');
+    const dateSection = document.getElementById('om-date-section');
+    const startDateEl = document.getElementById('om-start-date');
+    const endDateEl = document.getElementById('om-end-date');
     const stepDropdownEl = document.getElementById('om-step-dropdown');
-    const stepCustomEl   = document.getElementById('om-step-custom');
-    const validationMsg  = document.getElementById('om-validation-msg');
-    const fetchBtn       = document.getElementById('om-fetch-btn');
+    const stepCustomEl = document.getElementById('om-step-custom');
+    const validationMsg = document.getElementById('om-validation-msg');
+    const fetchBtn = document.getElementById('om-fetch-btn');
 
-    const formOverlay    = document.getElementById('om-form-overlay');
+    const formOverlay = document.getElementById('om-form-overlay');
     const viewerControls = document.getElementById('om-viewer-controls');
-    const newSearchBtn   = document.getElementById('om-new-search-btn');
+    const newSearchBtn = document.getElementById('om-new-search-btn');
 
-    const sidebar        = document.getElementById('om-sidebar');
-    const savePointBtn   = document.getElementById('om-save-point-btn');
-    const saveFileBtn    = document.getElementById('om-save-file-btn');
-    const saveDirBtn     = document.getElementById('om-save-dir-btn');
-    const viewerStatus   = document.getElementById('om-viewer-status');
-    const imgInput       = document.getElementById('om-img-input');
-    const imgBtn         = document.getElementById('om-img-btn');
-    const imgRemoveBtn   = document.getElementById('om-img-remove');
-    const dropZone       = document.getElementById('om-drop-zone');
+    const sidebar = document.getElementById('om-sidebar');
+    const savePointBtn = document.getElementById('om-save-point-btn');
+    const saveFileBtn = document.getElementById('om-save-file-btn');
+    const saveDirBtn = document.getElementById('om-save-dir-btn');
+    const viewerStatus = document.getElementById('om-viewer-status');
+    const imgInput = document.getElementById('om-img-input');
+    const imgBtn = document.getElementById('om-img-btn');
+    const imgRemoveBtn = document.getElementById('om-img-remove');
+    const dropZone = document.getElementById('om-drop-zone');
 
     // Story 2.14
-    const durationPctEl      = document.getElementById('om-duration-pct');
-    const stoppableEl        = document.getElementById('om-stoppable');
-    const settingsBtn        = document.getElementById('om-settings-btn');
-    const settingsModal      = document.getElementById('om-settings-modal');
-    const settingsCloseBtn   = document.getElementById('om-settings-modal-close');
+    const durationPctEl = document.getElementById('om-duration-pct');
+    const stoppableEl = document.getElementById('om-stoppable');
+    const settingsBtn = document.getElementById('om-settings-btn');
+    const settingsModal = document.getElementById('om-settings-modal');
+    const settingsCloseBtn = document.getElementById('om-settings-modal-close');
 
     // Story 2.15
-    const playVideoBtn       = document.getElementById('om-play-video-btn');
-    const playConfirmModal   = document.getElementById('om-play-confirm-modal');
-    const playConfirmMsg     = document.getElementById('om-play-confirm-msg');
-    const playSaveFirstBtn   = document.getElementById('om-play-save-first-btn');
-    const playAnywayBtn      = document.getElementById('om-play-anyway-btn');
+    const playVideoBtn = document.getElementById('om-play-video-btn');
+    const playConfirmModal = document.getElementById('om-play-confirm-modal');
+    const playConfirmMsg = document.getElementById('om-play-confirm-msg');
+    const playSaveFirstBtn = document.getElementById('om-play-save-first-btn');
+    const playAnywayBtn = document.getElementById('om-play-anyway-btn');
 
     // ── Form status helpers ───────────────────────────────────
 
     function setStatus(mode, text) {
         statusEl.style.display = '';
-        statusEl.className     = mode;
-        statusEl.textContent   = text;
+        statusEl.className = mode;
+        statusEl.textContent = text;
     }
 
     function clearStatus() {
-        statusEl.className     = '';
-        statusEl.textContent   = '';
+        statusEl.className = '';
+        statusEl.textContent = '';
         statusEl.style.display = 'none';
     }
 
@@ -899,20 +905,20 @@ function formatTrajDate(str) {
 
     function setViewerStatus(mode, text) {
         if (!viewerStatus) return;
-        viewerStatus.className   = mode;
+        viewerStatus.className = mode;
         viewerStatus.textContent = text;
     }
 
     function clearViewerStatus() {
         if (!viewerStatus) return;
-        viewerStatus.className   = '';
+        viewerStatus.className = '';
         viewerStatus.textContent = '';
         viewerStatus.style.display = 'none';
     }
 
     // ── UI state helpers ─────────────────────────────────────
 
-    function hideDraftCard()  { draftCard.classList.remove('visible'); }
+    function hideDraftCard() { draftCard.classList.remove('visible'); }
 
     function showDraftCard(designation, savedCount, total) {
         draftCardMsg.textContent =
@@ -948,7 +954,7 @@ function formatTrajDate(str) {
             if (pauseBtn) pauseBtn.textContent = '\u25B6 Play';
         }
 
-        formOverlay.style.display    = 'none';
+        formOverlay.style.display = 'none';
         viewerControls.style.display = 'block';
         viewerControls.removeAttribute('aria-hidden');
 
@@ -997,7 +1003,7 @@ function formatTrajDate(str) {
         sidebar.classList.remove('visible');
         viewerControls.style.display = 'none';
         viewerControls.setAttribute('aria-hidden', 'true');
-        formOverlay.style.display    = '';
+        formOverlay.style.display = '';
         clearViewerStatus();
     }
 
@@ -1007,7 +1013,7 @@ function formatTrajDate(str) {
 
     function navigateToPoint(index) {
         const pts = TrajectoryStore.getPoints();
-        const p   = pts[index];
+        const p = pts[index];
         if (!p) return;
 
         WorkflowController.goTo(index);
@@ -1030,7 +1036,7 @@ function formatTrajDate(str) {
 
         // Story 2.14: reflect saved (or default) duration & stoppable
         if (durationPctEl) durationPctEl.value = p.durationPct ?? 100;
-        if (stoppableEl)   stoppableEl.checked  = p.stoppable   ?? false;
+        if (stoppableEl) stoppableEl.checked = p.stoppable ?? false;
 
         updateCounter();
         clearViewerStatus();
@@ -1066,19 +1072,19 @@ function formatTrajDate(str) {
     // ── Counter + save-button state ───────────────────────────
 
     function updateCounter() {
-        const pts     = TrajectoryStore.getPoints();
-        const idx     = WorkflowController.getCurrent();
+        const pts = TrajectoryStore.getPoints();
+        const idx = WorkflowController.getCurrent();
         const counter = document.getElementById('om-point-counter');
         if (counter) counter.textContent = `Point ${idx + 1} of ${pts.length}`;
     }
 
     function updateSaveButtons() {
         const anySaved = TrajectoryStore.savedCount() > 0;
-        const allDone  = TrajectoryStore.allSaved();
-        const msg      = document.getElementById('om-all-saved-msg');
-        if (msg)         msg.style.display = allDone ? '' : 'none';
-        if (saveFileBtn)  saveFileBtn.classList.toggle('enabled', anySaved);
-        if (saveDirBtn)   saveDirBtn.classList.toggle('enabled', anySaved);
+        const allDone = TrajectoryStore.allSaved();
+        const msg = document.getElementById('om-all-saved-msg');
+        if (msg) msg.style.display = allDone ? '' : 'none';
+        if (saveFileBtn) saveFileBtn.classList.toggle('enabled', anySaved);
+        if (saveDirBtn) saveDirBtn.classList.toggle('enabled', anySaved);
         if (playVideoBtn) playVideoBtn.classList.toggle('enabled', anySaved);
     }
 
@@ -1167,7 +1173,7 @@ function formatTrajDate(str) {
 
     saveFileBtn.addEventListener('click', () => {
         if (!saveFileBtn.classList.contains('enabled')) return;
-        const json     = FileIO.serialize(TrajectoryStore);
+        const json = FileIO.serialize(TrajectoryStore);
         const imgCount = FileIO.download(json, TrajectoryStore.getPoints());
         _clearDraft();
         WorkflowController.setHasSavedFile(true);
@@ -1181,12 +1187,12 @@ function formatTrajDate(str) {
     if (saveDirBtn) {
         saveDirBtn.addEventListener('click', async () => {
             if (!saveDirBtn.classList.contains('enabled')) return;
-            const name   = sanitize(TrajectoryStore.getDesignation());
+            const name = sanitize(TrajectoryStore.getDesignation());
             const points = TrajectoryStore.getPoints();
-            const json   = FileIO.serialize(TrajectoryStore);
+            const json = FileIO.serialize(TrajectoryStore);
             try {
                 const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-                const imgCount  = await FileIO.saveToDirectory(dirHandle, name, json, points);
+                const imgCount = await FileIO.saveToDirectory(dirHandle, name, json, points);
                 _clearDraft();
                 WorkflowController.setHasSavedFile(true);
                 WorkflowController.setUnsavedChanges(false);
@@ -1220,7 +1226,7 @@ function formatTrajDate(str) {
 
     function _openPlayer() {
         const name = sanitize(TrajectoryStore.getDesignation());
-        window.open(`trajectory_player.html?designation=${encodeURIComponent(name)}`, '_blank');
+        window.open(`trajectory_player?designation=${encodeURIComponent(name)}`, '_blank');
     }
 
     if (playVideoBtn) {
@@ -1247,7 +1253,7 @@ function formatTrajDate(str) {
         playSaveFirstBtn.addEventListener('click', () => {
             playConfirmModal.classList.remove('visible');
             if (!saveFileBtn.classList.contains('enabled')) return;
-            const json     = FileIO.serialize(TrajectoryStore);
+            const json = FileIO.serialize(TrajectoryStore);
             const imgCount = FileIO.download(json, TrajectoryStore.getPoints());
             _clearDraft();
             WorkflowController.setHasSavedFile(true);
@@ -1280,8 +1286,8 @@ function formatTrajDate(str) {
     function _saveDraft() {
         const rawDesignation = TrajectoryStore.getDesignation();
         const name = sanitize(rawDesignation);
-        const key  = _draftKey(name);
-        const idx  = WorkflowController.getCurrent();
+        const key = _draftKey(name);
+        const idx = WorkflowController.getCurrent();
         try {
             const plain = TrajectoryStore.toPlainObject();
             // Normalize every saved camera so tx/ty/tz are always explicit.
@@ -1307,7 +1313,7 @@ function formatTrajDate(str) {
 
     function _clearDraft() {
         const name = sanitize(TrajectoryStore.getDesignation());
-        try { localStorage.removeItem(_draftKey(name)); } catch (_) {}
+        try { localStorage.removeItem(_draftKey(name)); } catch (_) { }
     }
 
     // ── Search button enable/disable ─────────────────────────
@@ -1354,7 +1360,7 @@ function formatTrajDate(str) {
         if (!searchBtn.classList.contains('enabled')) return;
 
         const designation = designationEl.value.trim();
-        const name        = sanitize(designation);
+        const name = sanitize(designation);
 
         resetToStep1();
 
@@ -1363,13 +1369,13 @@ function formatTrajDate(str) {
             const raw = localStorage.getItem(_draftKey(name));
             if (raw) {
                 const parsed = JSON.parse(raw);
-                const saved  = (parsed.points || []).filter(p => p.camera !== null).length;
-                const total  = (parsed.points || []).length;
+                const saved = (parsed.points || []).filter(p => p.camera !== null).length;
+                const total = (parsed.points || []).length;
                 updateSearchButton();
                 showDraftCard(designation, saved, total);
                 return;
             }
-        } catch (_) {}
+        } catch (_) { }
 
         await _runNormalSearch(designation);
     });
@@ -1382,7 +1388,7 @@ function formatTrajDate(str) {
 
     resumeBtn.addEventListener('click', () => {
         const designation = designationEl.value.trim();
-        const name        = sanitize(designation);
+        const name = sanitize(designation);
         hideDraftCard();
         try {
             const raw = localStorage.getItem(_draftKey(name));
@@ -1396,8 +1402,8 @@ function formatTrajDate(str) {
 
     startFreshBtn.addEventListener('click', async () => {
         const designation = designationEl.value.trim();
-        const name        = sanitize(designation);
-        try { localStorage.removeItem(_draftKey(name)); } catch (_) {}
+        const name = sanitize(designation);
+        try { localStorage.removeItem(_draftKey(name)); } catch (_) { }
         hideDraftCard();
         await _runNormalSearch(designation);
     });
@@ -1406,21 +1412,21 @@ function formatTrajDate(str) {
 
     function loadTrajectoryFromData(json) {
         const designation = json.designation || json.object || designationEl.value.trim();
-        const createdAt   = json.createdAt || null;
-        const raw         = json.points || [];
+        const createdAt = json.createdAt || null;
+        const raw = json.points || [];
 
         const points = raw.map(p => ({
-            jd:          p.jd,
-            date:        p.date,
-            au:          p.au,
-            wx:          p.wx  ?? p.px?.wx ?? (p.au?.x * AU_TO_PX) ?? 0,
-            wy:          p.wy  ?? p.px?.wy ?? (p.au?.y * AU_TO_PX) ?? 0,
-            wz:          p.wz  ?? p.px?.wz ?? (p.au?.z * AU_TO_PX) ?? 0,
-            camera:      normalizeCameraState(p.camera),
+            jd: p.jd,
+            date: p.date,
+            au: p.au,
+            wx: p.wx ?? p.px?.wx ?? (p.au?.x * AU_TO_PX) ?? 0,
+            wy: p.wy ?? p.px?.wy ?? (p.au?.y * AU_TO_PX) ?? 0,
+            wz: p.wz ?? p.px?.wz ?? (p.au?.z * AU_TO_PX) ?? 0,
+            camera: normalizeCameraState(p.camera),
             description: p.description ?? null,
-            image:       p.image       ?? null,
+            image: p.image ?? null,
             durationPct: p.durationPct ?? 100,
-            stoppable:   p.stoppable   ?? false,
+            stoppable: p.stoppable ?? false,
         }));
 
         if (points.length === 0) {
@@ -1432,10 +1438,11 @@ function formatTrajDate(str) {
         WorkflowController.start(points);
 
         designationEl.value = designation;
+        syncObjectMotionUrl(designation);
         updateSearchButton();
 
-        const saved   = TrajectoryStore.savedCount();
-        const total   = points.length;
+        const saved = TrajectoryStore.savedCount();
+        const total = points.length;
         const withTx = points.filter(p => p.camera && 'tx' in p.camera).length;
         console.log('[PAN] loadTrajectoryFromData: total pts:', total, '| saved cameras:', saved,
             '| cameras with tx field:', withTx,
@@ -1478,13 +1485,13 @@ function formatTrajDate(str) {
     function updateFetchButton() {
         const ready =
             designationEl.value.trim() !== '' &&
-            startDateEl.value          !== '' &&
-            endDateEl.value            !== '';
+            startDateEl.value !== '' &&
+            endDateEl.value !== '';
         fetchBtn.classList.toggle('enabled', ready);
     }
 
     [startDateEl, endDateEl].forEach(el => {
-        el.addEventListener('input',  updateFetchButton);
+        el.addEventListener('input', updateFetchButton);
         el.addEventListener('change', updateFetchButton);
     });
 
@@ -1519,9 +1526,9 @@ function formatTrajDate(str) {
         if (!validateDates()) return;
 
         const designation = designationEl.value.trim();
-        const startDate   = startDateEl.value;
-        const endDate     = endDateEl.value;
-        const step        = resolveStep(stepDropdownEl, stepCustomEl);
+        const startDate = startDateEl.value;
+        const endDate = endDateEl.value;
+        const step = resolveStep(stepDropdownEl, stepCustomEl);
 
         clearValidationError();
         setStatus('loading', 'Fetching trajectory\u2026');
@@ -1553,7 +1560,7 @@ function formatTrajDate(str) {
     // Auto-loads without any confirmation card so a page refresh
     // silently restores in-progress work.
     (async function _applyUrlParam() {
-        const params   = new URLSearchParams(location.search);
+        const params = new URLSearchParams(location.search);
         const paramVal = params.get('designation') || params.get('d');
         if (!paramVal) return;
         const value = decodeURIComponent(paramVal).trim();
@@ -1562,7 +1569,7 @@ function formatTrajDate(str) {
         updateSearchButton();
 
         const name = sanitize(value);
-        const key  = _draftKey(name);
+        const key = _draftKey(name);
 
         // 1. Auto-restore localStorage draft if present
         try {
