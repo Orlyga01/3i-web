@@ -34,18 +34,22 @@ window.SolarSystem = (() => {
         // J2000.0 epoch: Jan 1.5, 2000 TT  (as UTC ms, close enough for visual accuracy)
         const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 
-        // Sidereal orbital periods (days) and mean ecliptic longitude at J2000 (degrees).
-        // Source: Astronomical Almanac simplified VSOP87.
+        // Keplerian elements at J2000.0 epoch.
+        // Source: JPL/Standish 1992, Table 1 (valid 1800–2050 AD).
+        //   period = 360 / (mean-motion °/century / 36525)  [days]
+        //   L0     = mean ecliptic longitude at J2000 [°]
+        //   e      = orbital eccentricity
+        //   W      = longitude of perihelion = Ω + ω [°]
         // Order MUST match shared_render.js planets[] array:
         // Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus
         const ORBITAL = [
-            { period:    87.97, L0: 252.25 }, // Mercury
-            { period:   224.70, L0: 181.98 }, // Venus
-            { period:   365.25, L0: 100.46 }, // Earth
-            { period:   686.97, L0: 355.43 }, // Mars
-            { period:  4332.59, L0:  34.33 }, // Jupiter
-            { period: 10759.22, L0:  50.08 }, // Saturn
-            { period: 30688.50, L0: 314.20 }, // Uranus
+            { period:    87.969, L0: 252.25032, e: 0.20563593, W:  77.45780 }, // Mercury
+            { period:   224.701, L0: 181.97910, e: 0.00677672, W: 131.60247 }, // Venus
+            { period:   365.257, L0: 100.46457, e: 0.01671123, W: 102.93768 }, // Earth  ← was 365.25; fixes ~1° error by 2025
+            { period:   686.971, L0: 355.44657, e: 0.09339410, W: 336.05637 }, // Mars
+            { period:  4332.60,  L0:  34.39644, e: 0.04838624, W:  14.72848 }, // Jupiter
+            { period: 10759.70,  L0:  49.95424, e: 0.05386179, W:  92.59888 }, // Saturn
+            { period: 30687.2,   L0: 313.23810, e: 0.04725744, W: 170.95428 }, // Uranus
         ];
 
         // Visual mode: planets orbit at a cosmetic rate, date stays fixed at today.
@@ -63,13 +67,27 @@ window.SolarSystem = (() => {
             return (date.getTime() - J2000_MS) / 86400000;
         }
 
+        // Solve Kepler's equation E - e*sin(E) = M via Newton-Raphson (6 iterations).
+        function _solveKepler(M, e) {
+            let E = M;
+            for (let i = 0; i < 6; i++) {
+                E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+            }
+            return E;
+        }
+
         // Snap all planet angles to a specific date's accurate J2000 positions.
+        // Uses the equation of center (Kepler's equation) for sub-degree accuracy.
         function _applyDateToAngles(date) {
-            const d = _daysSinceJ2000(date);
+            const DEG = Math.PI / 180;
+            const d   = _daysSinceJ2000(date);
             for (let i = 0; i < planets.length && i < ORBITAL.length; i++) {
-                const o   = ORBITAL[i];
-                const lon = o.L0 + (360 / o.period) * d;
-                planets[i].angle = (lon % 360) * (Math.PI / 180);
+                const o  = ORBITAL[i];
+                const L  = (o.L0 + (360 / o.period) * d) * DEG;  // mean longitude (rad)
+                const M  = ((L - o.W * DEG) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI); // mean anomaly [0, 2π]
+                const E  = _solveKepler(M, o.e);                   // eccentric anomaly
+                const nu = Math.atan2(Math.sqrt(1 - o.e * o.e) * Math.sin(E), Math.cos(E) - o.e); // true anomaly
+                planets[i].angle = ((nu + o.W * DEG) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
             }
         }
 
@@ -246,6 +264,9 @@ window.SolarSystem = (() => {
 
         function endPan() { _panning = false; }
 
+        function getPanTarget() { return { tx: _txTgt, ty: _tyTgt, tz: _tzTgt }; }
+        function setPanTarget(tx, ty, tz) { _txTgt = tx; _tyTgt = ty; _tzTgt = tz; }
+
         // ── Reset — returns all camera state to default ecliptic view ──
         function resetAll() {
             _elTgt = 5;  _azTgt = 0;
@@ -281,6 +302,7 @@ window.SolarSystem = (() => {
             resetAll,
             setElTarget, setAzTarget, getElTarget, getAzTarget,
             setZoom,
+            getPanTarget, setPanTarget,
             setPreset,
             getState,
             get isDragging() { return _dragging; },
@@ -292,8 +314,10 @@ window.SolarSystem = (() => {
 
     // ─────────────────────────────────────────────────────────────
     // MODULE: HUD
-    // Live camera state overlay drawn on the main canvas each frame.
-    // Top-right corner. Always visible. Read-only in Epic 1.
+    // Interactive HTML panel — bottom-left corner.
+    // Displays ZOOM / ELEV / AZ / DATE with +/- buttons so the
+    // user can nudge each value precisely without using the slider
+    // or drag controls.
     // ─────────────────────────────────────────────────────────────
     const HUD = (() => {
 
@@ -304,48 +328,204 @@ window.SolarSystem = (() => {
             return MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
         }
 
-        function draw() {
-            const state   = CameraController.getState();
-            const dateStr = _formatDate(PlanetaryEngine.date);
+        let _zoomSpan, _elSpan, _azSpan, _txSpan, _tySpan, _tzSpan, _dateSpan;
 
-            const rows = [
-                { label: 'ZOOM', value: state.zoom      },
-                { label: 'ELEV', value: state.elevation  },
-                { label: 'AZ',   value: state.azimuth    },
-                { label: 'DATE', value: dateStr           },
-            ];
-
-            const PAD_H  = 12, PAD_V = 10, ROW_H = 20;
-            const panelW = 180;
-            const panelH = PAD_V * 2 + rows.length * ROW_H;
-            const panelX = canvas.width - panelW - 18;
-            const panelY = 18;
-
-            ctx.beginPath();
-            ctx.roundRect(panelX, panelY, panelW, panelH, 7);
-            ctx.fillStyle   = 'rgba(0, 5, 20, 0.72)';
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(130, 180, 255, 0.28)';
-            ctx.lineWidth   = 1;
-            ctx.stroke();
-
-            rows.forEach((row, i) => {
-                const y = panelY + PAD_V + 14 + i * ROW_H;
-                ctx.font      = '10px Georgia';
-                ctx.fillStyle = 'rgba(130, 180, 255, 0.70)';
-                ctx.textAlign = 'left';
-                ctx.fillText(row.label, panelX + PAD_H, y);
-
-                ctx.font      = row.label === 'DATE'
-                    ? '11px Georgia'
-                    : 'bold 13px Georgia';
-                ctx.fillStyle = 'rgba(220, 235, 255, 1.0)';
-                ctx.textAlign = 'right';
-                ctx.fillText(row.value, panelX + panelW - PAD_H, y);
-            });
+        // Keep the zoom slider in the controls panel in sync
+        function _syncZoomSlider(z) {
+            const slider = document.getElementById('ss-zoom');
+            const label  = document.getElementById('ss-zoom-val');
+            if (slider) slider.value = z;
+            if (label)  label.textContent = z > 0 ? '+' + Math.round(z) : String(Math.round(z));
         }
 
-        return { draw };
+        // Create a button that fires adjustFn once on click and repeatedly while held
+        function _makeBtn(label, adjustFn) {
+            const btn = document.createElement('button');
+            btn.textContent = label;
+            btn.className   = 'ss-hud-btn';
+            let _iv;
+            const _run = () => { adjustFn(); sync(); };
+            btn.addEventListener('mousedown', e => {
+                e.preventDefault();   // keep canvas focus
+                _run();
+                _iv = setInterval(_run, 80);
+            });
+            const _stop = () => clearInterval(_iv);
+            btn.addEventListener('mouseup',    _stop);
+            btn.addEventListener('mouseleave', _stop);
+            document.addEventListener('mouseup', _stop, { passive: true });
+            return btn;
+        }
+
+        function _makeRow(labelText, decFn, incFn) {
+            const row = document.createElement('div');
+            row.className = 'ss-hud-row';
+
+            const lbl = document.createElement('span');
+            lbl.className   = 'ss-hud-label';
+            lbl.textContent = labelText;
+
+            const val = document.createElement('span');
+            val.className = 'ss-hud-val';
+
+            row.append(lbl, _makeBtn('−', decFn), val, _makeBtn('+', incFn));
+            return { row, val };
+        }
+
+        function _makeDateRow() {
+            const row = document.createElement('div');
+            row.className = 'ss-hud-row';
+
+            const lbl = document.createElement('span');
+            lbl.className   = 'ss-hud-label';
+            lbl.textContent = 'DATE';
+
+            const val = document.createElement('span');
+            val.className = 'ss-hud-val ss-hud-date-val';
+
+            row.append(lbl, val);
+            return { row, val };
+        }
+
+        function init() {
+            const style = document.createElement('style');
+            style.textContent = `
+                #ss-hud-panel {
+                    position: fixed;
+                    bottom: 18px;
+                    left: 18px;
+                    background: rgba(0, 5, 20, 0.82);
+                    border: 1px solid rgba(130, 180, 255, 0.28);
+                    border-radius: 7px;
+                    padding: 8px 12px;
+                    z-index: 20;
+                    user-select: none;
+                    min-width: 190px;
+                }
+                .ss-hud-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 3px 0;
+                }
+                .ss-hud-label {
+                    font: 10px Georgia, serif;
+                    color: rgba(130, 180, 255, 0.70);
+                    letter-spacing: 0.5px;
+                    width: 34px;
+                    flex-shrink: 0;
+                }
+                .ss-hud-val {
+                    font: bold 13px Georgia, serif;
+                    color: rgba(220, 235, 255, 1.0);
+                    min-width: 52px;
+                    text-align: center;
+                    flex: 1;
+                }
+                .ss-hud-date-val {
+                    font: 11px Georgia, serif !important;
+                    font-weight: normal !important;
+                    color: rgba(200, 220, 255, 0.85) !important;
+                }
+                .ss-hud-btn {
+                    background: rgba(30, 50, 110, 0.70);
+                    border: 1px solid rgba(130, 180, 255, 0.35);
+                    border-radius: 4px;
+                    color: rgba(200, 225, 255, 0.90);
+                    font-size: 15px;
+                    line-height: 1;
+                    width: 22px;
+                    height: 22px;
+                    cursor: pointer;
+                    padding: 0;
+                    flex-shrink: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .ss-hud-btn:hover  { background: rgba(60,  90, 180, 0.80); border-color: rgba(130,180,255,0.65); }
+                .ss-hud-btn:active { background: rgba(80, 120, 220, 0.90); }
+                .ss-hud-divider {
+                    border: none;
+                    border-top: 1px solid rgba(130, 180, 255, 0.15);
+                    margin: 4px 0;
+                }
+            `;
+            document.head.appendChild(style);
+
+            const panel = document.createElement('div');
+            panel.id = 'ss-hud-panel';
+
+            const zoomRow = _makeRow('ZOOM',
+                () => { const z = clamp(CameraController.zoom - 5, -100, 100); CameraController.setZoom(z); _syncZoomSlider(z); },
+                () => { const z = clamp(CameraController.zoom + 5, -100, 100); CameraController.setZoom(z); _syncZoomSlider(z); }
+            );
+            _zoomSpan = zoomRow.val;
+
+            const elevRow = _makeRow('ELEV',
+                () => CameraController.setElTarget(clamp(CameraController.getElTarget() - 1, -89, 89)),
+                () => CameraController.setElTarget(clamp(CameraController.getElTarget() + 1, -89, 89))
+            );
+            _elSpan = elevRow.val;
+
+            const azRow = _makeRow('AZ',
+                () => CameraController.setAzTarget(CameraController.getAzTarget() - Math.PI / 180),
+                () => CameraController.setAzTarget(CameraController.getAzTarget() + Math.PI / 180)
+            );
+            _azSpan = azRow.val;
+
+            const divider = document.createElement('hr');
+            divider.className = 'ss-hud-divider';
+
+            const txRow = _makeRow('TX',
+                () => { const p = CameraController.getPanTarget(); const nx = p.tx - 10; CameraController.setPanTarget(nx, p.ty, p.tz); aTx = nx; console.log('[PAN] TX-: tx now', nx); },
+                () => { const p = CameraController.getPanTarget(); const nx = p.tx + 10; CameraController.setPanTarget(nx, p.ty, p.tz); aTx = nx; console.log('[PAN] TX+: tx now', nx); }
+            );
+            _txSpan = txRow.val;
+
+            const tyRow = _makeRow('TY',
+                () => { const p = CameraController.getPanTarget(); const ny = p.ty - 10; CameraController.setPanTarget(p.tx, ny, p.tz); aTy = ny; console.log('[PAN] TY-: ty now', ny); },
+                () => { const p = CameraController.getPanTarget(); const ny = p.ty + 10; CameraController.setPanTarget(p.tx, ny, p.tz); aTy = ny; console.log('[PAN] TY+: ty now', ny); }
+            );
+            _tySpan = tyRow.val;
+
+            const tzRow = _makeRow('TZ',
+                () => { const p = CameraController.getPanTarget(); const nz = p.tz - 10; CameraController.setPanTarget(p.tx, p.ty, nz); aTz = nz; console.log('[PAN] TZ-: tz now', nz); },
+                () => { const p = CameraController.getPanTarget(); const nz = p.tz + 10; CameraController.setPanTarget(p.tx, p.ty, nz); aTz = nz; console.log('[PAN] TZ+: tz now', nz); }
+            );
+            _tzSpan = tzRow.val;
+
+            const dateRow = _makeDateRow();
+            _dateSpan = dateRow.val;
+
+            panel.append(zoomRow.row, elevRow.row, azRow.row, divider,
+                         txRow.row, tyRow.row, tzRow.row, dateRow.row);
+            document.body.appendChild(panel);
+        }
+
+        function sync() {
+            if (!_zoomSpan) return;
+
+            const z = CameraController.zoom;
+            _zoomSpan.textContent = z > 0 ? '+' + Math.round(z) : String(Math.round(z));
+
+            const el = CameraController.getElTarget();
+            _elSpan.textContent = (el >= 0 ? '+' : '') + Math.round(el) + '°';
+
+            const azRad = CameraController.getAzTarget();
+            const azDeg = Math.round(((azRad * 180 / Math.PI) % 360 + 360) % 360);
+            _azSpan.textContent = azDeg + '°';
+
+            const pan = CameraController.getPanTarget();
+            const _fmt = v => (v >= 0 ? '+' : '') + Math.round(v);
+            _txSpan.textContent = _fmt(pan.tx);
+            _tySpan.textContent = _fmt(pan.ty);
+            _tzSpan.textContent = _fmt(pan.tz);
+
+            _dateSpan.textContent = _formatDate(PlanetaryEngine.date);
+        }
+
+        return { init, sync };
     })();
 
 
@@ -665,10 +845,7 @@ window.SolarSystem = (() => {
             drawSun();
         });
 
-        // 'hud' is last so it always renders on top of all other layers
-        LayerManager.register('hud', () => {
-            HUD.draw();
-        });
+        // HUD is now an HTML panel — no canvas layer needed
     }
 
 
@@ -685,8 +862,9 @@ window.SolarSystem = (() => {
         // 2. Update camera (writes aEl/aAz/aDist → CAM)
         CameraController.update();
 
-        // 3. Sync DOM date input (non-intrusively)
+        // 3. Sync DOM date input and HUD panel (non-intrusively)
         UIControls.syncDateDisplay();
+        HUD.sync();
 
         // 4. Draw all registered layers onto main canvas
         LayerManager.draw();
@@ -705,6 +883,7 @@ window.SolarSystem = (() => {
 
         _registerCoreLayers();
         UIControls.init();
+        HUD.init();
         ArcballWidget.init();
 
         // Compute planet positions for today on first frame
@@ -730,19 +909,26 @@ window.SolarSystem = (() => {
             setPreset: name => CameraController.setPreset(name),
             getState:  ()   => CameraController.getState(),
 
-            /** Returns raw camera angles and zoom level for serialisation. */
-            getRawState: () => ({
-                el:   CameraController.getElTarget(),
-                az:   CameraController.getAzTarget(),
-                zoom: CameraController.zoom,
-            }),
+            /** Returns raw camera angles, zoom, and pan offset for serialisation. */
+            getRawState: () => {
+                const pan = CameraController.getPanTarget();
+                return {
+                    el:   CameraController.getElTarget(),
+                    az:   CameraController.getAzTarget(),
+                    zoom: CameraController.zoom,
+                    tx:   pan.tx,
+                    ty:   pan.ty,
+                    tz:   pan.tz,
+                };
+            },
 
-            /** Restores camera angles and zoom; syncs DOM slider.
+            /** Restores camera angles, zoom, and pan; snaps animation globals
+             *  immediately so the view matches exactly on load.
              *  Accepts both new { zoom } and legacy { zoomIn, zoomOut } formats. */
             setRawState: (s) => {
                 if (!s) return;
-                if (s.el != null) CameraController.setElTarget(s.el);
-                if (s.az != null) CameraController.setAzTarget(s.az);
+                if (s.el != null) { CameraController.setElTarget(s.el); aEl = s.el; }
+                if (s.az != null) { CameraController.setAzTarget(s.az); aAz = s.az; }
                 let z = 0;
                 if (s.zoom    != null) { z = s.zoom; }
                 else if (s.zoomIn != null || s.zoomOut != null) {
@@ -753,6 +939,16 @@ window.SolarSystem = (() => {
                 const zoomValEl = document.getElementById('ss-zoom-val');
                 if (zoomEl)    zoomEl.value          = z;
                 if (zoomValEl) zoomValEl.textContent = z > 0 ? '+' + Math.round(z) : String(Math.round(z));
+                // Restore pan only when the saved state has explicit tx/ty/tz.
+                // Old-format cameras {el,az,zoom} have no pan keys; applying ?? 0
+                // there would silently reset any pan the user set on a previous point.
+                if ('tx' in s || 'ty' in s || 'tz' in s) {
+                    const tx = s.tx ?? 0;
+                    const ty = s.ty ?? 0;
+                    const tz = s.tz ?? 0;
+                    CameraController.setPanTarget(tx, ty, tz);
+                    aTx = tx; aTy = ty; aTz = tz;
+                }
             },
         },
 

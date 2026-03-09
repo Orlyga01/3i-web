@@ -15,7 +15,7 @@
 | [2.1](#story-21--page-shell--input-form) | Page Shell & Input Form | ✅ Done |
 | [2.2](#story-22--horizons-api-client) | Horizons API Client | ✅ Done |
 | [2.3](#story-23--api-error-handling) | API Error Handling | ✅ Done |
-| [2.4](#story-24--existing-file-detection--update-mode) | Existing File Detection & Update Mode | ✅ Done |
+| [2.4](#story-24--bundled-data-auto-load--update-mode) | Bundled Data Auto-Load & Update Mode | ✅ Done |
 | [2.5](#story-25--solar-system-viewer-integration) | Solar System Viewer Integration | ✅ Done |
 | [2.6](#story-26--object-marker-layer) | Object Marker Layer | ✅ Done |
 | [2.7](#story-27--progress-sidebar) | Progress Sidebar | ✅ Done |
@@ -25,8 +25,9 @@
 | [2.11](#story-211--localstorage-draft--auto-save) | LocalStorage Draft & Auto-save | ✅ Done |
 | [2.12](#story-212--json-serialisation--file-save) | JSON Serialisation & File Save | ✅ Done |
 | [2.13](#story-213--deep-link-via-url-parameter) | Deep-Link via URL Parameter | ✅ Done |
-| [2.14](#story-214--per-point-duration--stoppable-flag) | Per-Point Duration & Stoppable Flag | 🔲 Pending |
-| [2.15](#story-215--play-video-button--player-handoff) | "Play Video" Button & Player Handoff | 🔲 Pending |
+| [2.14](#story-214--per-point-duration--stoppable-flag) | Per-Point Duration & Stoppable Flag | ✅ Done |
+| [2.15](#story-215--play-video-button--player-handoff) | "Play Video" Button & Player Handoff | ✅ Done |
+| [2.16](#story-216--offline-file-upload-fallback) | Offline File Upload Fallback | 🚧 In Progress |
 
 ---
 
@@ -138,35 +139,32 @@
 
 ---
 
-## Story 2.4 — Existing File Detection & Update Mode
+## Story 2.4 — Bundled Data Auto-Load & Update Mode
 
 **As a** dataset curator,
-**I want** the app to detect if I already have a saved trajectory for an object,
-**so that** I can load and update it without re-fetching from the API.
+**I want** the app to automatically detect and load a saved trajectory for an object,
+**so that** I can immediately continue annotation without a manual confirmation step.
 
 ### Acceptance Criteria
 
-- [ ] When "Fetch Trajectory" is clicked, before calling the API the system performs a `fetch()` to `data/{sanitized_name}/trajectory.json`
+- [ ] When "Search" is clicked, after the localStorage draft check, the system performs a GET `fetch()` to `data/{sanitized_name}/trajectory.json`
   - `sanitized_name` = designation with spaces and `/` replaced by `_` (e.g., `C/2025 N1` → `C_2025_N1`)
 - [ ] If the file returns HTTP 200 (exists):
-  - A notice is shown: "A saved trajectory for '[name]' already exists."
-  - Two buttons are offered: **"Load Saved Data"** and **"Re-fetch from Horizons"**
-  - The API is **not** called until the user chooses
-- [ ] **"Load Saved Data"** path:
-  - Parses `trajectory.json` into the `TrajectoryStore`
-  - All points that have a `camera` object are marked `✓ saved` in the progress indicator
-  - Camera is pre-set to the saved state when a saved point becomes active
-  - The page enters the annotation workflow (Story 2.8) in Update Mode
-- [ ] **"Re-fetch from Horizons"** path:
-  - Proceeds with the API call normally (Story 2.2)
-  - The existing file is only overwritten after the user completes annotation and explicitly clicks "Save to File" (Story 2.12)
-- [ ] If the file returns 404 (does not exist), proceed directly to the API call — no prompt shown
+  - The JSON is parsed and loaded **automatically** — no confirmation card is shown
+  - `TrajectoryStore` is populated via `loadTrajectoryFromData()`
+  - The result is immediately written to `localStorage` under `objectMotion:{sanitized_name}` (so subsequent loads use the draft path)
+  - The viewer activates directly (Update Mode)
+- [ ] All points that have a `camera` object are marked `✓ saved` in the progress indicator
+- [ ] Camera is pre-set to the saved state when a saved point becomes active
+- [ ] If the file returns 404 (or the fetch fails), the fallback section is revealed (Story 2.16 upload + date-range form for API) — no silent failure
+- [ ] The old "Load Saved Data / Re-fetch from Horizons" confirmation card is **removed**
 
 ### Technical Notes
 
 - Sanitisation function: `sanitize(name) => name.replace(/[\s\/]/g, '_')`
 - In Update Mode, when navigating to a point that has no saved camera state, the camera retains its current view (same as normal annotation mode)
 - Existing `image` filenames in the JSON are used to fetch thumbnails from `data/{sanitized_name}/point_{index}.{ext}`
+- `_saveDraft()` is called immediately after `loadTrajectoryFromData()` so the data is cached for offline/fast reload
 
 ### Dependencies
 - Story 2.1, Story 2.2
@@ -243,10 +241,12 @@
   - Date (`Jul 01, 2025`)
   - Image thumbnail icon (a small 20×20px preview if an image has been attached; a faint placeholder icon if not)
   - Status badge: `· pending` (grey) or `✓ saved` (green)
+- [ ] Each row includes a small delete icon button; clicking it removes that point from the current trajectory without triggering row navigation
 - [ ] The currently active point row is highlighted (e.g., brighter background, left border accent)
 - [ ] Clicking any row navigates directly to that point — the marker moves, the date updates, the camera is pre-set if that point has a saved state (Update Mode), otherwise camera is unchanged
 - [ ] The sidebar is scrollable; the active row is always scrolled into view automatically
 - [ ] A summary line at the top of the sidebar shows: `"[N saved] of [M total]"`
+- [ ] After a point is deleted, the sidebar re-numbers the remaining rows and immediately updates the active point, summary line, and `"Point [current] of [total]"` counter
 - [ ] On mobile widths (< 768px) the sidebar collapses to a compact top bar showing only the summary line and current point number
 
 ### Technical Notes
@@ -359,8 +359,9 @@
 ### Acceptance Criteria
 
 - [ ] Every time a point is saved (Story 2.8), the full `TrajectoryStore` state is written to `localStorage` under the key `objectMotion:{sanitized_name}`
+- [ ] Every time a point is deleted from the sidebar (Story 2.7), the full `TrajectoryStore` state is immediately rewritten to the same `localStorage` key; if the final point is deleted, the draft is cleared
 - [ ] The stored draft includes: all point data (date, jd, au, px), all saved camera states, all saved descriptions; image filenames are stored but `File` objects are not (cannot be serialised to localStorage)
-- [ ] On page load, after the user enters an object designation and clicks "Fetch Trajectory", the system checks localStorage for a matching key **before** checking for a saved file (Story 2.4) and **before** calling the API
+- [ ] On page load, after the user enters an object designation and clicks "Search", the system checks localStorage for a matching key **before** checking for a bundled file (Story 2.4) and **before** calling the API
 - [ ] If a draft is found, the user is shown: `"Resume unsaved session for '[name]' — [N] of [M] points saved"` with two buttons:
   - **"Resume"** — loads the draft into `TrajectoryStore`, skips the API call, enters the annotation workflow
   - **"Start Fresh"** — clears the draft, proceeds with the normal file-check → API flow
@@ -429,16 +430,15 @@
 - [ ] The search button is enabled immediately (same as if the user had typed the value)
 - [ ] The normal search flow is triggered automatically — in the same order as a manual click:
   1. Check `localStorage` for a draft matching the designation
-  2. If draft found → show the draft-resume card (user still chooses Resume / Start Fresh)
-  3. If no draft → HEAD-check `data/{sanitized}/trajectory.json`
-  4. If saved file found → show the saved-data card (user still chooses Load / Re-fetch)
-  5. If neither → reveal the date section so the user can fetch from Horizons
+  2. If draft found → load immediately (auto-restore, no prompt)
+  3. If no draft → GET `data/{sanitized}/trajectory.json`
+  4. If bundled file found → load automatically + write to `localStorage` (Story 2.4), enter viewer
+  5. If neither → reveal the fallback section (upload or Horizons API)
 - [ ] Supported URL formats:
   - `object_motion.html?designation=3I`
   - `object_motion.html?designation=C%2F2025%20N1` (URL-encoded special chars)
   - `object_motion.html?d=3I` (short alias)
 - [ ] If no parameter is present the page behaves exactly as before — no change to normal flow
-- [ ] The URL parameter does not bypass any existing confirmation cards (draft / saved-file) — the user still sees them
 
 ### Technical Notes
 
@@ -531,6 +531,38 @@ Existing files without these fields remain valid — the player defaults absent 
 
 ---
 
+## Story 2.16 — Offline File Upload Fallback
+
+**As a** trajectory author,
+**I want** to upload a local `trajectory.json` file when no bundled or cached data exists for an object,
+**so that** I can load previously exported trajectories without needing internet access or a server.
+
+### Acceptance Criteria
+
+- [ ] When no `localStorage` draft and no bundled `data/{name}/trajectory.json` are found for a designation, the fallback section is revealed containing two options:
+  - **Option A — Upload:** A "Browse file…" button (+ visible filename display) that opens a file picker accepting `.json` files
+  - **Option B — Fetch:** The existing date-range + step-size form + "Fetch Trajectory" button
+  - A visual divider `"— or fetch from JPL Horizons —"` separates the two options
+- [ ] When the user selects a `.json` file:
+  - It is read as text and parsed via `JSON.parse`
+  - If valid: `loadTrajectoryFromData()` is called and `_saveDraft()` caches the result to `localStorage`
+  - If invalid (parse error): an inline error is shown: "Could not parse the uploaded file. Make sure it is a valid trajectory.json."
+- [ ] After a successful upload load, the viewer activates exactly as if the file had been found on the server (Update Mode if points have camera data)
+- [ ] The file picker is triggered by the button click; the `<input type="file">` element itself is hidden
+- [ ] The filename of the uploaded file is displayed next to the button after selection
+
+### Technical Notes
+
+- Element IDs: `#om-json-upload-input` (hidden file input), `#om-json-upload-btn` (visible trigger button), `#om-json-upload-name` (filename display span)
+- Use `FileReader.readAsText()` to read the JSON file contents
+- The upload section lives inside `#om-date-section` so it is shown and hidden together with the API form
+- `_saveDraft()` is called immediately after `loadTrajectoryFromData()` to cache the upload for offline reload
+
+### Dependencies
+- Story 2.4 (fallback trigger), Story 2.11 (localStorage), Story 2.13 (auto-load path)
+
+---
+
 ## Implementation Order (Suggested)
 
 ```
@@ -549,6 +581,7 @@ Existing files without these fields remain valid — the player defaults absent 
 2.13 Deep-Link via URL Parameter         ← additive enhancement
 2.14 Per-Point Duration & Stoppable Flag ← Epic 3 data input
 2.15 "Play Video" Button & Player Handoff ← Epic 3 handoff
+2.16 Offline File Upload Fallback        ← data management improvement
 ```
 
 Stories 2.1–2.8 form the **minimum working product** — object lookup, trajectory display, and camera annotation with export. Stories 2.9–2.12 add media, descriptions, draft protection, and robust file saving. Story 2.13 adds deep-linking support. Stories 2.14–2.15 are Epic 3 prerequisites — they extend the annotation UI with pacing controls and the handoff button to the player.
@@ -557,5 +590,5 @@ Stories 2.1–2.8 form the **minimum working product** — object lookup, trajec
 
 *End of Stories — Epic 2: Object Motion Tracker*
 
-**Document version:** 1.2
+**Document version:** 1.3
 **Epic PRD:** `prd-epic2-object-motion-tracker.md`

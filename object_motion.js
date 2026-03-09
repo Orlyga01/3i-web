@@ -198,7 +198,7 @@ const TrajectoryStore = (() => {
     }
 
     function saveCamera(index, cameraState) {
-        if (_points[index]) _points[index].camera = cameraState;
+        if (_points[index]) _points[index].camera = normalizeCameraState(cameraState);
     }
 
     function saveDescription(index, text) {
@@ -218,6 +218,11 @@ const TrajectoryStore = (() => {
 
     function saveStoppable(index, val) {
         if (_points[index]) _points[index].stoppable = Boolean(val);
+    }
+
+    function deletePoint(index) {
+        if (index < 0 || index >= _points.length) return null;
+        return _points.splice(index, 1)[0] || null;
     }
 
     function toPlainObject() {
@@ -242,7 +247,7 @@ const TrajectoryStore = (() => {
                 },
                 durationPct: p.durationPct ?? 100,
                 stoppable:   p.stoppable   ?? false,
-                camera:      p.camera,
+                camera:      normalizeCameraState(p.camera),
                 description: p.description,
                 image:       p.image instanceof File ? p.image.name : p.image,
             })),
@@ -254,7 +259,7 @@ const TrajectoryStore = (() => {
         getPoints, getDesignation, getPoint,
         isUpdateMode, getCreatedAt,
         savedCount, allSaved,
-        saveCamera, saveDescription, saveImage, saveDurationPct, saveStoppable,
+        saveCamera, saveDescription, saveImage, saveDurationPct, saveStoppable, deletePoint,
         toPlainObject,
     };
 })();
@@ -293,8 +298,21 @@ const WorkflowController = (() => {
 
     function goTo(index) { _currentIndex = index; return _currentIndex; }
 
+    function adjustAfterDelete(deletedIndex, remainingCount) {
+        if (remainingCount <= 0) {
+            _currentIndex = 0;
+            return -1;
+        }
+        if (_currentIndex > deletedIndex) {
+            _currentIndex -= 1;
+        } else if (_currentIndex >= remainingCount) {
+            _currentIndex = remainingCount - 1;
+        }
+        return _currentIndex;
+    }
+
     return {
-        start, getCurrent, advanceToNextUnsaved, goTo,
+        start, getCurrent, advanceToNextUnsaved, goTo, adjustAfterDelete,
         hasUnsavedChanges, setUnsavedChanges,
         hasSavedFile, setHasSavedFile,
     };
@@ -322,7 +340,6 @@ const ObjectMarker = (() => {
         _frame++;
 
         const { sx, sy, depth } = project3(_point.wx, _point.wy, _point.wz);
-        if (depth < 10) return;
 
         const onScreen = sx >= 0 && sx <= canvas.width && sy >= 0 && sy <= canvas.height;
 
@@ -330,6 +347,8 @@ const ObjectMarker = (() => {
             _drawOffScreenArrow(sx, sy);
             return;
         }
+
+        if (depth < 10) return;
 
         // Outer pulsing ring (10–14 px, ~60-frame cycle)
         const pulse = 10 + 4 * (0.5 + 0.5 * Math.sin(_frame * Math.PI / 30));
@@ -362,16 +381,19 @@ const ObjectMarker = (() => {
         const angle = Math.atan2(dy, dx);
 
         const margin = 24;
+        // Use a wider right margin when the sidebar is open so the arrow is never hidden behind it
+        const sidebarEl  = document.getElementById('om-sidebar');
+        const rightMargin = (sidebarEl && sidebarEl.classList.contains('visible')) ? 268 : margin;
         let ex, ey;
         if (Math.abs(dx) * canvas.height >= Math.abs(dy) * canvas.width) {
-            ex = dx > 0 ? canvas.width - margin : margin;
+            ex = dx > 0 ? canvas.width - rightMargin : margin;
             ey = cy + (ex - cx) * (dy / (dx || 0.001));
         } else {
             ey = dy > 0 ? canvas.height - margin : margin;
             ex = cx + (ey - cy) * (dx / (dy || 0.001));
         }
         ey = Math.max(margin, Math.min(canvas.height - margin, ey));
-        ex = Math.max(margin, Math.min(canvas.width  - margin, ex));
+        ex = Math.max(margin, Math.min(canvas.width  - rightMargin, ex));
 
         // Equilateral triangle arrow (10 px)
         ctx.save();
@@ -405,8 +427,10 @@ const ObjectMarker = (() => {
 
 const ProgressPanel = (() => {
     let _onNavigate = null;
+    let _onDelete   = null;
 
     function setNavigateCallback(fn) { _onNavigate = fn; }
+    function setDeleteCallback(fn)   { _onDelete = fn; }
 
     function render(points, activeIndex) {
         const list    = document.getElementById('om-point-list');
@@ -444,7 +468,18 @@ const ProgressPanel = (() => {
             badge.className   = 'om-row-badge ' + (p.camera !== null ? 'saved' : 'pending');
             badge.textContent = p.camera !== null ? '\u2713' : '\u00B7';
 
-            row.append(num, thumbWrap, dateEl, badge);
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'om-row-delete';
+            deleteBtn.textContent = '\u2715';
+            deleteBtn.title = `Delete point ${i + 1}`;
+            deleteBtn.setAttribute('aria-label', `Delete point ${i + 1} (${formatTrajDate(p.date)})`);
+            deleteBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                if (_onDelete) _onDelete(i);
+            });
+
+            row.append(num, thumbWrap, dateEl, badge, deleteBtn);
             row.addEventListener('click', () => { if (_onNavigate) _onNavigate(i); });
             list.appendChild(row);
         });
@@ -516,7 +551,7 @@ const ProgressPanel = (() => {
         }
     }
 
-    return { setNavigateCallback, render, setActive, updateRowBadge, updateRowThumb };
+    return { setNavigateCallback, setDeleteCallback, render, setActive, updateRowBadge, updateRowThumb };
 })();
 
 
@@ -555,6 +590,23 @@ const MediaAnnotator = (() => {
         TrajectoryStore.saveImage(pointIndex, null);
         _hidePreview();
         ProgressPanel.updateRowThumb(pointIndex, null);
+    }
+
+    function removePoint(pointIndex) {
+        const shiftedUrls = {};
+
+        Object.keys(_objectUrls).forEach(key => {
+            const idx = Number(key);
+            const url = _objectUrls[idx];
+            if (idx === pointIndex) {
+                URL.revokeObjectURL(url);
+                return;
+            }
+            shiftedUrls[idx > pointIndex ? idx - 1 : idx] = url;
+        });
+
+        Object.keys(_objectUrls).forEach(key => delete _objectUrls[key]);
+        Object.assign(_objectUrls, shiftedUrls);
     }
 
     /** Populate the annotation panel for the given point index. */
@@ -614,7 +666,7 @@ const MediaAnnotator = (() => {
         }
     }
 
-    return { handleImageUpload, clearImage, loadAnnotationPanel };
+    return { handleImageUpload, clearImage, removePoint, loadAnnotationPanel };
 })();
 
 
@@ -645,10 +697,12 @@ const FileIO = (() => {
             // Round camera to 2 dp
             if (p.camera) {
                 p.camera = {
-                    el:      _round2(p.camera.el),
-                    az:      _round2(p.camera.az),
-                    zoomIn:  _round2(p.camera.zoomIn),
-                    zoomOut: _round2(p.camera.zoomOut),
+                    el:   _round2(p.camera.el),
+                    az:   _round2(p.camera.az),
+                    zoom: _round2(p.camera.zoom),
+                    tx:   _round2(p.camera.tx ?? 0),
+                    ty:   _round2(p.camera.ty ?? 0),
+                    tz:   _round2(p.camera.tz ?? 0),
                 };
             }
             // Ensure durationPct is a valid integer, stoppable is boolean
@@ -729,6 +783,16 @@ const FileIO = (() => {
 
 function sanitize(name) { return name.replace(/[\s/]/g, '_'); }
 
+function normalizeCameraState(camera) {
+    if (!camera) return null;
+    return {
+        ...camera,
+        tx: Number(camera.tx ?? 0),
+        ty: Number(camera.ty ?? 0),
+        tz: Number(camera.tz ?? 0),
+    };
+}
+
 function resolveStep(dropdownEl, customEl) {
     const custom = (customEl.value || '').trim();
     return custom || dropdownEl.value;
@@ -777,10 +841,9 @@ function formatTrajDate(str) {
     const resumeBtn      = document.getElementById('om-resume-btn');
     const startFreshBtn  = document.getElementById('om-start-fresh-btn');
 
-    const savedCard      = document.getElementById('om-saved-card');
-    const savedCardMsg   = document.getElementById('om-saved-card-msg');
-    const loadSavedBtn   = document.getElementById('om-load-saved-btn');
-    const refetchBtn     = document.getElementById('om-refetch-btn');
+    const jsonUploadInput = document.getElementById('om-json-upload-input');
+    const jsonUploadBtn   = document.getElementById('om-json-upload-btn');
+    const jsonUploadName  = document.getElementById('om-json-upload-name');
 
     const dateSection    = document.getElementById('om-date-section');
     const startDateEl    = document.getElementById('om-start-date');
@@ -849,13 +912,7 @@ function formatTrajDate(str) {
 
     // ── UI state helpers ─────────────────────────────────────
 
-    function hideSavedCard()  { savedCard.classList.remove('visible'); }
     function hideDraftCard()  { draftCard.classList.remove('visible'); }
-
-    function showSavedCard(designation) {
-        savedCardMsg.textContent = `A saved trajectory for '${designation}' already exists.`;
-        savedCard.classList.add('visible');
-    }
 
     function showDraftCard(designation, savedCount, total) {
         draftCardMsg.textContent =
@@ -871,7 +928,6 @@ function formatTrajDate(str) {
     function hideDateSection() { dateSection.classList.remove('visible'); }
 
     function resetToStep1() {
-        hideSavedCard();
         hideDraftCard();
         hideDateSection();
         clearStatus();
@@ -898,6 +954,7 @@ function formatTrajDate(str) {
 
         // Sidebar + marker setup
         ProgressPanel.setNavigateCallback(navigateToPoint);
+        ProgressPanel.setDeleteCallback(deletePoint);
         const idx = WorkflowController.getCurrent();
         ProgressPanel.render(points, idx);
 
@@ -915,6 +972,23 @@ function formatTrajDate(str) {
         // Expose File System Access API save button if available
         if (typeof window.showDirectoryPicker === 'function') {
             if (saveDirBtn) saveDirBtn.style.display = '';
+        }
+
+        // Apply camera LAST — after all setup — so it is not overridden by _init().
+        // If the starting point has a saved camera, restore it; otherwise snap to
+        // top-down so the object is always in view when the editor first opens.
+        if (window.SolarSystem) {
+            const startCam = points[idx]?.camera;
+            if (startCam) {
+                SolarSystem.camera.setRawState(startCam);
+                console.log('[PAN] activateViewer: applied camera for pt', idx,
+                    '| tx:', startCam.tx, 'ty:', startCam.ty, 'tz:', startCam.tz,
+                    '| "tx" in cam:', 'tx' in startCam);
+            } else {
+                SolarSystem.camera.setPreset('topdown');
+                aEl = 89;
+                console.log('[PAN] activateViewer: no camera for pt', idx, '— using topdown');
+            }
         }
     }
 
@@ -941,7 +1015,14 @@ function formatTrajDate(str) {
 
         if (window.SolarSystem) {
             SolarSystem.engine.setDate(parseTrajDate(p.date));
-            if (p.camera) SolarSystem.camera.setRawState(p.camera);
+            if (p.camera) {
+                SolarSystem.camera.setRawState(p.camera);
+                console.log('[PAN] navigateToPoint:', index,
+                    '| tx:', p.camera.tx, 'ty:', p.camera.ty, 'tz:', p.camera.tz,
+                    '| "tx" in cam:', 'tx' in p.camera);
+            } else {
+                console.log('[PAN] navigateToPoint:', index, '— no camera saved for this point');
+            }
         }
 
         ProgressPanel.setActive(index);
@@ -953,6 +1034,33 @@ function formatTrajDate(str) {
 
         updateCounter();
         clearViewerStatus();
+    }
+
+    function deletePoint(index) {
+        const point = TrajectoryStore.getPoint(index);
+        if (!point) return;
+
+        MediaAnnotator.removePoint(index);
+        TrajectoryStore.deletePoint(index);
+
+        const remaining = TrajectoryStore.getPoints().length;
+        WorkflowController.adjustAfterDelete(index, remaining);
+        WorkflowController.setUnsavedChanges(true);
+
+        if (remaining <= 0) {
+            ObjectMarker.setPoint(null, TrajectoryStore.getDesignation());
+            _clearDraft();
+            deactivateViewer();
+            setStatus('success', 'All points deleted from the draft.');
+            return;
+        }
+
+        const nextIndex = WorkflowController.getCurrent();
+        ProgressPanel.render(TrajectoryStore.getPoints(), nextIndex);
+        navigateToPoint(nextIndex);
+        updateSaveButtons();
+        _saveDraft();
+        setViewerStatus('success', `Deleted point ${index + 1}.`);
     }
 
     // ── Counter + save-button state ───────────────────────────
@@ -979,8 +1087,13 @@ function formatTrajDate(str) {
     function saveCurrentPoint() {
         const pts = TrajectoryStore.getPoints();
         const idx = WorkflowController.getCurrent();
-
-        const cam = (window.SolarSystem) ? SolarSystem.camera.getRawState() : { el: 5, az: 0, zoomIn: 0, zoomOut: 0 };
+        const cam = normalizeCameraState(
+            (window.SolarSystem) ? SolarSystem.camera.getRawState() : { el: 5, az: 0, zoom: 0 }
+        );
+        console.log('[PAN] saveCurrentPoint: pt', idx,
+            '| tx:', cam.tx, 'ty:', cam.ty, 'tz:', cam.tz,
+            '| "tx" in cam:', 'tx' in cam,
+            '| full cam:', JSON.stringify(cam));
         TrajectoryStore.saveCamera(idx, cam);
 
         const textarea = document.getElementById('om-description');
@@ -997,13 +1110,10 @@ function formatTrajDate(str) {
         // Auto-save draft to localStorage (Story 2.11)
         _saveDraft();
 
-        // Update sidebar badge for the just-saved row
+        // Update sidebar badge for the just-saved row and refresh UI in place
         ProgressPanel.updateRowBadge(idx);
-
-        // Advance to next unsaved
-        const nextIdx = WorkflowController.advanceToNextUnsaved(pts);
-        ProgressPanel.setActive(nextIdx);
-        navigateToPoint(nextIdx);
+        ProgressPanel.setActive(idx);
+        updateCounter();
         updateSaveButtons();
     }
 
@@ -1168,10 +1278,31 @@ function formatTrajDate(str) {
     function _draftKey(name) { return `objectMotion:${name}`; }
 
     function _saveDraft() {
-        const name = sanitize(TrajectoryStore.getDesignation());
+        const rawDesignation = TrajectoryStore.getDesignation();
+        const name = sanitize(rawDesignation);
+        const key  = _draftKey(name);
+        const idx  = WorkflowController.getCurrent();
         try {
-            localStorage.setItem(_draftKey(name), JSON.stringify(TrajectoryStore.toPlainObject()));
-        } catch (_) {}
+            const plain = TrajectoryStore.toPlainObject();
+            // Normalize every saved camera so tx/ty/tz are always explicit.
+            // Points loaded from old files only have {el,az,zoom}; without this
+            // normalization setRawState would silently reset pan to 0 on reload.
+            plain.points.forEach(p => {
+                if (p.camera) {
+                    p.camera.tx = p.camera.tx ?? 0;
+                    p.camera.ty = p.camera.ty ?? 0;
+                    p.camera.tz = p.camera.tz ?? 0;
+                }
+            });
+            const curCam = plain.points?.[idx]?.camera;
+            console.log('[PAN] _saveDraft: pt', idx, 'camera in draft:',
+                'tx:', curCam?.tx, 'ty:', curCam?.ty, 'tz:', curCam?.tz,
+                '| full:', JSON.stringify(curCam));
+            const serialized = JSON.stringify(plain);
+            localStorage.setItem(key, serialized);
+        } catch (err) {
+            console.error('[PAN] _saveDraft FAILED:', err);
+        }
     }
 
     function _clearDraft() {
@@ -1198,14 +1329,17 @@ function formatTrajDate(str) {
     async function _runNormalSearch(designation) {
         const name = sanitize(designation);
         searchBtn.classList.remove('enabled');
-        setStatus('loading', 'Checking for saved data\u2026');
+        setStatus('loading', 'Searching for trajectory data\u2026');
 
         try {
-            const res = await window.fetch(`data/${name}/trajectory.json`, { method: 'HEAD' });
-            clearStatus();
+            const res = await window.fetch(`data/${name}/trajectory.json`);
             if (res.ok) {
-                showSavedCard(designation);
+                const json = await res.json();
+                clearStatus();
+                loadTrajectoryFromData(json);
+                _saveDraft();
             } else {
+                clearStatus();
                 showDateSection();
             }
         } catch (_) {
@@ -1282,7 +1416,7 @@ function formatTrajDate(str) {
             wx:          p.wx  ?? p.px?.wx ?? (p.au?.x * AU_TO_PX) ?? 0,
             wy:          p.wy  ?? p.px?.wy ?? (p.au?.y * AU_TO_PX) ?? 0,
             wz:          p.wz  ?? p.px?.wz ?? (p.au?.z * AU_TO_PX) ?? 0,
-            camera:      p.camera      ?? null,
+            camera:      normalizeCameraState(p.camera),
             description: p.description ?? null,
             image:       p.image       ?? null,
             durationPct: p.durationPct ?? 100,
@@ -1302,6 +1436,11 @@ function formatTrajDate(str) {
 
         const saved   = TrajectoryStore.savedCount();
         const total   = points.length;
+        const withTx = points.filter(p => p.camera && 'tx' in p.camera).length;
+        console.log('[PAN] loadTrajectoryFromData: total pts:', total, '| saved cameras:', saved,
+            '| cameras with tx field:', withTx,
+            '| pt[0] cam:', JSON.stringify(points[0]?.camera),
+            '| updateMode:', TrajectoryStore.isUpdateMode());
         const modeTag = saved > 0
             ? ` \u00B7 ${saved} of ${total} annotated \u2014 Update Mode`
             : ` \u00B7 0 of ${total} annotated`;
@@ -1310,27 +1449,28 @@ function formatTrajDate(str) {
         activateViewer(TrajectoryStore.getPoints());
     }
 
-    // ── Saved-card buttons ───────────────────────────────────
+    // ── JSON file upload (Story 2.16) ─────────────────────────
 
-    loadSavedBtn.addEventListener('click', async () => {
-        const designation = designationEl.value.trim();
-        const name        = sanitize(designation);
+    jsonUploadBtn.addEventListener('click', () => jsonUploadInput.click());
 
-        setStatus('loading', 'Loading saved trajectory\u2026');
-        try {
-            const res  = await window.fetch(`data/${name}/trajectory.json`);
-            const json = await res.json();
-            hideSavedCard();
-            loadTrajectoryFromData(json);
-        } catch (_) {
-            setStatus('error', 'Could not load the saved trajectory file.');
-        }
-    });
+    jsonUploadInput.addEventListener('change', () => {
+        const file = jsonUploadInput.files[0];
+        if (!file) return;
 
-    refetchBtn.addEventListener('click', () => {
-        hideSavedCard();
-        clearStatus();
-        showDateSection();
+        jsonUploadName.textContent = file.name;
+
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const json = JSON.parse(e.target.result);
+                loadTrajectoryFromData(json);
+                _saveDraft();
+            } catch (_) {
+                setStatus('error', 'Could not parse the uploaded file. Make sure it is a valid trajectory.json.');
+            }
+        };
+        reader.readAsText(file);
+        jsonUploadInput.value = '';
     });
 
     // ── Fetch button enable/disable ──────────────────────────
@@ -1409,30 +1549,58 @@ function formatTrajDate(str) {
 
     // ── Story 2.13: Deep-link via URL parameter ───────────────
     // Supports ?designation=3I  or  ?d=3I
-    // Always loads from trajectory.json (authoritative source) so
-    // the latest file data is shown, not a potentially stale draft.
-    // Falls back to the normal search flow if no saved file exists.
+    // Priority: localStorage draft → disk file → search form.
+    // Auto-loads without any confirmation card so a page refresh
+    // silently restores in-progress work.
     (async function _applyUrlParam() {
-        const params = new URLSearchParams(location.search);
-        const raw    = params.get('designation') || params.get('d');
-        if (!raw) return;
-        const value = decodeURIComponent(raw).trim();
+        const params   = new URLSearchParams(location.search);
+        const paramVal = params.get('designation') || params.get('d');
+        if (!paramVal) return;
+        const value = decodeURIComponent(paramVal).trim();
         if (!value) return;
         designationEl.value = value;
         updateSearchButton();
 
-        // Load directly from trajectory.json — skip draft to always show fresh data
         const name = sanitize(value);
+        const key  = _draftKey(name);
+
+        // 1. Auto-restore localStorage draft if present
+        try {
+            const draftRaw = localStorage.getItem(key);
+            if (draftRaw) {
+                const parsed = JSON.parse(draftRaw);
+                const withTx = (parsed.points || []).filter(p => p.camera && 'tx' in p.camera).length;
+                console.log('[PAN] _applyUrlParam: restoring draft — pts:', parsed.points?.length,
+                    '| cameras with tx field:', withTx,
+                    '| pt[0] cam:', JSON.stringify(parsed.points?.[0]?.camera));
+                if (parsed && (parsed.points || []).length > 0) {
+                    // Defer until after DOMContentLoaded so solar_system.js _init() has run
+                    // before activateViewer sets the camera (otherwise _init() resets aEl=5).
+                    if (document.readyState === 'loading') {
+                        await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once: true }));
+                    }
+                    loadTrajectoryFromData(parsed);
+                    return;
+                }
+            }
+        } catch (err) {
+            console.error('[PAN] _applyUrlParam: ERROR reading draft:', err);
+        }
+
+        // 2. Fall back to bundled data file on disk
         try {
             const res = await window.fetch(`data/${name}/trajectory.json`);
+            console.log('[PAN] _applyUrlParam: loading disk file —', res.status, res.ok);
             if (res.ok) {
-                const json = await res.json();
-                loadTrajectoryFromData(json);
+                loadTrajectoryFromData(await res.json());
+                _saveDraft();
                 return;
             }
-        } catch (_) {}
+        } catch (err) {
+            console.error('[PAN] _applyUrlParam: ERROR fetching disk file:', err);
+        }
 
-        // No saved file — show normal search form (date section)
+        // 3. Nothing found — show search form
         searchBtn.click();
     })();
 

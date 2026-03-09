@@ -204,7 +204,7 @@ Object position between consecutive points is interpolated using the **Catmull-R
 
 #### FR-3.2 — Camera: Linear Interpolation (Lerp)
 
-Camera state (`el`, `az`, `zoom`) between two consecutive saved points uses the same **smooth-follow lerp** mechanism from `atlas_main.js` (`lerp(current, target, sp)` with `sp ≈ 0.022`). This produces the characteristic organic camera movement — decelerating into each point's view without any rigid snap.
+Camera state (`el`, `az`, `zoom`, `tx`, `ty`, `tz`) between two consecutive saved points uses the same **smooth-follow lerp** mechanism from `atlas_main.js` (`lerp(current, target, sp)` with `sp ≈ 0.022`). This produces the characteristic organic camera movement — decelerating into each point's view without any rigid snap while preserving the saved pan offset from Epic 2.
 
 If a point has `camera: null` (un-annotated), the system skips it and interpolates between the nearest non-null camera states on either side.
 

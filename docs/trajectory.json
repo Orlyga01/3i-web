@@ -2,7 +2,7 @@
   "object": "3I",
   "designation": "3I",
   "createdAt": "2026-03-08T00:00:00Z",
-  "updatedAt": "2026-03-09T06:50:45.070Z",
+  "updatedAt": "2026-03-09T11:52:28.255Z",
   "source": "JPL Horizons VECTORS",
   "dateRange": "2024-10-01 → 2026-03-16",
   "scale": {
@@ -25,10 +25,9 @@
       "durationPct": 100,
       "stoppable": false,
       "camera": {
-        "el": 5,
-        "az": 0,
-        "zoomIn": 0,
-        "zoomOut": 0
+        "el": 4.2,
+        "az": 1.26,
+        "zoom": -25
       },
       "description": "Pre-discovery — 13.8 AU from Sun, between Saturn and Uranus orbits, approaching inner solar system",
       "image": null
@@ -48,7 +47,11 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 3.4,
+        "az": 0.96,
+        "zoom": -25
+      },
       "description": "Pre-discovery — 9.9 AU from Sun, near Saturn's orbit, approaching inner solar system",
       "image": null
     },
@@ -67,7 +70,11 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 5.2,
+        "az": 0.09,
+        "zoom": -5
+      },
       "description": "Pre-discovery — 6.6 AU from Sun, incoming from outer solar system",
       "image": null
     },
@@ -86,7 +93,11 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 4.6,
+        "az": 0.1,
+        "zoom": 25
+      },
       "description": "Discovery — 4.5 AU from Sun",
       "image": null
     },
@@ -105,7 +116,11 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 4.6,
+        "az": 0.1,
+        "zoom": 35
+      },
       "description": null,
       "image": null
     },
@@ -124,7 +139,11 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 4.6,
+        "az": 0.08,
+        "zoom": 45
+      },
       "description": null,
       "image": null
     },
@@ -143,7 +162,11 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 5.4,
+        "az": 0.23,
+        "zoom": 85
+      },
       "description": null,
       "image": null
     },
@@ -162,7 +185,11 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 6.2,
+        "az": -0.02,
+        "zoom": 95
+      },
       "description": null,
       "image": null
     },
@@ -181,7 +208,11 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 15.4,
+        "az": -0.24,
+        "zoom": 100
+      },
       "description": null,
       "image": null
     },
@@ -200,7 +231,11 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 14.2,
+        "az": -0.1,
+        "zoom": 100
+      },
       "description": null,
       "image": null
     },
@@ -218,8 +253,12 @@
         "wz": 25
       },
       "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
+      "stoppable": true,
+      "camera": {
+        "el": 5,
+        "az": 0.09,
+        "zoom": 75
+      },
       "description": "Mars close approach — ~0.194 AU from Mars",
       "image": null
     },
@@ -238,7 +277,11 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 5,
+        "az": 0.09,
+        "zoom": 85
+      },
       "description": null,
       "image": null
     },
@@ -256,8 +299,12 @@
         "wz": 16
       },
       "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
+      "stoppable": true,
+      "camera": {
+        "el": 4.6,
+        "az": 0.04,
+        "zoom": 90
+      },
       "description": "Perihelion — closest approach to Sun, 1.356 AU. Peak brightness.",
       "image": null
     },
@@ -276,7 +323,11 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 4.6,
+        "az": 0.07,
+        "zoom": 95
+      },
       "description": null,
       "image": null
     },
@@ -371,7 +422,11 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 4.6,
+        "az": 0.09,
+        "zoom": 100
+      },
       "description": null,
       "image": null
     },

@@ -229,8 +229,9 @@ A compact sidebar shall show all data points as a scrollable list:
 | Date | `Jul 01, 2025` |
 | Image | Thumbnail icon if image is attached |
 | Status | `· pending` or `✓ saved` |
+| Delete | Inline delete control for removing the point from the working trajectory |
 
-The currently active point is highlighted. The user can click any row to jump to that point directly (pending points remain pending).
+The currently active point is highlighted. The user can click any row to jump to that point directly (pending points remain pending). Deleting a point immediately re-numbers the remaining rows and updates the active selection, summary, and point counter.
 
 #### FR-3.4 — Camera Controls
 
@@ -314,13 +315,13 @@ The user can click "Save Point →" with no image and no description attached. T
 
 #### FR-5.1 — LocalStorage Draft
 
-Every time the user saves a point, the current in-memory state is written to `localStorage` under:
+Every time the user saves a point, or deletes a point from the sidebar, the current in-memory state is written to `localStorage` under:
 
 ```
 objectMotion:{sanitized_name}
 ```
 
-This protects against accidental tab close before the final save.  
+This protects against accidental tab close before the final save. If the final remaining point is deleted, the draft is cleared instead of storing an empty trajectory.  
 Note: Image `File` objects cannot be stored in localStorage. The draft stores only image filenames; actual image files must be re-uploaded if the session is lost before final save.
 
 #### FR-5.2 — Draft Recovery

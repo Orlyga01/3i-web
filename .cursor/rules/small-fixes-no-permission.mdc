@@ -1,0 +1,23 @@
+---
+alwaysApply: true
+---
+
+# Small Fixes — No Permission Needed
+
+For **small, clearly-scoped fixes**, make the change directly without asking for permission first.
+
+## What counts as "small"
+
+- Bug fixes with an obvious, single correct solution (wrong value, off-by-one, typo, missing null check)
+- Numerical / constant corrections backed by a verified calculation (e.g. orbital elements, date offsets)
+- CSS / layout tweaks that fix a broken visual
+- A missing `return`, `break`, or guard clause
+- Fixing a linter error introduced by a previous edit
+
+## What still requires asking first
+
+- New features or new files
+- Changes that touch more than ~3 files
+- Refactors or renames that affect the public API
+- Anything that deletes or rewrites a significant block of logic
+- Changes where two valid approaches exist and the tradeoff is non-trivial

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trajectory Player · 3I-web</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    #c {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      cursor: grab;
+    }
+
+    #tp-back-link {
+      position: fixed;
+      top: 20px;
+      left: 24px;
+      z-index: 20;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      color: rgba(160, 200, 255, 0.72);
+      text-decoration: none;
+      transition: color .2s;
+    }
+
+    #tp-back-link:hover {
+      color: rgba(205, 230, 255, 0.95);
+    }
+
+    #tp-shell {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #tp-title-block {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      pointer-events: none;
+    }
+
+    #tp-title {
+      color: rgba(210, 230, 255, 0.95);
+      font-size: 15px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      text-shadow: 0 0 22px rgba(100, 180, 255, 0.8);
+    }
+
+    #tp-subtitle {
+      margin-top: 9px;
+      color: rgba(160, 200, 255, 0.66);
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 0 18px rgba(100, 180, 255, 0.35);
+    }
+
+    .tp-card {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(560px, calc(100vw - 32px));
+      padding: 18px 20px;
+      border-radius: 14px;
+      border: 1px solid rgba(100, 160, 255, 0.22);
+      background: rgba(0, 8, 28, 0.82);
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+      pointer-events: auto;
+    }
+
+    #tp-loading-card {
+      top: 110px;
+      text-align: center;
+      color: rgba(180, 215, 255, 0.9);
+      letter-spacing: 1px;
+    }
+
+    #tp-error-card {
+      top: 110px;
+      display: none;
+      text-align: center;
+      color: rgba(210, 225, 255, 0.92);
+    }
+
+    #tp-error-card.visible {
+      display: block;
+    }
+
+    #tp-error-message {
+      line-height: 1.55;
+    }
+
+    #tp-error-link {
+      display: inline-block;
+      margin-top: 14px;
+      color: rgba(150, 210, 255, 0.92);
+      text-decoration: none;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+
+    #tp-error-link:hover {
+      color: rgba(210, 235, 255, 1);
+    }
+
+    #tp-stats {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      min-width: 190px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(130, 180, 255, 0.2);
+      background: rgba(0, 1, 14, 0.75);
+      color: rgba(200, 230, 255, 0.92);
+      display: none;
+      pointer-events: none;
+    }
+
+    #tp-stats.visible {
+      display: block;
+    }
+
+    #tp-stats-date {
+      font-size: 15px;
+      letter-spacing: 1px;
+    }
+
+    #tp-stats-distance {
+      margin-top: 4px;
+      font-size: 12px;
+      color: rgba(170, 205, 255, 0.82);
+      letter-spacing: 0.8px;
+    }
+
+    #tp-overlay {
+      position: fixed;
+      left: 20px;
+      bottom: 106px;
+      min-width: 260px;
+      max-width: 360px;
+      min-height: 20px;
+      display: none;
+      border-radius: 10px;
+      border: 1px solid rgba(130, 180, 255, 0.3);
+      background: rgba(0, 1, 14, 0.88);
+      padding: 14px 16px;
+      color: rgba(180, 210, 255, 0.85);
+      pointer-events: none;
+    }
+
+    #tp-overlay.visible {
+      display: block;
+    }
+
+    #tp-continue-btn {
+      position: fixed;
+      left: 50%;
+      bottom: 102px;
+      transform: translateX(-50%);
+      display: none;
+      padding: 12px 26px;
+      font-size: 16px;
+      letter-spacing: 1.2px;
+      pointer-events: auto;
+    }
+
+    #tp-continue-btn.visible {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #tp-timeline-shell {
+      position: fixed;
+      left: 50%;
+      bottom: 86px;
+      transform: translateX(-50%);
+      width: min(860px, calc(100vw - 40px));
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    #tp-timeline-shell.visible {
+      display: flex;
+    }
+
+    #tp-timeline {
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #tp-timeline-progress {
+      width: 0%;
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, rgba(74, 170, 255, 0.92), rgba(140, 210, 255, 0.92));
+    }
+
+    #tp-timeline-thumb {
+      position: absolute;
+      top: 50%;
+      left: 0%;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(180, 220, 255, 0.95);
+      border: 2px solid rgba(100, 180, 255, 0.6);
+      box-shadow: 0 0 12px rgba(100, 180, 255, 0.8);
+    }
+
+    #tp-controls {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      width: min(860px, calc(100vw - 40px));
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(100, 160, 255, 0.22);
+      background: rgba(0, 8, 28, 0.78);
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.26);
+      pointer-events: auto;
+    }
+
+    #tp-controls.visible {
+      display: flex;
+    }
+
+    #tp-controls-left,
+    #tp-controls-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tp-icon-btn {
+      min-width: 48px;
+      padding: 8px 14px;
+    }
+
+    .tp-icon-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    #tp-play-btn {
+      min-width: 64px;
+    }
+
+    #tp-speed-wrap,
+    #tp-stop-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(180, 215, 255, 0.86);
+      font-size: 12px;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    #tp-speed-slider {
+      width: 140px;
+    }
+
+    #tp-status-pill {
+      color: rgba(150, 205, 255, 0.82);
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 900px) {
+      #tp-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      #tp-controls-left,
+      #tp-controls-right {
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <a id="tp-back-link" href="object_motion.html">← Back to Object Motion Tracker</a>
+
+  <div id="tp-shell">
+    <div id="tp-title-block">
+      <div id="tp-title">Trajectory Player</div>
+      <div id="tp-subtitle">Waiting for trajectory</div>
+    </div>
+
+    <div id="tp-loading-card" class="tp-card">Loading trajectory…</div>
+
+    <div id="tp-error-card" class="tp-card" role="alert" aria-live="polite">
+      <div id="tp-error-message"></div>
+      <a id="tp-error-link" href="object_motion.html">Open Object Motion Tracker</a>
+    </div>
+
+    <div id="tp-stats" aria-live="polite">
+      <div id="tp-stats-date">--</div>
+      <div id="tp-stats-distance">Sun: -- AU</div>
+    </div>
+
+    <div id="tp-overlay" aria-live="polite"></div>
+
+    <button id="tp-continue-btn" type="button">Continue →</button>
+
+    <div id="tp-timeline-shell">
+      <div id="tp-timeline">
+        <div id="tp-timeline-progress"></div>
+        <div id="tp-timeline-thumb"></div>
+      </div>
+    </div>
+
+    <div id="tp-controls">
+      <div id="tp-controls-left">
+        <button id="tp-restart-btn" class="tp-icon-btn" type="button">⏮</button>
+        <button id="tp-prev-btn" class="tp-icon-btn" type="button">⏪</button>
+        <button id="tp-play-btn" class="tp-icon-btn" type="button">▶</button>
+        <button id="tp-next-btn" class="tp-icon-btn" type="button">⏩</button>
+      </div>
+
+      <div id="tp-controls-right">
+        <label id="tp-speed-wrap">
+          <span>Speed:</span>
+          <input id="tp-speed-slider" type="range" min="0" max="7" step="1" value="3">
+          <span id="tp-speed-value">1×</span>
+        </label>
+
+        <label id="tp-stop-wrap">
+          <input id="tp-stop-checkbox" type="checkbox">
+          <span>Pause at stoppable points</span>
+        </label>
+
+        <span id="tp-status-pill">Idle</span>
+        <button id="tp-fullscreen-btn" class="tp-icon-btn" type="button">⛶</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="shared_render.js"></script>
+  <script src="solar_system.js"></script>
+  <script src="trajectory_player.js"></script>
+</body>
+</html>

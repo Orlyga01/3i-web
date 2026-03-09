@@ -12,8 +12,8 @@
 
 | Story | Title | Status |
 |---|---|---|
-| [3.1](#story-31--player-page-shell--url-loading) | Player Page Shell & URL Loading | 🔲 Pending |
-| [3.2](#story-32--animation-engine) | Animation Engine (Spline + Camera Lerp) | 🔲 Pending |
+| [3.1](#story-31--player-page-shell--url-loading) | Player Page Shell & URL Loading | ✅ Done |
+| [3.2](#story-32--animation-engine) | Animation Engine (Spline + Camera Lerp) | ✅ Done |
 | [3.3](#story-33--motion-trail) | Motion Trail | 🔲 Pending |
 | [3.4](#story-34--playback-controls--keyboard-shortcuts) | Playback Controls & Keyboard Shortcuts | 🔲 Pending |
 | [3.5](#story-35--speed-ruler) | Speed Ruler | 🔲 Pending |
@@ -33,20 +33,20 @@
 
 ### Acceptance Criteria
 
-- [ ] A new file `trajectory_player.html` exists and loads without errors
-- [ ] A new file `trajectory_player.js` exists and is loaded by the HTML
-- [ ] On page load, the system reads `?designation=` (or short alias `?d=`) from the URL query string via `URLSearchParams(location.search)`
-- [ ] The designation value is URL-decoded and used to construct the fetch path: `data/{sanitized_name}/trajectory.json` where `sanitized_name` = designation with spaces and `/` replaced by `_`
-- [ ] The `trajectory.json` is fetched and parsed; on success the solar system viewer is initialised and playback begins automatically
-- [ ] **Error states display clean, non-technical messages and include a link to `object_motion.html`:**
+- [x] A new file `trajectory_player.html` exists and loads without errors
+- [x] A new file `trajectory_player.js` exists and is loaded by the HTML
+- [x] On page load, the system reads `?designation=` (or short alias `?d=`) from the URL query string via `URLSearchParams(location.search)`
+- [x] The designation value is URL-decoded and used to construct the fetch path: `data/{sanitized_name}/trajectory.json` where `sanitized_name` = designation with spaces and `/` replaced by `_`
+- [x] The `trajectory.json` is fetched and parsed; on success the solar system viewer is initialised and playback begins automatically
+- [x] **Error states display clean, non-technical messages and include a link to `object_motion.html`:**
   - No `?designation=` param: `"Open this page with a ?designation= URL parameter, or use the ▶ Play Video button from the Object Motion Tracker."`
   - File not found (404): `"No saved trajectory found for '[designation]'. Annotate it first in the Object Motion Tracker."`
   - Invalid JSON: `"The trajectory file for '[designation]' could not be read. It may be corrupt."`
   - Network error: `"Could not load the trajectory file. Check your connection and try again."`
-- [ ] The page uses the existing dark space aesthetic (`styles.css`); no new conflicting global styles
-- [ ] The page has no dependency on `object_motion.js`, `atlas_main.js`, or `atlas_data.js`
-- [ ] `trajectory_player.js` defines the top-level module stubs: `TrajectoryLoader`, `PlaybackEngine`, `PlaybackController`, `TrailRenderer`, `ControlBar`, `TimelineScrubber`, `AnnotationOverlay`, `StatsDisplay`
-- [ ] Supported URL formats:
+- [x] The page uses the existing dark space aesthetic (`styles.css`); no new conflicting global styles
+- [x] The page has no dependency on `object_motion.js`, `atlas_main.js`, or `atlas_data.js`
+- [x] `trajectory_player.js` defines the top-level module stubs: `TrajectoryLoader`, `PlaybackEngine`, `PlaybackController`, `TrailRenderer`, `ControlBar`, `TimelineScrubber`, `AnnotationOverlay`, `StatsDisplay`
+- [x] Supported URL formats:
   - `trajectory_player.html?designation=3I`
   - `trajectory_player.html?designation=C%2F2025%20N1`
   - `trajectory_player.html?d=3I`
@@ -63,6 +63,19 @@
 - Epic 2 (a saved `trajectory.json` with camera states must exist for full testing)
 - Story 2.14 (schema fields `durationPct`, `stoppable` must be understood by the loader)
 
+### Implementation Notes
+
+- Added `trajectory_player.html` with a dedicated canvas-based player shell, loading/error states, and placeholders for later playback UI modules.
+- Added `trajectory_player.js` with `TrajectoryLoader`, typed load errors, designation sanitisation, bootstrap playback wiring, and top-level Epic 3 module stubs.
+- Added Jest coverage for loader URL parsing, sanitisation/path building, and point normalisation.
+
+### File List
+
+- `trajectory_player.html`
+- `trajectory_player.js`
+- `tests/trajectory_player_logic.js`
+- `tests/trajectory_player.test.js`
+
 ---
 
 ## Story 3.2 — Animation Engine (Spline + Camera Lerp)
@@ -73,33 +86,49 @@
 
 ### Acceptance Criteria
 
-- [ ] The `PlaybackEngine` runs a `requestAnimationFrame` loop continuously while the page is active
-- [ ] **Object position** is interpolated along the trajectory using a **Catmull-Rom spline** (identical to the `catmullRom()` function in `atlas_main.js`):
+- [x] The `PlaybackEngine` runs a `requestAnimationFrame` loop continuously while the page is active
+- [x] **Object position** is interpolated along the trajectory using a **Catmull-Rom spline** (identical to the `catmullRom()` function in `atlas_main.js`):
   - The four control points for segment `i → i+1` are `points[i-1]`, `points[i]`, `points[i+1]`, `points[i+2]`, clamped at array ends
   - `t` progresses from `0 → 1` over the segment's computed duration (see below)
   - Position is derived from `px.wx`, `px.wy`, `px.wz` fields of each point
-- [ ] **Camera state** transitions between the saved `camera` values of consecutive points using **smooth-follow lerp** (same `lerp(current, target, sp)` pattern with `sp ≈ 0.022` from `atlas_main.js`):
-  - Camera fields: `el` (elevation), `az` (azimuth), `zoom`
+- [x] **Camera state** transitions between the saved `camera` values of consecutive points using **smooth-follow lerp** (same `lerp(current, target, sp)` pattern with `sp ≈ 0.022` from `atlas_main.js`):
+  - Camera fields: `el` (elevation), `az` (azimuth), `zoom`, `tx`, `ty`, `tz`
   - The camera lerps toward the **destination** point's camera state throughout the segment
-- [ ] **Segment duration** is:
+- [x] **Segment duration** is:
   ```
   segmentMs = (durationPct / 100) × 1000 × (1 / speedMultiplier)
   ```
   Where `durationPct` is from the **destination** point (defaults to `100` if absent), and `speedMultiplier` is from the speed ruler (§3.5, defaults to `1`)
-- [ ] **Points with `camera: null`** are handled gracefully: the engine skips the null point and interpolates camera between the nearest non-null neighbors on either side; object position still passes through the null point's coordinates
-- [ ] **Date display** updates every frame: the current date is linearly interpolated between the two adjacent point dates as `t` progresses. Displayed as `"Mon DD, YYYY"` in the stats area (Story 3.9)
-- [ ] When `t` reaches `1.0` for the last segment, playback stops; the `PlaybackController` transitions to the `stopped` state
-- [ ] The object is drawn on the canvas each frame at its interpolated position using the existing `drawComet()` or equivalent marker draw call from `solar_system.js` / `shared_render.js`
+- [x] **Points with `camera: null`** are handled gracefully: the engine skips the null point and interpolates camera between the nearest non-null neighbors on either side; object position still passes through the null point's coordinates
+- [x] **Date display** updates every frame: the current date is linearly interpolated between the two adjacent point dates as `t` progresses. Displayed as `"Mon DD, YYYY"` in the stats area (Story 3.9)
+- [x] When `t` reaches `1.0` for the last segment, playback stops; the `PlaybackController` transitions to the `stopped` state
+- [x] The object is drawn on the canvas each frame at its interpolated position using the existing `drawComet()` or equivalent marker draw call from `solar_system.js` / `shared_render.js`
 
 ### Technical Notes
 
 - `PlaybackEngine.tick(deltaMs)` — called each `requestAnimationFrame`; advances `t` by `deltaMs / segmentMs`; handles segment boundary crossing
 - `catmullRom(p0, p1, p2, p3, t)` — can be duplicated from `atlas_main.js` or extracted to `shared_render.js`; do not modify `atlas_main.js`
 - `lerp(a, b, t)` — same utility function; same source
-- Camera state is passed to `SolarSystem.camera.setRawState({ el, az, zoom })` each frame
+- Camera state is passed to `SolarSystem.camera.setRawState({ el, az, zoom, tx, ty, tz })` each frame so saved pan is preserved in playback
 
 ### Dependencies
 - Story 3.1 (page shell and loaded trajectory data)
+
+### Implementation Notes
+
+- Replaced point-to-point stepping with a `requestAnimationFrame`-driven segment engine using Catmull-Rom interpolation for `px.wx`, `px.wy`, and `px.wz`.
+- Added per-frame interpolation for date and Sun distance, and kept the player stats panel synced throughout playback.
+- Added camera smooth-follow lerp for `el`, `az`, `zoom`, `tx`, `ty`, and `tz`, with null-camera segments targeting the nearest non-null camera on the right and preserving the last valid camera on the left.
+- Removed per-frame pan debug logging from `solar_system.js` so continuous camera playback does not flood the console.
+
+### File List
+
+- `trajectory_player.js`
+- `solar_system.js`
+- `tests/trajectory_player_logic.js`
+- `tests/trajectory_player.test.js`
+- `_bmad-output/planning-artifacts/stories-epic3-trajectory-player.md`
+- `_bmad-output/planning-artifacts/prd-epic3-trajectory-player.md`
 
 ---
 
