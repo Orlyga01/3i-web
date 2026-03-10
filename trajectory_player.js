@@ -11,9 +11,7 @@ class TrajectoryLoader {
   static readDesignationFromUrl(search = location.search) {
     const params = new URLSearchParams(search);
     const rawValue = params.get('designation') ?? params.get('d');
-    const designation = this.decodeDesignation(rawValue);
-
-    return designation || '3I';
+    return this.decodeDesignation(rawValue);
   }
 
   static decodeDesignation(value) {
@@ -90,6 +88,7 @@ class TrajectoryLoader {
       camera,
       durationPct: Number.isFinite(durationPct) ? Math.max(1, durationPct) : 100,
       stoppable: Boolean(point.stoppable),
+      color: normalizeVisualColor(point.color),
       description: point.description ?? null,
       image: point.image ?? null,
     };
@@ -163,6 +162,23 @@ class TrajectoryLoader {
   }
 }
 
+const TP_AU_IN_KM = 149597870.7;
+const TP_WORLD_PX_PER_AU = 175;
+const TP_REFERENCE_CONNECTOR_VISIBLE_FROM = '2025-10-31';
+const TP_FIXED_OBJECT_ANCHOR_DATE = '2025-10-29';
+const TP_DEFAULT_VISUAL_COLOR = 'green';
+const TP_VISUAL_COLOR_MAP = Object.freeze({
+  green: Object.freeze({ r: 88, g: 228, b: 128 }),
+  blue: Object.freeze({ r: 96, g: 176, b: 255 }),
+  red: Object.freeze({ r: 255, g: 104, b: 104 }),
+  yellow: Object.freeze({ r: 255, g: 214, b: 92 }),
+});
+const TP_FIXED_REFERENCE_POINT_KM = Object.freeze({
+  x: -3.318697414262085e8,
+  y: 7.099317219152682e8,
+  z: 4.476039412376106e6,
+});
+
 class PlaybackEngine {
   constructor(controller) {
     this.controller = controller;
@@ -207,6 +223,7 @@ class PlaybackController {
     this.trailRenderer = options.trailRenderer;
     this.timelineScrubber = options.timelineScrubber;
     this.annotationOverlay = options.annotationOverlay;
+    this.referenceConnectorRenderer = options.referenceConnectorRenderer;
     this.state = 'idle';
     this.speedMultiplier = 1;
     this.currentPointIndex = 0;
@@ -217,7 +234,15 @@ class PlaybackController {
     this.currentDate = this.currentPoint ? parseTrajectoryDate(this.currentPoint.date) : null;
     this.currentSunDistance = this.currentPoint ? computeSunDistance(this.currentPoint.au) : 0;
     this.currentCameraState = this.findNearestCamera(0);
+    this.currentAppearance = this.currentPoint ? getAppearanceAtPoint(this.points, 0) : getDefaultAppearance();
+    this.pauseAtStoppablePoints = true;
+    this.pauseAtEveryPoint = false;
+    this.solarSystemPaused = null;
     this.engine = new PlaybackEngine(this);
+    this.boundKeydown = event => this.handleKeydown(event);
+    this.boundCanvasClick = event => this.handleCanvasClick(event);
+    this.boundCanvasInteractionGate = event => this.handleCanvasInteractionGate(event);
+    this.interactionsBound = false;
   }
 
   bootstrap() {
@@ -229,14 +254,16 @@ class PlaybackController {
     }
 
     this.registerLayers();
+    this.bindInteractions();
+    this.state = 'paused';
     this.jumpToSegmentStart(0, { resetTrail: true, snapCamera: true });
     this.timelineScrubber.setProgress(0);
     this.statsDisplay.show();
     this.statsDisplay.update(this.currentDate, this.currentSunDistance);
     this.controlBar.show();
     this.timelineScrubber.show();
-    this.state = 'playing';
-    this.controlBar.setState(this.state);
+    this.controlBar.syncInitialValues(this);
+    this.syncUi();
     this.engine.start();
   }
 
@@ -247,35 +274,54 @@ class PlaybackController {
       this.trailRenderer.draw();
     });
 
+    window.SolarSystem.layers.register('trajectory-player-reference-connector', () => {
+      this.referenceConnectorRenderer?.draw(this.currentDate);
+    });
+
     window.SolarSystem.layers.register('trajectory-player-object', () => {
       if (!this.currentWorldPosition || typeof drawComet !== 'function') return;
       const alpha = 0.82 + Math.sin(this.engine.pulsePhase) * 0.08;
+      const tint = this.currentAppearance?.rgb || getNamedVisualColorRgb(TP_DEFAULT_VISUAL_COLOR);
       drawComet(
         this.currentWorldPosition.wx,
         this.currentWorldPosition.wy,
         this.currentWorldPosition.wz,
         alpha,
-        '180,220,255',
+        `${tint.r},${tint.g},${tint.b}`,
         0.95
       );
+      drawTrajectoryObjectColorRing(this.currentWorldPosition, tint, alpha);
     });
+  }
+
+  bindInteractions() {
+    if (this.interactionsBound) return;
+    this.interactionsBound = true;
+    document.addEventListener('keydown', this.boundKeydown);
+    const canvasEl = document.getElementById('c');
+    if (canvasEl) {
+      canvasEl.addEventListener('click', this.boundCanvasClick);
+      canvasEl.addEventListener('mousedown', this.boundCanvasInteractionGate, true);
+      canvasEl.addEventListener('wheel', this.boundCanvasInteractionGate, { capture: true, passive: false });
+      canvasEl.addEventListener('contextmenu', this.boundCanvasInteractionGate, true);
+    }
   }
 
   onFrame(deltaMs) {
     if (!this.currentPoint || !this.currentWorldPosition) return;
     if (this.state !== 'playing') {
-      this.controlBar.setState(this.state);
+      this.syncUi();
       return;
     }
 
     if (this.segmentIndex >= this.points.length - 1) {
       this.state = 'stopped';
-      this.controlBar.setState(this.state);
+      this.syncUi();
       return;
     }
 
     if (this.segmentIndex >= this.points.length - 1) {
-      this.controlBar.setState(this.state);
+      this.syncUi();
       return;
     }
 
@@ -288,20 +334,23 @@ class PlaybackController {
       this.currentPointIndex = Math.min(this.segmentIndex, this.points.length - 1);
       this.currentPoint = this.points[this.currentPointIndex];
 
+      this.applyPointFrame(this.currentPointIndex, { snapCamera: true });
+      this.timelineScrubber.setProgress(this.currentPointIndex / Math.max(1, this.points.length - 1));
+
       if (this.segmentIndex >= this.points.length - 1) {
         this.segmentElapsedMs = 0;
-        this.currentWorldPosition = { ...this.points[this.points.length - 1].px };
-        this.currentDate = parseTrajectoryDate(this.points[this.points.length - 1].date);
-        this.currentSunDistance = computeSunDistance(this.points[this.points.length - 1].au);
-        const finalCamera = this.getCurrentCameraTarget();
-        if (finalCamera) {
-          this.currentCameraState = { ...finalCamera };
-          this.applyCameraState(this.currentCameraState);
-        }
-        this.statsDisplay.update(this.currentDate, this.currentSunDistance);
         this.timelineScrubber.setProgress(1);
         this.state = 'stopped';
-        this.controlBar.setState(this.state);
+        this.syncUi();
+        return;
+      }
+
+      if (shouldPauseAtPoint(this.currentPoint, this.pauseAtStoppablePoints, this.pauseAtEveryPoint)) {
+        this.segmentElapsedMs = 0;
+        this.state = 'stopped-at-point';
+        this.annotationOverlay.hide();
+        this.controlBar.setContinueVisible(true);
+        this.syncUi();
         return;
       }
 
@@ -309,7 +358,7 @@ class PlaybackController {
     }
 
     this.updateInterpolatedFrame();
-    this.controlBar.setState(this.state);
+    this.syncUi();
   }
 
   getCurrentSegmentDurationMs() {
@@ -328,6 +377,7 @@ class PlaybackController {
     this.currentWorldPosition = interpolateWorldPosition(this.points, segmentIndex, t);
     this.currentDate = interpolateDateValue(this.points, segmentIndex, t);
     this.currentSunDistance = interpolateSunDistanceValue(this.points, segmentIndex, t);
+    this.currentAppearance = interpolateAppearanceForSegment(this.points, segmentIndex, t);
     this.trailRenderer.setAnchor(this.currentWorldPosition);
 
     if (window.SolarSystem?.engine) {
@@ -340,12 +390,12 @@ class PlaybackController {
       this.applyCameraState(this.currentCameraState);
     }
 
-    this.statsDisplay.update(this.currentDate, this.currentSunDistance);
+    this.statsDisplay.update(this.currentDate, this.currentSunDistance, this.currentWorldPosition);
     this.timelineScrubber.setProgress((segmentIndex + t) / Math.max(1, this.points.length - 1));
   }
 
   jumpToSegmentStart(index, options = {}) {
-    const { resetTrail = false, snapCamera = false } = options;
+    const { resetTrail = false, snapCamera = false, rebuildTrail = false } = options;
     const clampedIndex = Math.max(0, Math.min(this.points.length - 1, index));
     const point = this.points[clampedIndex];
     if (!point) return;
@@ -354,27 +404,22 @@ class PlaybackController {
     this.currentPointIndex = clampedIndex;
     this.currentPoint = point;
     this.segmentElapsedMs = 0;
-    this.currentWorldPosition = { ...point.px };
-    this.currentDate = parseTrajectoryDate(point.date);
-    this.currentSunDistance = computeSunDistance(point.au);
+    this.state = this.state === 'stopped' ? 'paused' : this.state;
+    this.annotationOverlay.hide();
+    this.controlBar.setContinueVisible(false);
+    this.applyPointFrame(clampedIndex, { snapCamera });
 
     if (resetTrail) {
       this.trailRenderer.reset(point.px);
+    } else if (rebuildTrail) {
+      this.trailRenderer.rebuild(this.points, clampedIndex);
     } else {
       this.trailRenderer.setAnchor(point.px);
     }
 
-    if (window.SolarSystem?.engine && this.currentDate) {
-      window.SolarSystem.engine.setDate(this.currentDate);
-    }
-
-    if (snapCamera) {
-      this.currentCameraState = this.findNearestCamera(clampedIndex);
-      this.applyCameraState(this.currentCameraState);
-    }
-
-    this.statsDisplay.update(this.currentDate, this.currentSunDistance);
+    this.statsDisplay.update(this.currentDate, this.currentSunDistance, this.currentWorldPosition);
     this.timelineScrubber.setProgress(clampedIndex / Math.max(1, this.points.length - 1));
+    this.syncUi();
   }
 
   applyCameraState(cameraState) {
@@ -416,21 +461,169 @@ class PlaybackController {
   }
 
   togglePlayPause() {
-    this.state = this.state === 'playing' ? 'paused' : 'playing';
-    this.controlBar.setState(this.state);
+    const action = getPlayAction(this.state, 'toggle');
+    if (action === 'restart') {
+      this.restart();
+      return;
+    }
+    if (action === 'noop') return;
+    this.controlBar.setContinueVisible(false);
+    this.annotationOverlay.hide();
+    this.state = action === 'pause' ? 'paused' : 'playing';
+    this.syncUi();
+  }
+
+  onPlayButton() {
+    const action = getPlayAction(this.state, 'button');
+    if (action === 'restart') {
+      this.restart();
+      return;
+    }
+    if (action === 'noop') return;
+    this.controlBar.setContinueVisible(false);
+    this.annotationOverlay.hide();
+    this.state = action === 'pause' ? 'paused' : 'playing';
+    this.syncUi();
   }
 
   restart() {
+    if (areSecondaryControlsDisabled(this.state)) return;
     this.state = 'playing';
+    this.controlBar.setContinueVisible(false);
+    this.annotationOverlay.hide();
     this.jumpToSegmentStart(0, { resetTrail: true, snapCamera: true });
   }
 
+  continueFromStop() {
+    if (this.state !== 'stopped-at-point') return;
+    this.controlBar.setContinueVisible(false);
+    this.annotationOverlay.hide();
+    this.state = 'playing';
+    this.syncUi();
+  }
+
   prevPoint() {
-    this.jumpToSegmentStart(Math.max(0, this.currentPointIndex - 1), { snapCamera: true });
+    if (areSecondaryControlsDisabled(this.state)) return;
+    const targetIndex = Math.max(0, this.currentPointIndex - 1);
+    if (this.state === 'stopped') this.state = 'paused';
+    this.jumpToSegmentStart(targetIndex, { snapCamera: true, rebuildTrail: true });
   }
 
   nextPoint() {
-    this.jumpToSegmentStart(Math.min(this.points.length - 1, this.currentPointIndex + 1), { snapCamera: true });
+    if (areSecondaryControlsDisabled(this.state)) return;
+    const targetIndex = Math.min(this.points.length - 1, this.currentPointIndex + 1);
+    if (this.state === 'stopped') this.state = 'paused';
+    this.jumpToSegmentStart(targetIndex, { snapCamera: true, rebuildTrail: true });
+  }
+
+  handleKeydown(event) {
+    if (shouldIgnorePlaybackShortcut(event.target)) return;
+
+    if (event.code === 'Space') {
+      event.preventDefault();
+      if (this.state === 'stopped-at-point') {
+        this.continueFromStop();
+      } else {
+        this.togglePlayPause();
+      }
+      return;
+    }
+
+    if (event.code === 'ArrowLeft') {
+      if (areSecondaryControlsDisabled(this.state)) return;
+      event.preventDefault();
+      this.prevPoint();
+      return;
+    }
+
+    if (event.code === 'ArrowRight') {
+      if (areSecondaryControlsDisabled(this.state)) return;
+      event.preventDefault();
+      this.nextPoint();
+      return;
+    }
+
+    if (event.code === 'KeyF') {
+      event.preventDefault();
+      this.controlBar.toggleFullscreen();
+      return;
+    }
+
+    if (event.code === 'Enter' && this.state === 'stopped-at-point') {
+      event.preventDefault();
+      this.continueFromStop();
+    }
+  }
+
+  handleCanvasClick(event) {
+    if (event.defaultPrevented) return;
+    if (this.state === 'stopped') return;
+    this.togglePlayPause();
+  }
+
+  handleCanvasInteractionGate(event) {
+    if (!areSecondaryControlsDisabled(this.state)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === 'function') {
+      event.stopImmediatePropagation();
+    }
+  }
+
+  applyPointFrame(index, options = {}) {
+    const { snapCamera = false } = options;
+    const point = this.points[index];
+    if (!point) return;
+
+    this.currentPointIndex = index;
+    this.currentPoint = point;
+    this.currentWorldPosition = { ...point.px };
+    this.currentDate = parseTrajectoryDate(point.date);
+    this.currentSunDistance = computeSunDistance(point.au);
+    this.currentAppearance = getAppearanceAtPoint(this.points, index);
+
+    if (window.SolarSystem?.engine && this.currentDate) {
+      window.SolarSystem.engine.setDate(this.currentDate);
+    }
+
+    this.statsDisplay.update(this.currentDate, this.currentSunDistance, this.currentWorldPosition);
+
+    if (snapCamera) {
+      this.currentCameraState = this.findNearestCamera(index);
+      this.applyCameraState(this.currentCameraState);
+    }
+  }
+
+  syncSolarSystemMotion() {
+    const shouldPause = this.state !== 'playing';
+    if (this.solarSystemPaused === shouldPause) return;
+    this.solarSystemPaused = shouldPause;
+
+    if (!window.SolarSystem?.engine) return;
+    if (shouldPause) {
+      window.SolarSystem.engine.pause();
+    } else {
+      window.SolarSystem.engine.resume();
+    }
+  }
+
+  syncAnnotationOverlay() {
+    this.annotationOverlay.show({
+      state: this.state,
+      point: this.currentPoint,
+      appearance: this.currentAppearance,
+      sanitizedName: this.sanitizedName,
+    });
+  }
+
+  syncUi() {
+    this.syncSolarSystemMotion();
+    this.controlBar.setState(this.state, {
+      currentPointIndex: this.currentPointIndex,
+      totalPoints: this.points.length,
+    });
+    this.statsDisplay.updatePosition(this.currentWorldPosition);
+    this.syncAnnotationOverlay();
   }
 }
 
@@ -450,9 +643,95 @@ class TrailRenderer {
     this.trail.push({ wx: point.wx, wy: point.wy, wz: point.wz });
   }
 
+  rebuild(points, throughIndex) {
+    this.trail = buildTrailThroughIndex(points, throughIndex);
+  }
+
   draw() {
-    // Story 3.3 owns full trail rendering; the layer is registered now so
-    // later stories can fill it in without changing the page shell contract.
+    if (!Array.isArray(this.trail) || this.trail.length < 2 || typeof project3 !== 'function' || typeof ctx === 'undefined') {
+      return;
+    }
+
+    for (let i = 1; i < this.trail.length; i += 1) {
+      const a = this.trail[i - 1];
+      const b = this.trail[i];
+      const pa = project3(a.wx, a.wy, a.wz);
+      const pb = project3(b.wx, b.wy, b.wz);
+      if (pa.depth < 10 || pb.depth < 10) continue;
+      const opacity = (i / this.trail.length) * 0.7;
+      ctx.beginPath();
+      ctx.moveTo(pa.sx, pa.sy);
+      ctx.lineTo(pb.sx, pb.sy);
+      ctx.strokeStyle = `rgba(120,255,200,${opacity})`;
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+    }
+  }
+}
+
+class ReferenceConnectorRenderer {
+  constructor(config = {}) {
+    this.config = config;
+  }
+
+  draw(currentDate) {
+    const objectAnchorWorld = this.config.objectAnchorWorld;
+    const referenceWorld = this.config.referencePoint?.world;
+    if (
+      !objectAnchorWorld ||
+      !referenceWorld ||
+      !shouldShowReferenceConnector(currentDate, this.config.visibleFrom) ||
+      typeof project3 !== 'function' ||
+      typeof ctx === 'undefined'
+    ) {
+      return;
+    }
+
+    const objectProjected = project3(objectAnchorWorld.wx, objectAnchorWorld.wy, objectAnchorWorld.wz);
+    const referenceProjected = project3(referenceWorld.wx, referenceWorld.wy, referenceWorld.wz);
+
+    const markerScale = typeof getScale === 'function' ? getScale(referenceProjected.depth) : 1;
+    const markerRadius = Math.max(4, Math.min(10, markerScale * 6));
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(objectProjected.sx, objectProjected.sy);
+    ctx.lineTo(referenceProjected.sx, referenceProjected.sy);
+    ctx.strokeStyle = 'rgba(255, 220, 80, 0.25)';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(objectProjected.sx, objectProjected.sy);
+    ctx.lineTo(referenceProjected.sx, referenceProjected.sy);
+    ctx.strokeStyle = 'rgba(255, 230, 110, 0.9)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const glow = ctx.createRadialGradient(
+      referenceProjected.sx,
+      referenceProjected.sy,
+      0,
+      referenceProjected.sx,
+      referenceProjected.sy,
+      markerRadius * 3
+    );
+    glow.addColorStop(0, 'rgba(255, 255, 210, 0.95)');
+    glow.addColorStop(0.35, 'rgba(255, 235, 120, 0.85)');
+    glow.addColorStop(1, 'rgba(255, 210, 60, 0)');
+    ctx.beginPath();
+    ctx.arc(referenceProjected.sx, referenceProjected.sy, markerRadius * 3, 0, Math.PI * 2);
+    ctx.fillStyle = glow;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(referenceProjected.sx, referenceProjected.sy, markerRadius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 236, 135, 0.98)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 247, 210, 0.95)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
@@ -466,6 +745,9 @@ class ControlBar {
     this.nextBtn = document.getElementById('tp-next-btn');
     this.speedSlider = document.getElementById('tp-speed-slider');
     this.speedValue = document.getElementById('tp-speed-value');
+    this.stopCheckbox = document.getElementById('tp-stop-checkbox');
+    this.stopAllCheckbox = document.getElementById('tp-stop-all-checkbox');
+    this.continueBtn = document.getElementById('tp-continue-btn');
     this.fullscreenBtn = document.getElementById('tp-fullscreen-btn');
     this.controller = null;
   }
@@ -473,12 +755,31 @@ class ControlBar {
   connect(controller) {
     this.controller = controller;
 
-    this.playBtn.addEventListener('click', () => controller.togglePlayPause());
+    this.playBtn.addEventListener('click', () => controller.onPlayButton());
     this.restartBtn.addEventListener('click', () => controller.restart());
     this.prevBtn.addEventListener('click', () => controller.prevPoint());
     this.nextBtn.addEventListener('click', () => controller.nextPoint());
+    this.stopCheckbox?.addEventListener('change', () => {
+      if (areSecondaryControlsDisabled(controller.state)) {
+        this.stopCheckbox.checked = controller.pauseAtStoppablePoints;
+        return;
+      }
+      controller.pauseAtStoppablePoints = Boolean(this.stopCheckbox.checked);
+    });
+    this.stopAllCheckbox?.addEventListener('change', () => {
+      if (areSecondaryControlsDisabled(controller.state)) {
+        this.stopAllCheckbox.checked = controller.pauseAtEveryPoint;
+        return;
+      }
+      controller.pauseAtEveryPoint = Boolean(this.stopAllCheckbox.checked);
+    });
+    this.continueBtn?.addEventListener('click', () => controller.continueFromStop());
 
     this.speedSlider.addEventListener('input', () => {
+      if (areSecondaryControlsDisabled(controller.state)) {
+        this.speedSlider.value = String(ControlBar.SPEED_STEPS.indexOf(controller.speedMultiplier));
+        return;
+      }
       const speed = ControlBar.SPEED_STEPS[Number(this.speedSlider.value)] ?? 1;
       controller.speedMultiplier = speed;
       this.speedValue.textContent = `${speed}×`;
@@ -489,20 +790,37 @@ class ControlBar {
     });
   }
 
+  toggleFullscreen() {
+    this.fullscreenBtn?.click();
+  }
+
+  setContinueVisible(visible) {
+    this.continueBtn?.classList.toggle('visible', Boolean(visible));
+  }
+
+  syncInitialValues(controller) {
+    if (this.stopCheckbox) this.stopCheckbox.checked = Boolean(controller.pauseAtStoppablePoints);
+    if (this.stopAllCheckbox) this.stopAllCheckbox.checked = Boolean(controller.pauseAtEveryPoint);
+    const speedIndex = Math.max(0, ControlBar.SPEED_STEPS.indexOf(controller.speedMultiplier));
+    if (this.speedSlider) this.speedSlider.value = String(speedIndex);
+    if (this.speedValue) this.speedValue.textContent = `${controller.speedMultiplier}×`;
+  }
+
   show() {
     this.root.classList.add('visible');
   }
 
-  setState(state) {
-    const label = state === 'playing'
-      ? 'Playing'
-      : state === 'paused'
-        ? 'Paused'
-        : state === 'stopped'
-          ? 'Stopped'
-          : 'Idle';
-    this.statusEl.textContent = label;
-    this.playBtn.textContent = state === 'playing' ? '⏸' : '▶';
+  setState(state, meta = {}) {
+    const view = getControlBarState(state, meta.currentPointIndex ?? 0, meta.totalPoints ?? 1);
+    this.statusEl.textContent = view.label;
+    this.playBtn.textContent = view.playText;
+    this.playBtn.disabled = view.playDisabled;
+    this.restartBtn.disabled = view.secondaryDisabled;
+    this.prevBtn.disabled = view.prevDisabled;
+    this.nextBtn.disabled = view.nextDisabled;
+    if (this.speedSlider) this.speedSlider.disabled = view.secondaryDisabled;
+    if (this.stopCheckbox) this.stopCheckbox.disabled = view.secondaryDisabled;
+    if (this.stopAllCheckbox) this.stopAllCheckbox.disabled = view.secondaryDisabled;
   }
 }
 
@@ -529,14 +847,106 @@ class TimelineScrubber {
 class AnnotationOverlay {
   constructor(root) {
     this.root = root;
+    this.modelKey = '';
+    this.failedImageSrc = null;
+    if (!this.root) return;
+
+    this.root.innerHTML = `
+      <div class="tp-overlay-card">
+        <div class="tp-overlay-kicker"></div>
+        <div class="tp-overlay-date"></div>
+        <div class="tp-overlay-media-shell">
+          <canvas class="tp-overlay-preview" width="220" height="220" aria-hidden="true"></canvas>
+          <img class="tp-overlay-image" alt="">
+          <div class="tp-overlay-no-image">Image unavailable.</div>
+        </div>
+        <div class="tp-overlay-description"></div>
+      </div>
+    `;
+
+    this.kickerEl = this.root.querySelector('.tp-overlay-kicker');
+    this.dateEl = this.root.querySelector('.tp-overlay-date');
+    this.mediaShellEl = this.root.querySelector('.tp-overlay-media-shell');
+    this.previewEl = this.root.querySelector('.tp-overlay-preview');
+    this.imageEl = this.root.querySelector('.tp-overlay-image');
+    this.noImageEl = this.root.querySelector('.tp-overlay-no-image');
+    this.descriptionEl = this.root.querySelector('.tp-overlay-description');
   }
 
-  show() {
+  show(context) {
+    if (!this.root) return;
+    const nextKey = getTrajectoryOverlayKey(context);
+    if (this.modelKey !== nextKey) {
+      this.modelKey = nextKey;
+      this.failedImageSrc = null;
+    }
+
+    this.applyModel(context);
     this.root.classList.add('visible');
   }
 
+  applyModel(context) {
+    if (!this.root) return;
+    const imageState = this.failedImageSrc ? 'error' : 'ready';
+    const model = buildTrajectoryOverlayModel(context, imageState);
+
+    this.root.classList.toggle('is-preview-mode', model.mode === 'preview');
+    this.root.classList.toggle('is-image-mode', model.mode === 'image');
+    if (this.kickerEl) this.kickerEl.textContent = model.kicker;
+    if (this.dateEl) this.dateEl.textContent = model.dateText;
+    if (this.descriptionEl) {
+      this.descriptionEl.textContent = model.description;
+      this.descriptionEl.style.display = model.showDescription ? 'block' : 'none';
+    }
+    if (this.mediaShellEl) {
+      this.mediaShellEl.style.display = 'flex';
+    }
+    if (this.noImageEl) {
+      this.noImageEl.style.display = model.showNoImageState ? 'flex' : 'none';
+    }
+    if (this.previewEl) {
+      this.previewEl.style.display = model.showPreview ? 'block' : 'none';
+      if (model.showPreview) {
+        renderLivePreview(this.previewEl, model.previewAppearance);
+      }
+    }
+    if (!this.imageEl) return;
+
+    this.imageEl.onload = null;
+    this.imageEl.onerror = null;
+    this.imageEl.style.display = model.showImage ? 'block' : 'none';
+
+    if (model.showImage && model.imageSrc) {
+      this.imageEl.onload = () => {
+        if (this.imageEl.getAttribute('src') !== model.imageSrc) return;
+        this.failedImageSrc = null;
+      };
+      this.imageEl.onerror = () => {
+        if (this.imageEl.getAttribute('src') !== model.imageSrc) return;
+        this.failedImageSrc = model.imageSrc;
+        this.applyModel(context);
+      };
+
+      if (this.imageEl.getAttribute('src') !== model.imageSrc) {
+        this.imageEl.src = model.imageSrc;
+      }
+    } else {
+      this.imageEl.removeAttribute('src');
+    }
+  }
+
   hide() {
+    if (!this.root) return;
     this.root.classList.remove('visible');
+    this.root.classList.remove('is-preview-mode');
+    this.root.classList.remove('is-image-mode');
+    this.modelKey = '';
+    this.failedImageSrc = null;
+    if (this.imageEl) {
+      this.imageEl.onload = null;
+      this.imageEl.onerror = null;
+      this.imageEl.removeAttribute('src');
+    }
   }
 }
 
@@ -551,10 +961,31 @@ class StatsDisplay {
     this.root.classList.add('visible');
   }
 
-  update(dateValue, sunDistance) {
+  update(dateValue, sunDistance, worldPosition) {
     if (!dateValue) return;
     this.dateEl.textContent = formatDisplayDate(dateValue);
     this.distanceEl.textContent = `Sun: ${Number(sunDistance || 0).toFixed(2)} AU`;
+    this.updatePosition(worldPosition);
+  }
+
+  updatePosition(worldPosition) {
+    if (!worldPosition || typeof project3 !== 'function') return;
+    const projected = project3(worldPosition.wx, worldPosition.wy, worldPosition.wz);
+    const layout = getFloatingStatsLayout(
+      projected,
+      {
+        width: this.root.offsetWidth || 190,
+        height: this.root.offsetHeight || 56,
+      },
+      {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }
+    );
+
+    this.root.style.left = `${layout.left}px`;
+    this.root.style.top = `${layout.top}px`;
+    this.root.style.opacity = layout.visible ? '1' : '0';
   }
 }
 
@@ -575,12 +1006,124 @@ function tpCatmullRom(p0, p1, p2, p3, t) {
   );
 }
 
+function normalizeVisualColor(value) {
+  const key = String(value || '').trim().toLowerCase();
+  return TP_VISUAL_COLOR_MAP[key] ? key : null;
+}
+
+function getNamedVisualColorRgb(name) {
+  return TP_VISUAL_COLOR_MAP[normalizeVisualColor(name) || TP_DEFAULT_VISUAL_COLOR];
+}
+
+function getColorNameForPoint(points, index) {
+  for (let cursor = index; cursor >= 0; cursor -= 1) {
+    const color = normalizeVisualColor(points[cursor]?.color);
+    if (color) return color;
+  }
+  return TP_DEFAULT_VISUAL_COLOR;
+}
+
+function getDefaultAppearance() {
+  return {
+    name: TP_DEFAULT_VISUAL_COLOR,
+    rgb: { ...getNamedVisualColorRgb(TP_DEFAULT_VISUAL_COLOR) },
+  };
+}
+
+function getAppearanceAtPoint(points, index) {
+  const name = getColorNameForPoint(points, index);
+  return {
+    name,
+    rgb: { ...getNamedVisualColorRgb(name) },
+  };
+}
+
+function interpolateAppearanceForSegment(points, segmentIndex, t) {
+  const startName = getColorNameForPoint(points, segmentIndex);
+  const destinationIndex = Math.min(points.length - 1, segmentIndex + 1);
+  const explicitDestinationName = normalizeVisualColor(points[destinationIndex]?.color);
+  const endName = explicitDestinationName || startName;
+  const startRgb = getNamedVisualColorRgb(startName);
+  const endRgb = getNamedVisualColorRgb(endName);
+
+  return {
+    name: t >= 0.5 ? endName : startName,
+    fromName: startName,
+    toName: endName,
+    rgb: {
+      r: Math.round(tpLerp(startRgb.r, endRgb.r, t)),
+      g: Math.round(tpLerp(startRgb.g, endRgb.g, t)),
+      b: Math.round(tpLerp(startRgb.b, endRgb.b, t)),
+    },
+  };
+}
+
 function parseTrajectoryDate(value) {
   if (value instanceof Date) return new Date(value.getTime());
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return new Date(`${value}T00:00:00Z`);
   }
   return new Date(value);
+}
+
+function convertKmToAuPosition(positionKm) {
+  return {
+    x: Number(positionKm?.x || 0) / TP_AU_IN_KM,
+    y: Number(positionKm?.y || 0) / TP_AU_IN_KM,
+    z: Number(positionKm?.z || 0) / TP_AU_IN_KM,
+  };
+}
+
+function convertAuToWorldPosition(positionAu) {
+  return {
+    wx: Number(positionAu?.x || 0) * TP_WORLD_PX_PER_AU,
+    wy: Number(positionAu?.y || 0) * TP_WORLD_PX_PER_AU,
+    wz: Number(positionAu?.z || 0) * TP_WORLD_PX_PER_AU,
+  };
+}
+
+function getFixedReferencePoint() {
+  const au = convertKmToAuPosition(TP_FIXED_REFERENCE_POINT_KM);
+  return {
+    visibleFrom: TP_REFERENCE_CONNECTOR_VISIBLE_FROM,
+    km: { ...TP_FIXED_REFERENCE_POINT_KM },
+    au,
+    world: convertAuToWorldPosition(au),
+  };
+}
+
+function getWorldPositionAtDate(points, targetDate) {
+  if (!Array.isArray(points) || points.length === 0) return null;
+  const exactPoint = points.find(point => point?.date === targetDate);
+  if (exactPoint?.px) {
+    return { ...exactPoint.px };
+  }
+
+  const targetTime = parseTrajectoryDate(targetDate).getTime();
+  if (Number.isNaN(targetTime)) return null;
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const startTime = parseTrajectoryDate(points[index]?.date).getTime();
+    const endTime = parseTrajectoryDate(points[index + 1]?.date).getTime();
+    if (Number.isNaN(startTime) || Number.isNaN(endTime) || targetTime < startTime || targetTime > endTime) {
+      continue;
+    }
+
+    const duration = endTime - startTime;
+    const t = duration <= 0 ? 0 : (targetTime - startTime) / duration;
+    return interpolateWorldPosition(points, index, t);
+  }
+
+  return null;
+}
+
+function getFixedConnectorConfiguration(points) {
+  return {
+    visibleFrom: TP_REFERENCE_CONNECTOR_VISIBLE_FROM,
+    objectAnchorDate: TP_FIXED_OBJECT_ANCHOR_DATE,
+    objectAnchorWorld: getWorldPositionAtDate(points, TP_FIXED_OBJECT_ANCHOR_DATE),
+    referencePoint: getFixedReferencePoint(),
+  };
 }
 
 function computeSunDistance(au) {
@@ -591,7 +1134,21 @@ function computeSunDistance(au) {
 function getSegmentDurationMs(points, segmentIndex, speedMultiplier = 1) {
   const destinationPoint = points[segmentIndex + 1];
   if (!destinationPoint) return Number.POSITIVE_INFINITY;
-  return (destinationPoint.durationPct / 100) * 1000 * (1 / speedMultiplier);
+  return (destinationPoint.durationPct / 100) * 4000 * (1 / speedMultiplier);
+}
+
+function buildTrailThroughIndex(points, throughIndex, samplesPerSegment = 8) {
+  if (!Array.isArray(points) || points.length === 0) return [];
+  const clampedIndex = tpClamp(throughIndex, 0, points.length - 1);
+  const trail = [{ ...points[0].px }];
+
+  for (let segmentIndex = 0; segmentIndex < clampedIndex; segmentIndex += 1) {
+    for (let step = 1; step <= samplesPerSegment; step += 1) {
+      trail.push(interpolateWorldPosition(points, segmentIndex, step / samplesPerSegment));
+    }
+  }
+
+  return trail;
 }
 
 function interpolateWorldPosition(points, segmentIndex, t) {
@@ -651,6 +1208,245 @@ function lerpCameraState(current, target, sp = 0.022) {
     ty: tpLerp(base.ty ?? target.ty ?? 0, target.ty ?? base.ty ?? 0, sp),
     tz: tpLerp(base.tz ?? target.tz ?? 0, target.tz ?? base.tz ?? 0, sp),
   };
+}
+
+function shouldPauseAtPoint(point, pauseAtStoppablePoints, pauseAtEveryPoint = false) {
+  return Boolean(pauseAtEveryPoint || (pauseAtStoppablePoints && point?.stoppable));
+}
+
+function getPlayAction(state, source = 'toggle') {
+  if (state === 'stopped-at-point') return 'noop';
+  if (state === 'stopped') return source === 'button' ? 'restart' : 'noop';
+  return state === 'playing' ? 'pause' : 'play';
+}
+
+function areSecondaryControlsDisabled(state) {
+  return state === 'playing';
+}
+
+function getControlBarState(state, currentPointIndex, totalPoints) {
+  const atStart = currentPointIndex <= 0;
+  const atEnd = currentPointIndex >= Math.max(0, totalPoints - 1);
+  const secondaryDisabled = areSecondaryControlsDisabled(state);
+  return {
+    label: state === 'playing'
+      ? 'Playing'
+      : state === 'paused'
+        ? 'Paused'
+        : state === 'stopped'
+          ? 'Stopped'
+          : state === 'stopped-at-point'
+            ? 'Paused at point'
+            : 'Idle',
+    playText: state === 'playing' ? '⏸' : '▶',
+    playDisabled: state === 'stopped-at-point',
+    prevDisabled: secondaryDisabled || atStart,
+    nextDisabled: secondaryDisabled || atEnd,
+    secondaryDisabled,
+  };
+}
+
+function getFloatingStatsLayout(projected, panelSize, viewportSize) {
+  const margin = 16;
+  const panelWidth = Math.max(0, Number(panelSize?.width) || 190);
+  const panelHeight = Math.max(0, Number(panelSize?.height) || 56);
+  const viewportWidth = Math.max(panelWidth + margin * 2, Number(viewportSize?.width) || 0);
+  const viewportHeight = Math.max(panelHeight + margin * 2, Number(viewportSize?.height) || 0);
+
+  if (!projected || !Number.isFinite(projected.sx) || !Number.isFinite(projected.sy) || projected.depth < 10) {
+    return {
+      left: margin,
+      top: margin,
+      visible: false,
+    };
+  }
+
+  let left = projected.sx + 18;
+  let top = projected.sy - panelHeight - 14;
+
+  if (top < margin) {
+    top = projected.sy + 18;
+  }
+
+  left = tpClamp(left, margin, viewportWidth - panelWidth - margin);
+  top = tpClamp(top, margin, viewportHeight - panelHeight - margin);
+
+  return {
+    left,
+    top,
+    visible: true,
+  };
+}
+
+function shouldIgnorePlaybackShortcut(target) {
+  if (!target || typeof target !== 'object') return false;
+  if (target.isContentEditable) return true;
+  const tagName = String(target.tagName || '').toUpperCase();
+  if (tagName === 'TEXTAREA' || tagName === 'SELECT') return true;
+  if (tagName !== 'INPUT') return false;
+  const type = String(target.type || '').toLowerCase();
+  return ['text', 'search', 'url', 'tel', 'email', 'password', 'number'].includes(type);
+}
+
+function shouldShowReferenceConnector(currentDate, visibleFrom = TP_REFERENCE_CONNECTOR_VISIBLE_FROM) {
+  const date = parseTrajectoryDate(currentDate);
+  const start = parseTrajectoryDate(visibleFrom);
+  if (Number.isNaN(date.getTime()) || Number.isNaN(start.getTime())) return false;
+  return date.getTime() >= start.getTime();
+}
+
+function normalizeAnnotationDescription(description) {
+  return typeof description === 'string' ? description.trim() : '';
+}
+
+function isAbsoluteImageUrl(value) {
+  return /^https?:\/\//i.test(String(value || '').trim());
+}
+
+function resolveAnnotationImageSrc(image, sanitizedName) {
+  if (typeof image !== 'string') return null;
+  const trimmed = image.trim();
+  if (!trimmed) return null;
+  if (isAbsoluteImageUrl(trimmed)) return trimmed;
+  if (trimmed.startsWith('/')) return trimmed;
+  const normalized = trimmed.replace(/^\.?[\\/]+/, '').replace(/\\/g, '/');
+  return `data/${TrajectoryLoader.sanitize(sanitizedName)}/${normalized}`;
+}
+
+function hasAnnotationContent(point, sanitizedName = '') {
+  return Boolean(
+    normalizeAnnotationDescription(point?.description) ||
+    resolveAnnotationImageSrc(point?.image, sanitizedName)
+  );
+}
+
+function shouldShowAnnotationOverlay(state, point) {
+  return state === 'stopped-at-point' && hasAnnotationContent(point);
+}
+
+function buildAnnotationOverlayModel(point, sanitizedName, imageState = 'ready') {
+  const description = normalizeAnnotationDescription(point?.description);
+  const imageSrc = resolveAnnotationImageSrc(point?.image, sanitizedName);
+  const hasImageWindow = Boolean(imageSrc);
+  const showImage = Boolean(imageSrc) && imageState !== 'error';
+
+  return {
+    dateText: formatDisplayDate(point?.date),
+    description,
+    imageSrc,
+    hasContent: Boolean(description || imageSrc),
+    hasImageWindow,
+    showImage,
+    showDescription: Boolean(description),
+    showNoImageState: hasImageWindow && imageState === 'error',
+  };
+}
+
+function buildTrajectoryOverlayModel(context = {}, imageState = 'ready') {
+  const point = context.point || null;
+  const appearance = context.appearance || getDefaultAppearance();
+  const sanitizedName = context.sanitizedName || '';
+  const stopImageSrc = resolveAnnotationImageSrc(point?.image, sanitizedName);
+  const showStoppedImage = context.state === 'stopped-at-point' && Boolean(stopImageSrc);
+  const description = normalizeAnnotationDescription(point?.description);
+  const colorName = appearance.name || TP_DEFAULT_VISUAL_COLOR;
+
+  return {
+    mode: showStoppedImage ? 'image' : 'preview',
+    kicker: showStoppedImage ? 'Point Image' : `${capitalizeVisualColor(colorName)} Preview`,
+    dateText: formatDisplayDate(point?.date),
+    description,
+    imageSrc: showStoppedImage ? stopImageSrc : null,
+    showImage: showStoppedImage && imageState !== 'error',
+    showNoImageState: showStoppedImage && imageState === 'error',
+    showPreview: !showStoppedImage || imageState === 'error',
+    showDescription: Boolean(description),
+    previewAppearance: appearance,
+  };
+}
+
+function capitalizeVisualColor(name) {
+  const value = String(name || TP_DEFAULT_VISUAL_COLOR);
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function getTrajectoryOverlayKey(context = {}) {
+  return JSON.stringify({
+    state: context.state || '',
+    point: getAnnotationOverlayKey(context.point, context.sanitizedName),
+    appearance: context.appearance || null,
+  });
+}
+
+function renderLivePreview(canvasEl, appearance) {
+  if (!canvasEl?.getContext) return;
+  const previewCtx = canvasEl.getContext('2d');
+  if (!previewCtx) return;
+
+  const width = canvasEl.width;
+  const height = canvasEl.height;
+  const tint = appearance?.rgb || getNamedVisualColorRgb(TP_DEFAULT_VISUAL_COLOR);
+
+  previewCtx.clearRect(0, 0, width, height);
+  const bg = previewCtx.createRadialGradient(width * 0.48, height * 0.45, 8, width * 0.5, height * 0.5, width * 0.5);
+  bg.addColorStop(0, 'rgba(18,34,58,0.96)');
+  bg.addColorStop(1, 'rgba(3,8,18,0.98)');
+  previewCtx.fillStyle = bg;
+  previewCtx.fillRect(0, 0, width, height);
+
+  const halo = previewCtx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width * 0.42);
+  halo.addColorStop(0, `rgba(${tint.r},${tint.g},${tint.b},0.34)`);
+  halo.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
+  previewCtx.fillStyle = halo;
+  previewCtx.fillRect(0, 0, width, height);
+
+  if (typeof window.drawCometBillboard === 'function') {
+    window.drawCometBillboard(previewCtx, {
+      x: width / 2,
+      y: height / 2,
+      size: Math.min(width, height) * 0.68,
+      rotationAngle: -Math.PI / 4,
+      alpha: 0.98,
+      tint,
+    });
+  }
+
+  previewCtx.save();
+  previewCtx.fillStyle = `rgba(${tint.r},${tint.g},${tint.b},0.95)`;
+  previewCtx.font = '600 14px Georgia, serif';
+  previewCtx.textAlign = 'center';
+  previewCtx.fillText(capitalizeVisualColor(appearance?.name), width / 2, height - 16);
+  previewCtx.restore();
+}
+
+function drawTrajectoryObjectColorRing(worldPosition, tint, alpha = 1) {
+  if (!worldPosition || typeof project3 !== 'function' || typeof ctx === 'undefined') return;
+  const projected = project3(worldPosition.wx, worldPosition.wy, worldPosition.wz);
+  if (projected.depth < 5) return;
+
+  const scale = typeof getScale === 'function' ? getScale(projected.depth) : 1;
+  const radius = Math.max(12, Math.min(26, scale * 16));
+  const lineWidth = Math.max(1.8, Math.min(3.4, scale * 2.2));
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(projected.sx, projected.sy, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(${tint.r},${tint.g},${tint.b},${Math.max(0.5, alpha)})`;
+  ctx.lineWidth = lineWidth;
+  ctx.shadowBlur = 14;
+  ctx.shadowColor = `rgba(${tint.r},${tint.g},${tint.b},0.45)`;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function getAnnotationOverlayKey(point, sanitizedName) {
+  return JSON.stringify({
+    sanitizedName: sanitizedName || '',
+    index: point?.index ?? -1,
+    date: point?.date ?? '',
+    description: normalizeAnnotationDescription(point?.description),
+    image: point?.image ?? null,
+  });
 }
 
 function formatDisplayDate(value) {
@@ -717,9 +1513,13 @@ async function bootstrapTrajectoryPlayer() {
 
   try {
     const designation = TrajectoryLoader.readDesignationFromUrl();
-    syncPlayerUrl(designation);
-    updateObjectMotionLinks(designation);
-    setSubtitle(`Loading ${designation}`);
+    if (designation) {
+      syncPlayerUrl(designation);
+      setSubtitle(`Loading ${designation}`);
+    } else {
+      setSubtitle('Waiting for trajectory');
+    }
+    updateObjectMotionLinks(designation || '3I');
 
     const result = await TrajectoryLoader.load(designation);
 
@@ -731,6 +1531,7 @@ async function bootstrapTrajectoryPlayer() {
     const trailRenderer = new TrailRenderer();
     const timelineScrubber = new TimelineScrubber(document.getElementById('tp-timeline-shell'));
     const annotationOverlay = new AnnotationOverlay(document.getElementById('tp-overlay'));
+    const referenceConnectorRenderer = new ReferenceConnectorRenderer(getFixedConnectorConfiguration(result.points));
 
     const controller = new PlaybackController({
       designation: result.designation,
@@ -741,10 +1542,11 @@ async function bootstrapTrajectoryPlayer() {
       trailRenderer,
       timelineScrubber,
       annotationOverlay,
+      referenceConnectorRenderer,
     });
 
     controlBar.connect(controller);
-    statsDisplay.update(parseTrajectoryDate(result.points[0].date), computeSunDistance(result.points[0].au));
+    statsDisplay.update(parseTrajectoryDate(result.points[0].date), computeSunDistance(result.points[0].au), result.points[0].px);
 
     requestAnimationFrame(() => controller.bootstrap());
   } catch (error) {

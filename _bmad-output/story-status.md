@@ -1,7 +1,7 @@
 # 3i-web — Story Status Tracker
 
 **Project:** 3i-web
-**Last updated:** 2026-03-09
+**Last updated:** 2026-03-10
 **Maintained by:** All agents — update this file whenever a story's implementation status changes.
 
 > **Rule:** Any agent (dev, PM, QA, architect) that completes, partially completes, or discovers a status change for any story **must** update the relevant row in this file before ending their session. The status values are defined below.
@@ -59,18 +59,20 @@
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
-| 3.1 | Player Page Shell & URL Loading | ✅ Done | Added player shell, URL loader, friendly error states, bootstrap playback, and Jest coverage |
+| 3.1 | Player Page Shell & URL Loading | ✅ Done | Added player shell, URL loader, friendly error states, and manual-start playback wiring per latest user request |
 | 3.2 | Animation Engine (Spline + Camera Lerp) | ✅ Done | Catmull-Rom playback, per-frame date/AU interpolation, and pan-aware camera lerp implemented |
-| 3.3 | Motion Trail | 🔲 Pending | Depends on 3.2 |
-| 3.4 | Playback Controls & Keyboard Shortcuts | 🔲 Pending | ⏮⏪⏸▶⏩ + Space/←/→; depends on 3.2 |
-| 3.5 | Speed Ruler | 🔲 Pending | 0.25×–4× slider; depends on 3.2, 3.4 |
-| 3.6 | Stop-at-Points Mode | 🔲 Pending | stoppable pause + Continue →; depends on 3.2, 3.4 |
+| 3.3 | Motion Trail | ✅ Done | Glowing projected trail now accumulates during playback and resets cleanly on restart / point jumps |
+| 3.4 | Playback Controls & Keyboard Shortcuts | ✅ Done | Wired ⏮⏪⏸▶⏩ controls, disabled edge states, canvas click toggle, and Space/←/→/F shortcuts |
+| 3.5 | Speed Ruler | 🚧 In Progress | Playback pacing rebased so centered `1×` now matches the former `0.25×` default; total-duration readout still pending |
+| 3.6 | Stop-at-Points Mode | 🚧 In Progress | Stoppable pauses plus temporary any-point option implemented; single overlay now stays live and swaps to point images on stop |
 | 3.7 | Timeline Scrubber | 🔲 Pending | Drag-to-seek + notch markers; depends on 3.2, 3.4 |
-| 3.8 | Annotation Overlay | 🔲 Pending | Description/image card; depends on 3.6 |
+| 3.8 | Annotation Overlay | ✅ Done | Auto-shows only on automatic annotated pauses, resolves local/remote images, and dismisses on Continue/manual navigation |
 | 3.9 | Live Stats Display | 🔲 Pending | Date + Sun distance; depends on 3.2 |
 | 3.10 | Fullscreen Mode | 🔲 Pending | requestFullscreen + F key; depends on 3.4 |
+| 3.11 | Fixed Reference Point & Connector Line | ✅ Done | Static Jupiter-to-Atlas connector now stays rendered from 2025-10-31 onward, without dropping out when the camera swings behind an endpoint |
+| 3.12 | Large Annotated Image Window | ✅ Done | Added larger paused-point media window with local/remote/root-asset image support, top-right placement, and graceful no-image fallback |
 
-**Progress: 2 / 10 stories complete**
+**Progress: 7 / 12 stories complete**
 
 ---
 
@@ -79,8 +81,8 @@
 | Epic | Title | Done | Total | % |
 |---|---|---|---|---|
 | Epic 2 | Object Motion Tracker | 16 | 16 | 100% |
-| Epic 3 | Trajectory Player | 2 | 10 | 20% |
-| **Total** | | **18** | **26** | **69%** |
+| Epic 3 | Trajectory Player | 7 | 12 | 58% |
+| **Total** | | **23** | **28** | **82%** |
 
 ---
 
@@ -102,3 +104,26 @@
 | 2026-03-09 | Completed Story 3.1 with new player shell, URL-based trajectory loader, friendly error states, basic autoplay bootstrap, and Jest coverage | dev agent |
 | 2026-03-09 | Started Story 3.2: spline playback engine, interpolated stats, and camera pan support | dev agent |
 | 2026-03-09 | Completed Story 3.2 with Catmull-Rom motion, per-frame date/Sun-distance updates, and camera lerp including tx/ty/tz pan data | dev agent |
+| 2026-03-09 | Fixed Story 3.1 missing-designation handling to show the required friendly error instead of silently defaulting to `3I` | dev agent |
+| 2026-03-09 | Completed Stories 3.3 and 3.4 with projected motion trail rendering, playback controls, edge-state disabling, canvas click toggle, and keyboard shortcuts | dev agent |
+| 2026-03-09 | Started Story 3.6 bug-fix pass: stoppable checkbox now pauses playback with Continue →, non-playing states pause solar-system motion, and only an explicit Play-button click restarts from the end | dev agent |
+| 2026-03-09 | Updated player UX by request: no autoplay on load, `Pause at stoppable points` defaults on, and non-play controls plus canvas drag/zoom stay disabled while playback is running | dev agent |
+| 2026-03-09 | Hid the shared Solar System HUD on `trajectory_player`, made date/Sun-distance float with the object, and added a temporary `Pause at every point` checkbox | dev agent |
+| 2026-03-09 | Added a new bundled `3I` trajectory point for `2025-10-31` to `data/3I/trajectory.json`, including converted AU/PX coordinates and a smooth interpolated camera state | dev agent |
+| 2026-03-09 | Corrected the trajectory-player default playback speed to `0.25×` (4× slower than the original default) and synced the slider UI to match | dev agent |
+| 2026-03-09 | Added Epic 3 Story 3.11 for a fixed 2026-03-16 reference point and yellow connector line that appears from 2025-10-31 onward | dev agent |
+| 2026-03-09 | Implemented Story 3.11 with an isolated trajectory-player reference-point renderer, date gate, and Jest coverage for the fixed coordinates and visibility logic | dev agent |
+| 2026-03-09 | Revised Story 3.11 to anchor the yellow connector between fixed Jupiter coordinates and the saved 2025-10-29 Atlas position instead of the live playback position | dev agent |
+| 2026-03-09 | Adjusted Story 3.11 rendering so the static yellow connector remains visible after 2025-10-31 even when the camera passes behind one of its fixed endpoints | dev agent |
+| 2026-03-09 | Updated Epic 2 docs so image references can be local asset paths or absolute URLs without requiring upload, and added Epic 3 Story 3.12 for a larger annotated image window | dev agent |
+| 2026-03-09 | Implemented Stories 3.8 and 3.12 with a DOM-based paused-point annotation overlay, larger local/remote image window, and graceful image-load fallback | dev agent |
+| 2026-03-09 | Rebased trajectory-player pacing so centered `1×` now matches the prior slow default by changing the base segment duration to 4000 ms and restoring controller default speed to `1` | dev agent |
+| 2026-03-09 | Updated shared solar-system planet textures so Venus now uses `assets/venus.webp` and Uranus uses `assets/uranus.png` | dev agent |
+| 2026-03-09 | Fixed trajectory-player local asset image resolution for root-relative paths, moved the annotation window to the top-right, and updated the small-fixes rule to skip approval prompts | dev agent |
+| 2026-03-09 | Fixed the floating date/Sun-distance panel to keep tracking the object during paused camera moves by reprojecting its screen position on every UI sync | dev agent |
+| 2026-03-10 | Added trajectory-driven named-color comet tinting, kept a single bottom-right live preview box, and switched stoppable image mode to reuse that same box | dev agent |
+| 2026-03-10 | Replaced overlay tinting with generated recolored comet-image variants so blue/red states change the sprite itself instead of painting a diamond-shaped cover over it | dev agent |
+| 2026-03-10 | Fixed color inheritance so points without `color` keep the last defined trajectory color, and transitions happen only when the destination point explicitly defines a new color | dev agent |
+| 2026-03-10 | Added `yellow` as a supported trajectory-driven comet color so the player now respects green, blue, red, and yellow values from `data/3I/trajectory.json` | dev agent |
+| 2026-03-10 | Moved the single trajectory overlay back to the top of the screen and added a hollow color ring over the media area to show the current trajectory color on both preview and stopped-image states | dev agent |
+| 2026-03-10 | Moved the hollow color ring off the overlay box and onto the flying object itself so the ring tracks the live object instead of covering preview or stop images | dev agent |

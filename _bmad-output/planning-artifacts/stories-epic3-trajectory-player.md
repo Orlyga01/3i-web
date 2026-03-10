@@ -14,14 +14,15 @@
 |---|---|---|
 | [3.1](#story-31--player-page-shell--url-loading) | Player Page Shell & URL Loading | ✅ Done |
 | [3.2](#story-32--animation-engine) | Animation Engine (Spline + Camera Lerp) | ✅ Done |
-| [3.3](#story-33--motion-trail) | Motion Trail | 🔲 Pending |
-| [3.4](#story-34--playback-controls--keyboard-shortcuts) | Playback Controls & Keyboard Shortcuts | 🔲 Pending |
+| [3.3](#story-33--motion-trail) | Motion Trail | ✅ Done |
+| [3.4](#story-34--playback-controls--keyboard-shortcuts) | Playback Controls & Keyboard Shortcuts | ✅ Done |
 | [3.5](#story-35--speed-ruler) | Speed Ruler | 🔲 Pending |
 | [3.6](#story-36--stop-at-points-mode) | Stop-at-Points Mode | 🔲 Pending |
 | [3.7](#story-37--timeline-scrubber) | Timeline Scrubber | 🔲 Pending |
 | [3.8](#story-38--annotation-overlay) | Annotation Overlay | 🔲 Pending |
 | [3.9](#story-39--live-stats-display) | Live Stats Display | 🔲 Pending |
 | [3.10](#story-310--fullscreen-mode) | Fullscreen Mode | 🔲 Pending |
+| [3.12](#story-312--large-annotated-image-window) | Large Annotated Image Window | 🔲 Pending |
 
 ---
 
@@ -140,17 +141,17 @@
 
 ### Acceptance Criteria
 
-- [ ] Starting from the very first animation frame (object at point 0), the trail begins accumulating
-- [ ] Each frame, the object's current interpolated world position `(wx, wy, wz)` is appended to a trail array
-- [ ] The trail is drawn as a series of connected line segments between consecutive trail points:
+- [x] Starting from the very first animation frame (object at point 0), the trail begins accumulating
+- [x] Each frame, the object's current interpolated world position `(wx, wy, wz)` is appended to a trail array
+- [x] The trail is drawn as a series of connected line segments between consecutive trail points:
   - Each segment's opacity = `(i / trail.length) × 0.7` — newer segments are more opaque, older ones fade out at the start
   - Colour: `rgba(120,255,200, opacity)`
   - Line width: `1.8px`
   - Uses `project3(wx, wy, wz)` from `shared_render.js` to convert world → screen coordinates
   - Segments behind the camera (depth < 10) are skipped
-- [ ] The trail is drawn **before** the object marker each frame, so the marker renders on top
-- [ ] When `⏮ Restart` is triggered (Story 3.4), the trail array is cleared and rebuilds from point 0
-- [ ] When the user jumps to a different point via `⏩ / ⏪` (Story 3.4) or the scrubber (Story 3.7), the trail array is cleared and rebuilds from the new position forward
+- [x] The trail is drawn **before** the object marker each frame, so the marker renders on top
+- [x] When `⏮ Restart` is triggered (Story 3.4), the trail array is cleared and rebuilds from point 0
+- [x] When the user jumps to a different point via `⏩ / ⏪` (Story 3.4) or the scrubber (Story 3.7), the trail array is cleared and rebuilds from the new position forward
 
 ### Technical Notes
 
@@ -160,6 +161,18 @@
 
 ### Dependencies
 - Story 3.2 (animation engine must produce interpolated positions each frame)
+
+### Implementation Notes
+
+- Filled `TrailRenderer.draw()` with a projected glow trail using `project3()` and the same opacity ramp as `drawAtlasTrail()` in `atlas_main.js`.
+- Hooked trail accumulation into the per-frame playback path and reset behavior used by Restart / Prev / Next controls.
+- Added Jest coverage for trail rebuild helper logic alongside the existing interpolation tests.
+
+### File List
+
+- `trajectory_player.js`
+- `tests/trajectory_player_logic.js`
+- `tests/trajectory_player.test.js`
 
 ---
 
@@ -171,16 +184,16 @@
 
 ### Acceptance Criteria
 
-- [ ] A fixed control bar is visible at the bottom of the screen with the following buttons, in order:
+- [x] A fixed control bar is visible at the bottom of the screen with the following buttons, in order:
   - `⏮` Restart
   - `⏪` Prev Point
   - `⏸ / ▶` Play / Pause (toggles; label updates to reflect state)
   - `⏩` Next Point
-- [ ] **`⏮ Restart`:** jumps to the beginning of segment 0 (object at point 0), clears the trail, resets the camera to point 0's saved state, begins playing
-- [ ] **`⏪ Prev Point`:** immediately moves to the start of the previous segment; camera snaps (not lerps) to the previous point's saved camera state; trail is trimmed to only include positions up to that point
-- [ ] **`⏩ Next Point`:** immediately moves to the start of the next segment; camera snaps to that point's saved camera state; trail continues from that position
-- [ ] **`⏸ / ▶`:** toggles between playing and paused; the `PlaybackEngine` loop continues running but `t` is not advanced while paused
-- [ ] **Keyboard shortcuts** — active when no text input is focused:
+- [x] **`⏮ Restart`:** jumps to the beginning of segment 0 (object at point 0), clears the trail, resets the camera to point 0's saved state, begins playing
+- [x] **`⏪ Prev Point`:** immediately moves to the start of the previous segment; camera snaps (not lerps) to the previous point's saved camera state; trail is trimmed to only include positions up to that point
+- [x] **`⏩ Next Point`:** immediately moves to the start of the next segment; camera snaps to that point's saved camera state; trail continues from that position
+- [x] **`⏸ / ▶`:** toggles between playing and paused; the `PlaybackEngine` loop continues running but `t` is not advanced while paused
+- [x] **Keyboard shortcuts** — active when no text input is focused:
   | Key | Action |
   |---|---|
   | `Space` | Play / Pause |
@@ -188,18 +201,30 @@
   | `→` | Next Point |
   | `F` | Toggle fullscreen (Story 3.10) |
   | `Enter` | Continue → (at a stoppable pause, Story 3.6) |
-- [ ] Prev/Next buttons are disabled (visually greyed) at the start and end of the trajectory respectively
-- [ ] Clicking the canvas (outside the control bar) toggles play/pause — matching the existing `atlas_main.js` behaviour
+- [x] Prev/Next buttons are disabled (visually greyed) at the start and end of the trajectory respectively
+- [x] Clicking the canvas (outside the control bar) toggles play/pause — matching the existing `atlas_main.js` behaviour
 
 ### Technical Notes
 
 - `PlaybackController` holds state: `playing | paused | stopped-at-point`
-- Snap (not lerp) on Prev/Next: directly set `SolarSystem.camera.setState(point.camera)` rather than setting lerp target
+- Snap (not lerp) on Prev/Next: directly set `SolarSystem.camera.setRawState(point.camera)` rather than setting lerp target
 - `stopped-at-point` is a distinct state from `paused` — it is entered by Story 3.6 (stop-at-stoppable-point), not by the play/pause toggle
 
 ### Dependencies
 - Story 3.2 (PlaybackEngine loop)
 - Story 3.3 (trail reset on Restart / Prev / Next)
+
+### Implementation Notes
+
+- Connected the existing bottom control bar shell to `PlaybackController` so Restart / Prev / Play-Pause / Next now manipulate the live playback state.
+- Added keyboard handling for `Space`, `←`, `→`, and `F`, with text-entry guards so shortcuts do not interfere with future form fields.
+- Added UI edge-state updates so Prev/Next disable correctly at the start/end of the trajectory, and clicking the canvas now mirrors the play/pause toggle.
+
+### File List
+
+- `trajectory_player.js`
+- `tests/trajectory_player_logic.js`
+- `tests/trajectory_player.test.js`
 
 ---
 
@@ -320,7 +345,7 @@
 - [ ] **Overlay layout** — positioned bottom-left, above the control bar:
   - Background: `rgba(0,1,14,0.88)`, border `1px solid rgba(130,180,255,0.3)`, `border-radius: 10px` — matching the `drawAtlasCloseup` panel aesthetic
   - Date line: the point's date in large `Georgia` font, `rgba(200,235,255,0.9)`
-  - Image: displayed at maximum `200×150px` (`object-fit: contain`) if `image` is non-null; fetched from `data/{sanitized_name}/{image_filename}`
+  - Image: displayed at maximum `200×150px` (`object-fit: contain`) if `image` is non-null; relative/local values resolve from `data/{sanitized_name}/...`, while absolute URLs are used as-is
   - Description text: `12px Georgia`, `rgba(180,210,255,0.85)`, wrapping within the panel width
   - Minimum panel width: `260px`; maximum: `360px`
 - [ ] The overlay is dismissed when the user presses "Continue →" or `Space` / `Enter` (Story 3.6)
@@ -329,7 +354,7 @@
 ### Technical Notes
 
 - `AnnotationOverlay.show(point, sanitizedName)` / `AnnotationOverlay.hide()`
-- Image loading: `<img src="data/{sanitizedName}/{point.image}">` — uses the same relative path convention as Epic 2 Update Mode
+- Image loading: resolve `point.image` as either a local asset path within `data/{sanitizedName}/...` or an absolute URL
 - The overlay is a DOM element, not a canvas draw — it sits over the canvas via CSS `position: absolute; z-index: 10`
 
 ### Dependencies
@@ -394,6 +419,73 @@
 
 ---
 
+## Story 3.11 — Fixed Reference Point & Connector Line
+
+**As a** viewer,
+**I want** to see a fixed solar-system reference point and a straight yellow line connecting it to `3I/ATLAS`,
+**so that** the presentation can highlight the object's relationship to a specific future state vector without cluttering the existing player logic.
+
+### Acceptance Criteria
+
+- [ ] A fixed reference point is defined in the trajectory player using the supplied Horizons state for `A.D. 2026-Mar-16 00:00:00.0000 TDB` (`JD 2461116.500000000`)
+- [ ] The reference point uses the supplied position coordinates:
+  1. `X = -2.938911969874775E+08 km`
+  2. `Y = 7.061584947345904E+08 km`
+  3. `Z = -3.226181197025475E+07 km`
+- [ ] The trajectory player renders that reference point as a visible marker in the solar system view
+- [ ] A straight **yellow** line is rendered from the live `3I/ATLAS` position to the fixed reference point
+- [ ] The reference point and yellow connector remain hidden before `2025-10-31`
+- [ ] The reference point and yellow connector become visible on and after `2025-10-31`
+- [ ] The implementation is encapsulated inside the trajectory player codepath and does not require changes to shared solar-system rendering behaviour outside this feature
+- [ ] Existing playback, trail, controls, annotations, and camera behaviour continue to work unchanged when the feature is present
+
+### Technical Notes
+
+- Convert the supplied Horizons XYZ position from kilometres into the coordinate system already used by the player (`AU` and/or world-pixel space as appropriate)
+- Treat the point as a fixed overlay/reference marker rather than a new animated trajectory point
+- Register the feature through a dedicated, self-contained player render hook or helper so the change stays isolated from unrelated rendering logic
+- Use the player's current interpolated object world position and date to decide when to show the marker and where to draw the line
+
+### Dependencies
+- Story 3.2 (interpolated object world position and playback date)
+- Story 3.3 (trajectory-player-specific rendering layer pattern)
+
+---
+
+## Story 3.12 — Large Annotated Image Window
+
+**As a** viewer at a highlighted story beat,
+**I want** a much larger image window to appear for dated trajectory points,
+**so that** the visual storytelling lands clearly during playback.
+
+### Acceptance Criteria
+
+- [ ] The player supports trajectory points whose `image` field is either:
+  1. A local asset filename/path resolved from `data/{sanitized_name}/...`
+  2. An absolute remote URL used directly
+- [ ] When the player pauses at a relevant annotated point, the image is shown in a dedicated DOM window rather than relying only on the compact Story 3.8 card image slot
+- [ ] The image window is visibly larger than the old `atlas_journey` inset:
+  - Minimum panel width: `340px`
+  - Maximum panel width: `560px`
+  - Image display target: up to `420×280px`, `object-fit: contain`
+- [ ] The window includes the point date and may include the point description below the image when present
+- [ ] If the image fails to load, the rest of the player continues working and the window shows a graceful no-image state instead of breaking playback
+- [ ] The implementation is encapsulated inside the trajectory player codepath and requires only minimal changes to existing playback, control, and overlay wiring
+- [ ] Existing trajectories with `image: null` continue to behave exactly as before
+
+### Technical Notes
+
+- Prefer a dedicated helper/component such as `AnnotationImageWindow` or an equivalent extension of `AnnotationOverlay`
+- Reuse the dark panel aesthetic inspired by `drawAtlasCloseup()` while keeping the implementation DOM-based
+- Resolve local/relative image values against `data/{sanitizedName}/`; detect `http://` and `https://` values and pass them through untouched
+- Keep the feature isolated from shared solar-system rendering so the change remains easy to remove or evolve later
+
+### Dependencies
+- Story 3.6 (stop-at-points mode)
+- Story 3.8 (base annotation overlay behavior)
+
+---
+
 ## Implementation Order (Suggested)
 
 ```
@@ -407,9 +499,11 @@
 3.8  Annotation Overlay                    ← depends on 3.6
 3.9  Live Stats Display                    ← informational layer
 3.10 Fullscreen Mode                       ← presentation polish
+3.11 Fixed Reference Point & Connector     ← specialized presentation layer
+3.12 Large Annotated Image Window          ← enhanced storytelling window
 ```
 
-Stories 3.1–3.4 form the **minimum working player** — loads a trajectory, animates it, basic controls. Stories 3.5–3.8 add the pacing and storytelling features. Stories 3.9–3.10 add presentation polish.
+Stories 3.1–3.4 form the **minimum working player** — loads a trajectory, animates it, basic controls. Stories 3.5–3.8 add the pacing and storytelling features. Stories 3.9–3.12 add presentation polish and presentation-specific overlays.
 
 **Epic 2 prerequisites (must be complete before Epic 3 development):**
 - Story 2.14 (per-point `durationPct` and `stoppable` fields in annotation UI + schema)

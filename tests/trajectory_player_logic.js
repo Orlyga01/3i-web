@@ -29,8 +29,7 @@ function decodeDesignation(value) {
 function readDesignationFromUrl(search = '') {
     const params = new URLSearchParams(search);
     const rawValue = params.get('designation') ?? params.get('d');
-    const designation = decodeDesignation(rawValue);
-    return designation || '3I';
+    return decodeDesignation(rawValue);
 }
 
 function sanitize(name) {
@@ -95,6 +94,7 @@ function normalizePoint(point, index, designation) {
         camera,
         durationPct: Number.isFinite(durationPct) ? Math.max(1, durationPct) : 100,
         stoppable: Boolean(point.stoppable),
+        color: normalizeVisualColor(point.color),
         description: point.description ?? null,
         image: point.image ?? null,
     };
@@ -107,6 +107,23 @@ function buildObjectMotionHref(designation) {
 function buildTrajectoryPlayerHref(designation) {
     return `trajectory_player?designation=${encodeURIComponent(designation || '3I')}`;
 }
+
+const AU_IN_KM = 149597870.7;
+const WORLD_PX_PER_AU = 175;
+const REFERENCE_CONNECTOR_VISIBLE_FROM = '2025-10-31';
+const FIXED_OBJECT_ANCHOR_DATE = '2025-10-29';
+const DEFAULT_VISUAL_COLOR = 'green';
+const VISUAL_COLOR_MAP = Object.freeze({
+    green: Object.freeze({ r: 88, g: 228, b: 128 }),
+    blue: Object.freeze({ r: 96, g: 176, b: 255 }),
+    red: Object.freeze({ r: 255, g: 104, b: 104 }),
+    yellow: Object.freeze({ r: 255, g: 214, b: 92 }),
+});
+const FIXED_REFERENCE_POINT_KM = Object.freeze({
+    x: -3.318697414262085e8,
+    y: 7.099317219152682e8,
+    z: 4.476039412376106e6,
+});
 
 function lerp(a, b, t) {
     return a + (b - a) * t;
@@ -121,6 +138,51 @@ function catmullRom(p0, p1, p2, p3, t) {
     );
 }
 
+function normalizeVisualColor(value) {
+    const key = String(value || '').trim().toLowerCase();
+    return VISUAL_COLOR_MAP[key] ? key : null;
+}
+
+function getNamedVisualColorRgb(name) {
+    return VISUAL_COLOR_MAP[normalizeVisualColor(name) || DEFAULT_VISUAL_COLOR];
+}
+
+function getColorNameForPoint(points, index) {
+    for (let cursor = index; cursor >= 0; cursor -= 1) {
+        const color = normalizeVisualColor(points[cursor]?.color);
+        if (color) return color;
+    }
+    return DEFAULT_VISUAL_COLOR;
+}
+
+function getAppearanceAtPoint(points, index) {
+    const name = getColorNameForPoint(points, index);
+    return {
+        name,
+        rgb: { ...getNamedVisualColorRgb(name) },
+    };
+}
+
+function interpolateAppearanceForSegment(points, segmentIndex, t) {
+    const startName = getColorNameForPoint(points, segmentIndex);
+    const destinationIndex = Math.min(points.length - 1, segmentIndex + 1);
+    const explicitDestinationName = normalizeVisualColor(points[destinationIndex]?.color);
+    const endName = explicitDestinationName || startName;
+    const startRgb = getNamedVisualColorRgb(startName);
+    const endRgb = getNamedVisualColorRgb(endName);
+
+    return {
+        name: t >= 0.5 ? endName : startName,
+        fromName: startName,
+        toName: endName,
+        rgb: {
+            r: Math.round(lerp(startRgb.r, endRgb.r, t)),
+            g: Math.round(lerp(startRgb.g, endRgb.g, t)),
+            b: Math.round(lerp(startRgb.b, endRgb.b, t)),
+        },
+    };
+}
+
 function clampSegmentIndex(points, index) {
     return Math.max(0, Math.min(points.length - 1, index));
 }
@@ -128,7 +190,21 @@ function clampSegmentIndex(points, index) {
 function getSegmentDurationMs(points, segmentIndex, speedMultiplier = 1) {
     const destinationPoint = points[segmentIndex + 1];
     if (!destinationPoint) return Number.POSITIVE_INFINITY;
-    return (destinationPoint.durationPct / 100) * 1000 * (1 / speedMultiplier);
+    return (destinationPoint.durationPct / 100) * 4000 * (1 / speedMultiplier);
+}
+
+function buildTrailThroughIndex(points, throughIndex, samplesPerSegment = 8) {
+    if (!Array.isArray(points) || points.length === 0) return [];
+    const clampedIndex = Math.max(0, Math.min(points.length - 1, throughIndex));
+    const trail = [{ ...points[0].px }];
+
+    for (let segmentIndex = 0; segmentIndex < clampedIndex; segmentIndex += 1) {
+        for (let step = 1; step <= samplesPerSegment; step += 1) {
+            trail.push(interpolateWorldPosition(points, segmentIndex, step / samplesPerSegment));
+        }
+    }
+
+    return trail;
 }
 
 function interpolateWorldPosition(points, segmentIndex, t) {
@@ -150,6 +226,66 @@ function parseDate(value) {
         return new Date(`${value}T00:00:00Z`);
     }
     return new Date(value);
+}
+
+function convertKmToAuPosition(positionKm) {
+    return {
+        x: Number(positionKm?.x || 0) / AU_IN_KM,
+        y: Number(positionKm?.y || 0) / AU_IN_KM,
+        z: Number(positionKm?.z || 0) / AU_IN_KM,
+    };
+}
+
+function convertAuToWorldPosition(positionAu) {
+    return {
+        wx: Number(positionAu?.x || 0) * WORLD_PX_PER_AU,
+        wy: Number(positionAu?.y || 0) * WORLD_PX_PER_AU,
+        wz: Number(positionAu?.z || 0) * WORLD_PX_PER_AU,
+    };
+}
+
+function getFixedReferencePoint() {
+    const au = convertKmToAuPosition(FIXED_REFERENCE_POINT_KM);
+    return {
+        visibleFrom: REFERENCE_CONNECTOR_VISIBLE_FROM,
+        km: { ...FIXED_REFERENCE_POINT_KM },
+        au,
+        world: convertAuToWorldPosition(au),
+    };
+}
+
+function getWorldPositionAtDate(points, targetDate) {
+    if (!Array.isArray(points) || points.length === 0) return null;
+    const exactPoint = points.find(point => point?.date === targetDate);
+    if (exactPoint?.px) {
+        return { ...exactPoint.px };
+    }
+
+    const targetTime = parseDate(targetDate).getTime();
+    if (Number.isNaN(targetTime)) return null;
+
+    for (let index = 0; index < points.length - 1; index += 1) {
+        const startTime = parseDate(points[index]?.date).getTime();
+        const endTime = parseDate(points[index + 1]?.date).getTime();
+        if (Number.isNaN(startTime) || Number.isNaN(endTime) || targetTime < startTime || targetTime > endTime) {
+            continue;
+        }
+
+        const duration = endTime - startTime;
+        const t = duration <= 0 ? 0 : (targetTime - startTime) / duration;
+        return interpolateWorldPosition(points, index, t);
+    }
+
+    return null;
+}
+
+function getFixedConnectorConfiguration(points) {
+    return {
+        visibleFrom: REFERENCE_CONNECTOR_VISIBLE_FROM,
+        objectAnchorDate: FIXED_OBJECT_ANCHOR_DATE,
+        objectAnchorWorld: getWorldPositionAtDate(points, FIXED_OBJECT_ANCHOR_DATE),
+        referencePoint: getFixedReferencePoint(),
+    };
 }
 
 function interpolateDate(points, segmentIndex, t) {
@@ -199,6 +335,179 @@ function lerpCameraState(current, target, sp = 0.022) {
     };
 }
 
+function shouldPauseAtPoint(point, pauseAtStoppablePoints, pauseAtEveryPoint = false) {
+    return Boolean(pauseAtEveryPoint || (pauseAtStoppablePoints && point?.stoppable));
+}
+
+function getPlayAction(state, source = 'toggle') {
+    if (state === 'stopped-at-point') return 'noop';
+    if (state === 'stopped') return source === 'button' ? 'restart' : 'noop';
+    return state === 'playing' ? 'pause' : 'play';
+}
+
+function areSecondaryControlsDisabled(state) {
+    return state === 'playing';
+}
+
+function getControlBarState(state, currentPointIndex, totalPoints) {
+    const atStart = currentPointIndex <= 0;
+    const atEnd = currentPointIndex >= Math.max(0, totalPoints - 1);
+    const secondaryDisabled = areSecondaryControlsDisabled(state);
+    return {
+        label: state === 'playing'
+            ? 'Playing'
+            : state === 'paused'
+                ? 'Paused'
+                : state === 'stopped'
+                    ? 'Stopped'
+                    : state === 'stopped-at-point'
+                        ? 'Paused at point'
+                        : 'Idle',
+        playText: state === 'playing' ? '⏸' : '▶',
+        playDisabled: state === 'stopped-at-point',
+        prevDisabled: secondaryDisabled || atStart,
+        nextDisabled: secondaryDisabled || atEnd,
+        secondaryDisabled,
+    };
+}
+
+function getFloatingStatsLayout(projected, panelSize, viewportSize) {
+    const margin = 16;
+    const panelWidth = Math.max(0, Number(panelSize?.width) || 190);
+    const panelHeight = Math.max(0, Number(panelSize?.height) || 56);
+    const viewportWidth = Math.max(panelWidth + margin * 2, Number(viewportSize?.width) || 0);
+    const viewportHeight = Math.max(panelHeight + margin * 2, Number(viewportSize?.height) || 0);
+
+    if (!projected || !Number.isFinite(projected.sx) || !Number.isFinite(projected.sy) || projected.depth < 10) {
+        return {
+            left: margin,
+            top: margin,
+            visible: false,
+        };
+    }
+
+    let left = projected.sx + 18;
+    let top = projected.sy - panelHeight - 14;
+
+    if (top < margin) {
+        top = projected.sy + 18;
+    }
+
+    left = Math.max(margin, Math.min(viewportWidth - panelWidth - margin, left));
+    top = Math.max(margin, Math.min(viewportHeight - panelHeight - margin, top));
+
+    return {
+        left,
+        top,
+        visible: true,
+    };
+}
+
+function shouldIgnorePlaybackShortcut(target) {
+    if (!target || typeof target !== 'object') return false;
+    if (target.isContentEditable) return true;
+    const tagName = String(target.tagName || '').toUpperCase();
+    if (tagName === 'TEXTAREA' || tagName === 'SELECT') return true;
+    if (tagName !== 'INPUT') return false;
+    const type = String(target.type || '').toLowerCase();
+    return ['text', 'search', 'url', 'tel', 'email', 'password', 'number'].includes(type);
+}
+
+function shouldShowReferenceConnector(currentDate, visibleFrom = REFERENCE_CONNECTOR_VISIBLE_FROM) {
+    const date = parseDate(currentDate);
+    const start = parseDate(visibleFrom);
+    if (Number.isNaN(date.getTime()) || Number.isNaN(start.getTime())) return false;
+    return date.getTime() >= start.getTime();
+}
+
+function normalizeAnnotationDescription(description) {
+    return typeof description === 'string' ? description.trim() : '';
+}
+
+function isAbsoluteImageUrl(value) {
+    return /^https?:\/\//i.test(String(value || '').trim());
+}
+
+function resolveAnnotationImageSrc(image, sanitizedName) {
+    if (typeof image !== 'string') return null;
+    const trimmed = image.trim();
+    if (!trimmed) return null;
+    if (isAbsoluteImageUrl(trimmed)) return trimmed;
+    if (trimmed.startsWith('/')) return trimmed;
+    const normalized = trimmed.replace(/^\.?[\\/]+/, '').replace(/\\/g, '/');
+    return `data/${sanitize(sanitizedName)}/${normalized}`;
+}
+
+function hasAnnotationContent(point) {
+    return Boolean(
+        normalizeAnnotationDescription(point?.description) ||
+        resolveAnnotationImageSrc(point?.image, point?.designation || '')
+    );
+}
+
+function shouldShowAnnotationOverlay(state, point) {
+    return state === 'stopped-at-point' && hasAnnotationContent(point);
+}
+
+function buildAnnotationOverlayModel(point, sanitizedName, imageState = 'ready') {
+    const description = normalizeAnnotationDescription(point?.description);
+    const imageSrc = resolveAnnotationImageSrc(point?.image, sanitizedName);
+    const hasImageWindow = Boolean(imageSrc);
+    const showImage = Boolean(imageSrc) && imageState !== 'error';
+
+    return {
+        dateText: point?.date ? parseDate(point.date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric',
+            timeZone: 'UTC',
+        }) : '--',
+        description,
+        imageSrc,
+        hasContent: Boolean(description || imageSrc),
+        hasImageWindow,
+        showImage,
+        showDescription: Boolean(description),
+        showNoImageState: hasImageWindow && imageState === 'error',
+    };
+}
+
+function capitalizeVisualColor(name) {
+    const value = String(name || DEFAULT_VISUAL_COLOR);
+    return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function buildTrajectoryOverlayModel(context = {}, imageState = 'ready') {
+    const point = context.point || null;
+    const appearance = context.appearance || {
+        name: DEFAULT_VISUAL_COLOR,
+        rgb: { ...getNamedVisualColorRgb(DEFAULT_VISUAL_COLOR) },
+    };
+    const sanitizedName = context.sanitizedName || '';
+    const stopImageSrc = resolveAnnotationImageSrc(point?.image, sanitizedName);
+    const showStoppedImage = context.state === 'stopped-at-point' && Boolean(stopImageSrc);
+    const description = normalizeAnnotationDescription(point?.description);
+    const colorName = appearance.name || DEFAULT_VISUAL_COLOR;
+
+    return {
+        mode: showStoppedImage ? 'image' : 'preview',
+        kicker: showStoppedImage ? 'Point Image' : `${capitalizeVisualColor(colorName)} Preview`,
+        dateText: point?.date ? parseDate(point.date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric',
+            timeZone: 'UTC',
+        }) : '--',
+        description,
+        imageSrc: showStoppedImage ? stopImageSrc : null,
+        showImage: showStoppedImage && imageState !== 'error',
+        showNoImageState: showStoppedImage && imageState === 'error',
+        showPreview: !showStoppedImage || imageState === 'error',
+        showDescription: Boolean(description),
+        previewAppearance: appearance,
+    };
+}
+
 module.exports = {
     TrajectoryLoadError,
     decodeDesignation,
@@ -208,12 +517,37 @@ module.exports = {
     buildObjectMotionHref,
     buildTrajectoryPlayerHref,
     normalizePoint,
+    normalizeVisualColor,
+    getNamedVisualColorRgb,
+    getColorNameForPoint,
+    getAppearanceAtPoint,
+    interpolateAppearanceForSegment,
     lerp,
     catmullRom,
     getSegmentDurationMs,
+    buildTrailThroughIndex,
     interpolateWorldPosition,
     interpolateDate,
     interpolateSunDistance,
     getCameraTargetForSegment,
     lerpCameraState,
+    shouldPauseAtPoint,
+    getPlayAction,
+    areSecondaryControlsDisabled,
+    getControlBarState,
+    getFloatingStatsLayout,
+    shouldIgnorePlaybackShortcut,
+    convertKmToAuPosition,
+    convertAuToWorldPosition,
+    getFixedReferencePoint,
+    getWorldPositionAtDate,
+    getFixedConnectorConfiguration,
+    shouldShowReferenceConnector,
+    normalizeAnnotationDescription,
+    isAbsoluteImageUrl,
+    resolveAnnotationImageSrc,
+    hasAnnotationContent,
+    shouldShowAnnotationOverlay,
+    buildAnnotationOverlayModel,
+    buildTrajectoryOverlayModel,
 };

@@ -27,6 +27,7 @@
    - 5.9 [Annotation Overlay](#59-annotation-overlay)
    - 5.10 [Live Stats Display](#510-live-stats-display)
    - 5.11 [Fullscreen Mode](#511-fullscreen-mode)
+  - 5.12 [Large Annotated Image Window](#512-large-annotated-image-window)
 6. [Non-Functional Requirements](#6-non-functional-requirements)
 7. [Out of Scope for Epic 3](#7-out-of-scope-for-epic-3)
 8. [User Journeys](#8-user-journeys)
@@ -371,9 +372,42 @@ If `stoppable: true` but neither description nor image exists, no overlay is sho
 - Background: `rgba(0,1,14,0.88)` with a `1px` border `rgba(130,180,255,0.3)`, rounded corners — matching the `drawAtlasCloseup` panel aesthetic
 - Contents (top to bottom):
   - Date: `"Oct 29, 2025"` — large, `Georgia` font
-  - Image: displayed at max 200×150px if present
+  - Image: displayed at max 200×150px if present; relative/local values resolve from `data/{sanitized_name}/...`, absolute URLs are used directly
   - Description text: `12px Georgia`, light colour
 - Stays visible until the user dismisses it (clicks "Continue →" or presses Space/Enter)
+
+---
+
+### 5.12 Large Annotated Image Window
+
+**Requirement:** For major story beats with an image, the player may present a larger dedicated image window that is clearly bigger than the old `atlas_journey` inset while remaining encapsulated inside the trajectory-player codepath.
+
+#### FR-12.1 — Supported Image Sources
+
+The `points[].image` field may contain either:
+
+- A local filename/path resolved from `data/{sanitized_name}/...`
+- An absolute remote URL (`http://` or `https://`)
+
+The player resolves local values relative to the trajectory folder and passes absolute URLs through unchanged.
+
+#### FR-12.2 — Window Layout
+
+- The image window is rendered as a DOM overlay, not a canvas draw
+- It follows the dark-panel style inspired by `drawAtlasCloseup()` in `atlas_main.js`
+- It is noticeably larger than the old `atlas_journey` inset (`220×220`)
+- Target layout:
+  - Panel width between `340px` and `560px`
+  - Image display target up to `420×280px`
+  - Date shown above the image
+  - Optional description shown below the image
+
+#### FR-12.3 — Behavior
+
+- The large image window is shown only when the active point has an image and the relevant player pause/annotation conditions are met
+- If the image fails to load, playback and controls continue uninterrupted
+- Existing points with `image: null` behave exactly as before
+- The feature is implemented with minimum changes to the current player and without changing shared solar-system rendering behavior
 
 ---
 
@@ -528,7 +562,7 @@ New fields added to each point (both optional, backward-compatible):
     "az": 0.0,
     "zoom": 0
   },
-  "image": "point_11.jpg",
+  "image": "images/perihelion.jpg",
   "description": "Perihelion — closest approach to Sun, 1.356 AU. Peak brightness."
 }
 ```
@@ -544,11 +578,12 @@ New fields added to each point (both optional, backward-compatible):
 | Constraint | Detail |
 |---|---|
 | **Epic 2 dependency** | `trajectory.json` files with saved camera states (all `camera` fields non-null) are required for full playback; files with some `camera: null` points are handled via neighbor interpolation |
-| **Epic 1 dependency** | `solar_system.js` must expose `SolarSystem.camera.getState()` and `SolarSystem.camera.setState()` |
+| **Epic 1 dependency** | `solar_system.js` must expose `SolarSystem.camera.getState()` and `SolarSystem.camera.setRawState()` |
 | **Catmull-Rom reuse** | The `catmullRom` and `lerp` functions currently in `atlas_main.js` must be accessible to `trajectory_player.js` — they can be duplicated or extracted to `shared_render.js` |
 | **Scale convention** | 1 AU = 175 px — unchanged |
 | **Read-only** | The player page must never write to any file — it is a pure consumer of `trajectory.json` |
 | **URL parameter** | `sanitized_name` in the URL must match the folder name convention from Epic 2 (`spaces and / → _`) |
+| **Image source support** | `points[].image` may be a local asset path relative to the trajectory folder or an absolute remote URL |
 
 ---
 

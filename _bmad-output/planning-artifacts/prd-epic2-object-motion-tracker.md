@@ -19,7 +19,7 @@
    - 5.1 [Object Search & Data Fetch](#51-object-search--data-fetch)
    - 5.2 [Existing File Detection & Update Mode](#52-existing-file-detection--update-mode)
    - 5.3 [Point-by-Point Camera Annotation Workflow](#53-point-by-point-camera-annotation-workflow)
-   - 5.4 [Per-Point Image & Description](#54-per-point-image--description)
+  - 5.4 [Per-Point Image Reference & Description](#54-per-point-image-reference--description)
    - 5.5 [JSON Export & Persistence](#55-json-export--persistence)
 6. [Non-Functional Requirements](#6-non-functional-requirements)
 7. [Out of Scope for Epic 2](#7-out-of-scope-for-epic-2)
@@ -35,11 +35,11 @@
 
 Epic 2 adds a new standalone page — **`object_motion.html`** — that lets the user look up any solar system object by name via the JPL Horizons API, retrieve its heliocentric trajectory as a list of dated positions, and annotate each position with a saved camera view using the Epic 1 solar system viewer as the visual canvas.
 
-For each data point the user may optionally attach an **image** and a **text description** — turning the trajectory file into a richly annotated record suitable for presentation, storytelling, or scientific notes.
+For each data point the user may optionally attach an **image reference** and a **text description** — turning the trajectory file into a richly annotated record suitable for presentation, storytelling, or scientific notes.
 
-The result is a **per-object folder** under `data/` containing a `trajectory.json` file and any uploaded images. These files are committed to the repository. They serve as the data source for future animated flyby epics (e.g., Epic 3: replay a saved trajectory as a cinematic scene).
+The result is a **per-object folder** under `data/` containing a `trajectory.json` file and any optional local image assets. These files are committed to the repository. They serve as the data source for future animated flyby epics (e.g., Epic 3: replay a saved trajectory as a cinematic scene).
 
-If a folder already exists for the named object, the page enters **Update Mode** — loading the previously saved data and allowing the user to revise any camera annotation, description, or image.
+If a folder already exists for the named object, the page enters **Update Mode** — loading the previously saved data and allowing the user to revise any camera annotation, description, or image reference.
 
 ---
 
@@ -261,35 +261,39 @@ As soon as at least one point has been saved, a **"Save to File"** button become
 
 1. Serialises the full annotated trajectory to `trajectory.json` (see Section 10)
 2. Triggers a browser **file download** of `trajectory.json`
-3. If the File System Access API is available (`window.showDirectoryPicker`), also offers to write all files (JSON + images) directly into the `data/{name}/` folder in the project
+3. If the File System Access API is available (`window.showDirectoryPicker`), also offers to write all files (JSON + any uploaded local images) directly into the `data/{name}/` folder in the project
 4. Falls back gracefully to download-only on Firefox/Safari
 5. Shows confirmation: "Trajectory saved — [N] points · [filename]"
 
 ---
 
-### 5.4 Per-Point Image & Description
+### 5.4 Per-Point Image Reference & Description
 
-**Requirement:** For each data point, the user may optionally attach a single image file and a free-text description. Both are optional and may be added, changed, or removed at any time during annotation.
+**Requirement:** For each data point, the user may optionally associate a single image reference and a free-text description. Both are optional and may be added, changed, or removed at any time during annotation.
 
-#### FR-4.1 — Image Upload
+#### FR-4.1 — Image Reference
 
-Each point in the progress sidebar and in the main annotation area shall include:
+Each point in the progress sidebar and in the main annotation area shall include support for an optional image reference:
 
-- An **"Upload Image"** button (or drag-and-drop target area)
-- Accepted formats: JPEG, PNG, WebP, GIF
-- No size limit enforced client-side, but a soft warning is shown for files > 5 MB: "Large images will increase the size of your saved data."
-- Once uploaded, the image is previewed as a small thumbnail (80×80px) beside the point
-- An **"×"** remove button clears the image
+- The existing **"Upload Image"** button (or drag-and-drop target area) may still be used
+- Upload remains optional; the player-facing requirement is only that `points[i].image` contain a string reference when an image should be shown
+- The saved `image` string may point to:
+  - A local filename/path inside `data/{sanitized_name}/`
+  - An absolute remote URL
+- If the upload flow is used, accepted formats are JPEG, PNG, WebP, GIF
+- If the upload flow is used and the file exceeds 5 MB, a soft warning is shown: "Large images will increase the size of your saved data."
+- When an image resolves successfully, a small thumbnail preview (80×80px) is shown beside the point
+- An **"×"** remove button clears the image reference
 
-The image is held in memory as a `File` object until saved. It is not embedded in the JSON — it is saved as a separate file (see FR-4.3).
+If the upload flow is used, the image is held in memory as a `File` object until saved. It is not embedded in the JSON — the JSON stores only the resolved string reference (see FR-4.3).
 
 #### FR-4.2 — Text Description
 
-Below the image upload area, a multiline text field (`<textarea>`) allows the user to type a description for the current point. Placeholder text: `"Add a note for this date... (optional)"`. No character limit. No formatting — plain text only.
+Below the image area, a multiline text field (`<textarea>`) allows the user to type a description for the current point. Placeholder text: `"Add a note for this date... (optional)"`. No character limit. No formatting — plain text only.
 
-#### FR-4.3 — Image File Naming & Storage
+#### FR-4.3 — Image Reference Storage
 
-When saving to file, each attached image is written as a separate file in the same object folder:
+When saving to file, any uploaded local image is written as a separate file in the same object folder:
 
 ```
 data/{sanitized_name}/
@@ -297,17 +301,21 @@ data/{sanitized_name}/
   point_{index}.jpg     ← or .png / .webp depending on uploaded file type
 ```
 
-The `trajectory.json` stores only the filename (not the image data):
+The `trajectory.json` stores only the image reference string (not the image data):
 
 ```json
 "image": "point_0.jpg"
 ```
 
-On load (Update Mode), the system fetches each image file by its relative path from the same folder to display thumbnails.
+On load (Update Mode), the system resolves image references as follows:
+
+- Relative/local values are fetched from the same object folder
+- Absolute URLs are used directly
+- The player and future viewers must not require the image to have been uploaded through the Epic 2 UI
 
 #### FR-4.4 — Images Not Required to Save Point
 
-The user can click "Save Point →" with no image and no description attached. The camera state is saved regardless. Images and descriptions are purely optional enrichments.
+The user can click "Save Point →" with no image and no description attached. The camera state is saved regardless. Images and descriptions are purely optional enrichments, and image playback does not require an upload step.
 
 ---
 
@@ -322,7 +330,7 @@ objectMotion:{sanitized_name}
 ```
 
 This protects against accidental tab close before the final save. If the final remaining point is deleted, the draft is cleared instead of storing an empty trajectory.  
-Note: Image `File` objects cannot be stored in localStorage. The draft stores only image filenames; actual image files must be re-uploaded if the session is lost before final save.
+Note: Uploaded image `File` objects cannot be stored in localStorage. The draft stores only image reference strings; actual uploaded files must still be re-uploaded if the session is lost before final save.
 
 #### FR-5.2 — Draft Recovery
 
@@ -373,9 +381,9 @@ with options **"Resume"** or **"Start Fresh"**.
 3. No existing folder found — system calls Horizons API.
 4. 122 data points returned. Solar system viewer appears with point 1 marked.
 5. User rotates the arcball to a 3/4 view, zooms in slightly. Clicks **"Save Point →"**.
-6. Point 2 appears. User notices the object is near Mars. Uploads a telescope image of YR4 from that date, types `"Close approach to Mars — 0.07 AU"`. Saves.
+6. Point 2 appears. User notices the object is near Mars. Adds an image reference for that date, types `"Close approach to Mars — 0.07 AU"`. Saves.
 7. Repeats for all 122 points. When done, clicks **"Save to File"**.
-8. `trajectory.json` and any image files download; optionally written to `data/2024_YR4/`.
+8. `trajectory.json` and any uploaded local image files download; optionally written to `data/2024_YR4/`.
 
 ### Journey 2: "Update 3I's annotations after redesigning the UI"
 
@@ -478,7 +486,7 @@ No modifications to `solar_system.js` are required unless `getState()` was not f
         "az": 0.0,
         "zoom": 0
       },
-      "image": "point_0.jpg",
+      "image": "images/discovery.jpg",
       "description": "Discovery observation — 4.5 AU from Sun"
     },
     {
@@ -522,7 +530,7 @@ This is the **forward-compatibility contract** Epic 3 depends on.
 | **File writing** | Full filesystem write requires Chrome with File System Access API; Firefox/Safari use download-only fallback |
 | **Scale convention** | 1 AU = 175 px (inherited from `atlas_data.js`) — must remain consistent across all epics |
 | **Coordinate frame** | Horizons VECTORS with `CENTER=500@10` returns ICRF/J2000 coordinates. The existing `shared_render.js` treats the XY plane as the ecliptic — this is a standard approximation (ecliptic obliquity ≈ 23.4° from equatorial) that is acceptable for visual purposes in Epic 2. A precise frame rotation is deferred to Epic 3. |
-| **Image storage** | Images are stored as separate files alongside `trajectory.json`, not embedded in the JSON, to keep the JSON lean and git history clean |
+| **Image references** | `points[].image` is a string reference; local assets may live alongside `trajectory.json`, and absolute remote URLs are also valid |
 | **data/ folder** | Committed to the repository — no `.gitignore` entry for this folder |
 
 ---

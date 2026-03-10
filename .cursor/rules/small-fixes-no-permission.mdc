@@ -14,6 +14,11 @@ For **small, clearly-scoped fixes**, make the change directly without asking for
 - A missing `return`, `break`, or guard clause
 - Fixing a linter error introduced by a previous edit
 
+## Approval behavior
+
+- Do **not** stop to ask for approval before applying a small fix.
+- Apply the small fix directly, then briefly explain what changed after the edit.
+
 ## What still requires asking first
 
 - New features or new files

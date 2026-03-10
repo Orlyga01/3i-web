@@ -81,12 +81,12 @@ function drawStars() {
 // Uranus kept at compressed value (background only).
 const planets = [
   { name: 'Mercury', color: '#c0b0a0', r: 5,  orbit:   68, speed: .047, angle: .5 },  // 0.387 AU
-  { name: 'Venus',   color: '#e8c87a', r: 8,  orbit:  127, speed: .035, angle: 1.2 },  // 0.723 AU
+  { name: 'Venus',   color: '#e8c87a', r: 8,  orbit:  127, speed: .035, angle: 1.2, texture: 'assets/venus.webp' },  // 0.723 AU
   { name: 'Earth',   color: '#4488cc', r: 9,  orbit:  175, speed: .029, angle: 2.1, texture: 'assets/earth.png' },  // 1.000 AU
   { name: 'Mars',    color: '#dd5533', r: 7,  orbit:  267, speed: .024, angle: 3.4, texture: 'assets/mars.png' },   // 1.524 AU
   { name: 'Jupiter', color: '#c8a060', r: 44, orbit:  910, speed: .013, angle: .8,  texture: 'assets/jupiter.gif' }, // 5.203 AU
   { name: 'Saturn',  color: '#d4b870', r: 18, orbit: 1669, speed: .009, angle: 4.2, ring: true, texture: 'assets/saturn.webp' }, // 9.537 AU
-  { name: 'Uranus',  color: '#88ddee', r: 13, orbit:  608, speed: .006, angle: 1.9 }, // compressed (background)
+  { name: 'Uranus',  color: '#88ddee', r: 13, orbit:  608, speed: .006, angle: 1.9, texture: 'assets/uranus.png' }, // compressed (background)
 ];
 const N_PLANETS = planets.length;
 
@@ -104,6 +104,142 @@ planets.forEach(loadPlanetTexture);
 // Load comet texture
 const cometImage = new Image();
 cometImage.src = 'assets/green_aura_transparent.png';
+
+function parseCometTint(col) {
+  if (Array.isArray(col) && col.length >= 3) {
+    return {
+      r: clamp(Math.round(Number(col[0]) || 0), 0, 255),
+      g: clamp(Math.round(Number(col[1]) || 0), 0, 255),
+      b: clamp(Math.round(Number(col[2]) || 0), 0, 255),
+    };
+  }
+  if (col && typeof col === 'object') {
+    return {
+      r: clamp(Math.round(Number(col.r) || 0), 0, 255),
+      g: clamp(Math.round(Number(col.g) || 0), 0, 255),
+      b: clamp(Math.round(Number(col.b) || 0), 0, 255),
+    };
+  }
+  const raw = String(col || '180,220,255').split(',').map(v => Number(v.trim()));
+  return {
+    r: clamp(Math.round(raw[0] || 180), 0, 255),
+    g: clamp(Math.round(raw[1] || 220), 0, 255),
+    b: clamp(Math.round(raw[2] || 255), 0, 255),
+  };
+}
+
+const cometVariantCache = new Map();
+
+function createScratchCanvas(width, height) {
+  if (typeof OffscreenCanvas !== 'undefined') {
+    return new OffscreenCanvas(width, height);
+  }
+  const el = document.createElement('canvas');
+  el.width = width;
+  el.height = height;
+  return el;
+}
+
+function getCometVariantCacheKey(image, tint) {
+  return [
+    image?.src || 'default',
+    tint.r,
+    tint.g,
+    tint.b,
+  ].join('|');
+}
+
+function getRecoloredCometImage(image, tint) {
+  if (!image?.complete || !(image.naturalWidth > 0)) return image;
+
+  const cacheKey = getCometVariantCacheKey(image, tint);
+  const cached = cometVariantCache.get(cacheKey);
+  if (cached) return cached;
+
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  const scratch = createScratchCanvas(width, height);
+  const scratchCtx = scratch.getContext('2d', { willReadFrequently: true });
+  if (!scratchCtx) return image;
+
+  scratchCtx.clearRect(0, 0, width, height);
+  scratchCtx.drawImage(image, 0, 0, width, height);
+
+  const imageData = scratchCtx.getImageData(0, 0, width, height);
+  const { data } = imageData;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (!alpha) continue;
+
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+
+    // Use the source sprite brightness as a mask so the recolored output
+    // becomes a true image variant instead of a colored overlay.
+    const brightness = Math.max(r, g, b) / 255;
+    const shaded = 0.22 + brightness * 0.9;
+
+    data[i] = clamp(Math.round(tint.r * shaded), 0, 255);
+    data[i + 1] = clamp(Math.round(tint.g * shaded), 0, 255);
+    data[i + 2] = clamp(Math.round(tint.b * shaded), 0, 255);
+  }
+
+  scratchCtx.putImageData(imageData, 0, 0);
+  cometVariantCache.set(cacheKey, scratch);
+  return scratch;
+}
+
+function drawTintedSprite(targetCtx, image, x, y, width, height, alpha, tint) {
+  const variant = getRecoloredCometImage(image, tint);
+  targetCtx.save();
+  targetCtx.globalAlpha = alpha;
+  targetCtx.drawImage(variant, x, y, width, height);
+  targetCtx.restore();
+}
+
+function drawCometBillboard(targetCtx, options = {}) {
+  const {
+    x = 0,
+    y = 0,
+    size = 80,
+    rotationAngle = 0,
+    alpha = 1,
+    tint = parseCometTint(),
+    image = cometImage,
+  } = options;
+
+  if (image?.complete && image.naturalWidth > 0) {
+    targetCtx.save();
+    targetCtx.translate(x, y);
+    targetCtx.rotate(rotationAngle);
+    drawTintedSprite(targetCtx, image, -size / 2, -size / 2, size, size, alpha, tint);
+    targetCtx.restore();
+    return;
+  }
+
+  const glowSize = Math.max(size * 0.44, 12);
+  const outerGlow = targetCtx.createRadialGradient(x, y, 0, x, y, glowSize);
+  outerGlow.addColorStop(0, `rgba(${tint.r},${tint.g},${tint.b},${0.5 * alpha})`);
+  outerGlow.addColorStop(0.3, `rgba(${tint.r},${tint.g},${tint.b},${0.3 * alpha})`);
+  outerGlow.addColorStop(0.6, `rgba(${tint.r},${tint.g},${tint.b},${0.15 * alpha})`);
+  outerGlow.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
+  targetCtx.beginPath();
+  targetCtx.arc(x, y, glowSize, 0, Math.PI * 2);
+  targetCtx.fillStyle = outerGlow;
+  targetCtx.fill();
+
+  const nucleusRadius = Math.max(size * 0.11, 3);
+  const nucleus = targetCtx.createRadialGradient(x, y, 0, x, y, nucleusRadius);
+  nucleus.addColorStop(0, `rgba(255,255,255,${alpha})`);
+  nucleus.addColorStop(0.4, `rgba(${tint.r},${tint.g},${tint.b},${0.85 * alpha})`);
+  nucleus.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
+  targetCtx.beginPath();
+  targetCtx.arc(x, y, nucleusRadius, 0, Math.PI * 2);
+  targetCtx.fillStyle = nucleus;
+  targetCtx.fill();
+}
 
 function drawOrbit(p, alpha) {
   const N = 120;
@@ -300,7 +436,7 @@ function drawPlaneFlash() {
 
 // ── COMET DRAW ────────────────────────────────────────────────
 function drawComet(wx, wy, wz, alpha, col, sizeMultiplier) {
-  col = col || '180,220,255';
+  const tint = parseCometTint(col);
   sizeMultiplier = sizeMultiplier || 1;
   const { sx, sy, depth } = project3(wx, wy, wz);
   if (depth < 5) return;
@@ -326,32 +462,24 @@ function drawComet(wx, wy, wz, alpha, col, sizeMultiplier) {
     // Size of the comet image on screen
     const cometSize = 80 * sc * sizeMultiplier;
     
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.translate(sx, sy);
-    ctx.rotate(rotationAngle);
-    ctx.drawImage(cometImage, -cometSize/2, -cometSize/2, cometSize, cometSize);
-    ctx.restore();
+    drawCometBillboard(ctx, {
+      x: sx,
+      y: sy,
+      size: cometSize,
+      rotationAngle,
+      alpha,
+      tint,
+    });
   } else {
-    // Fallback: Draw procedural comet if image not loaded
-    const glowSize = 35 * sc;
-    const outerGlow = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowSize);
-    outerGlow.addColorStop(0, `rgba(${col},${.5 * alpha})`);
-    outerGlow.addColorStop(0.3, `rgba(${col},${.3 * alpha})`);
-    outerGlow.addColorStop(0.6, `rgba(${col},${.15 * alpha})`);
-    outerGlow.addColorStop(1, `rgba(${col},0)`);
-    ctx.beginPath();
-    ctx.arc(sx, sy, glowSize, 0, Math.PI * 2);
-    ctx.fillStyle = outerGlow;
-    ctx.fill();
-    
-    const ng = ctx.createRadialGradient(sx, sy, 0, sx, sy, 9 * sc);
-    ng.addColorStop(0, `rgba(255,255,255,${alpha})`);
-    ng.addColorStop(.4, `rgba(${col},${.85 * alpha})`);
-    ng.addColorStop(1, `rgba(${col},0)`);
-    ctx.beginPath();
-    ctx.arc(sx, sy, 9 * sc, 0, Math.PI * 2);
-    ctx.fillStyle = ng;
-    ctx.fill();
+    drawCometBillboard(ctx, {
+      x: sx,
+      y: sy,
+      size: 80 * sc * sizeMultiplier,
+      alpha,
+      tint,
+    });
   }
 }
+
+window.drawCometBillboard = drawCometBillboard;
+window.parseCometTint = parseCometTint;

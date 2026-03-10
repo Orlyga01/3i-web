@@ -2,7 +2,7 @@
   "object": "3I",
   "designation": "3I",
   "createdAt": "2026-03-08T00:00:00Z",
-  "updatedAt": "2026-03-09T15:34:08.667Z",
+  "updatedAt": "2026-03-09T17:12:14Z",
   "source": "JPL Horizons VECTORS",
   "dateRange": "2024-10-01 → 2026-03-16",
   "scale": {
@@ -101,7 +101,8 @@
         "wz": 51
       },
       "durationPct": 100,
-      "stoppable": false,
+      "stoppable": true,
+      "color": "green",
       "camera": {
         "el": 4.6,
         "az": 0.08,
@@ -111,7 +112,7 @@
         "tz": 0
       },
       "description": "Discovery — 4.5 AU from Sun",
-      "image": null
+      "image": "/assets/3igreen.jpg"
     },
     {
       "jd": 2460872.5,
@@ -131,9 +132,9 @@
       "camera": {
         "el": 4.6,
         "az": 0.08,
-        "zoom": 40,
-        "tx": -10,
-        "ty": 0,
+        "zoom": 30,
+        "tx": 60,
+        "ty": 40,
         "tz": 0
       },
       "description": null,
@@ -157,9 +158,9 @@
       "camera": {
         "el": 4.6,
         "az": 0.08,
-        "zoom": 46,
-        "tx": -30,
-        "ty": 0,
+        "zoom": 40,
+        "tx": 10,
+        "ty": 30,
         "tz": 0
       },
       "description": null,
@@ -184,7 +185,7 @@
         "el": 5.4,
         "az": 0.09,
         "zoom": 53,
-        "tx": -89.34,
+        "tx": -70,
         "ty": 32.76,
         "tz": -9.72
       },
@@ -211,8 +212,8 @@
         "az": 0.08,
         "zoom": 55,
         "tx": -70.49,
-        "ty": -5.05,
-        "tz": 10.24
+        "ty": 80,
+        "tz": 0
       },
       "description": null,
       "image": null
@@ -237,11 +238,12 @@
         "az": 0.09,
         "zoom": 67,
         "tx": -140.28,
-        "ty": 71.53,
+        "ty": 65,
         "tz": -2.95
       },
       "description": null,
-      "image": null
+      "image": null,
+      "color": "blue"
     },
     {
       "jd": 2460947.5,
@@ -259,12 +261,12 @@
       "durationPct": 100,
       "stoppable": false,
       "camera": {
-        "el": 5.2,
-        "az": 0.09,
-        "zoom": 70,
-        "tx": 6.27,
-        "ty": 22.97,
-        "tz": -3.59
+        "el": 5.4,
+        "az": 1,
+        "zoom": 62,
+        "tx": -350.28,
+        "ty": 76,
+        "tz": 0
       },
       "description": null,
       "image": null
@@ -286,14 +288,14 @@
       "stoppable": true,
       "camera": {
         "el": 5,
-        "az": 0.09,
+        "az": 1,
         "zoom": 75,
-        "tx": -60,
+        "tx": -330,
         "ty": 0,
         "tz": 0
       },
       "description": "Mars close approach — ~0.194 AU from Mars",
-      "image": null
+      "image": "https://media.wired.com/photos/691e4c4fcd00e362e9e89aeb/master/w_1920,c_limit/3I:Atlas-Is-Interstellar-Comet-Science-AP25231484126430.jpg"
     },
     {
       "jd": 2460962.5,
@@ -348,6 +350,32 @@
       "image": null
     },
     {
+      "jd": 2460979.5,
+      "date": "2025-10-31",
+      "au": {
+        "x": -1.3275,
+        "y": -0.2705,
+        "z": 0.0879
+      },
+      "px": {
+        "wx": -232,
+        "wy": -47,
+        "wz": 15
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": {
+        "el": 3.91,
+        "az": 0.09,
+        "zoom": 88,
+        "tx": -216.95,
+        "ty": -28.4,
+        "tz": 14.59
+      },
+      "description": null,
+      "image": "https://www.universetoday.com/article_images/3I-ATLAS_noirlab2525b_crop_20251101_093148.png"
+    },
+    {
       "jd": 2460992.5,
       "date": "2025-11-13",
       "au": {
@@ -370,8 +398,17 @@
         "ty": -18.97,
         "tz": 11.05
       },
-      "description": null,
-      "image": null
+      "description": {
+        "images": [
+          {
+            "url": "https://c.ndtvimg.com/2025-11/5mrdu7s8_interstellar-object-3iatlas_625x300_10_November_25.jpeg?downsize=773:435"
+          },
+          {
+            "url": "https://miro.medium.com/v2/resize:fit:720/format:webp/1*SBgYRjky78TScNE5Rvfvog.png"
+          }
+        ]
+      },
+      "image": "https://ia.tmgrup.com.tr/644c75/806/378/0/48/1280/648?u=https://i.tmgrup.com.tr/anews/v1/2025/11/06/interstellar-comet-3iatlas-changes-color-to-blue-sparks-scientific-curiosity-1762421143121.jpg"
     },
     {
       "jd": 2461007.5,
@@ -412,6 +449,7 @@
         "wy": 238,
         "wz": -1
       },
+      "color": "green",
       "durationPct": 100,
       "stoppable": false,
       "camera": {
@@ -423,11 +461,12 @@
         "tz": -16.67
       },
       "description": null,
-      "image": null
+      "image": "https://www.futura-sciences.com/en/wp-content/uploads/2025/12/Hubble_reobserves_3I_ATLAS_pillars-1.jpeg"
     },
     {
       "jd": 2461037.5,
       "date": "2025-12-28",
+      "color": "red",
       "au": {
         "x": -1.68,
         "y": 1.9086,
@@ -449,6 +488,7 @@
         "tz": 15.3
       },
       "description": "Earth closest approach — ~1.8 AU. Earth enters ion tail.",
+      "video": "https://www.youtube.com/watch?v=9t-OV6Wmbkw",
       "image": null
     },
     {
@@ -465,7 +505,8 @@
         "wz": -17
       },
       "durationPct": 100,
-      "stoppable": false,
+      "stoppable": true,
+      "color": "yellow",
       "camera": {
         "el": 7,
         "az": -0.25,
@@ -475,7 +516,7 @@
         "tz": 51.53
       },
       "description": null,
-      "image": null
+      "image": "/assets/jets.jpg"
     },
     {
       "jd": 2461097.5,

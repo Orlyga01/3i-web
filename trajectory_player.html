@@ -113,8 +113,8 @@
 
     #tp-stats {
       position: fixed;
-      top: 16px;
-      right: 16px;
+      top: 0;
+      left: 0;
       min-width: 190px;
       padding: 8px 12px;
       border-radius: 8px;
@@ -143,22 +143,92 @@
 
     #tp-overlay {
       position: fixed;
-      left: 20px;
-      bottom: 106px;
-      min-width: 260px;
-      max-width: 360px;
-      min-height: 20px;
+      right: 20px;
+      top: 20px;
+      bottom: auto;
       display: none;
-      border-radius: 10px;
-      border: 1px solid rgba(130, 180, 255, 0.3);
-      background: rgba(0, 1, 14, 0.88);
-      padding: 14px 16px;
-      color: rgba(180, 210, 255, 0.85);
       pointer-events: none;
+      z-index: 12;
     }
 
     #tp-overlay.visible {
       display: block;
+    }
+
+    #tp-overlay .tp-overlay-card {
+      width: min(280px, calc(100vw - 32px));
+      min-height: 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(130, 180, 255, 0.3);
+      background: rgba(0, 1, 14, 0.88);
+      padding: 12px 12px 14px;
+      color: rgba(180, 210, 255, 0.85);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34);
+    }
+
+    .tp-overlay-kicker {
+      color: rgba(140, 196, 255, 0.72);
+      font-size: 10px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+    }
+
+    #tp-overlay.is-image-mode .tp-overlay-kicker {
+      color: rgba(255, 210, 150, 0.82);
+    }
+
+    .tp-overlay-date {
+      margin-top: 6px;
+      color: rgba(200, 235, 255, 0.9);
+      font: 600 18px Georgia, serif;
+      letter-spacing: 0.5px;
+    }
+
+    .tp-overlay-media-shell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 220px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(130, 180, 255, 0.2);
+      background: rgba(6, 18, 40, 0.92);
+      overflow: hidden;
+    }
+
+    .tp-overlay-preview {
+      width: 220px;
+      height: 220px;
+      display: block;
+    }
+
+    .tp-overlay-image {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      display: none;
+    }
+
+    .tp-overlay-no-image {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 220px;
+      padding: 18px;
+      color: rgba(170, 205, 255, 0.82);
+      font: 12px Georgia, serif;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+
+    .tp-overlay-description {
+      margin-top: 10px;
+      color: rgba(180, 210, 255, 0.85);
+      font: 12px Georgia, serif;
+      line-height: 1.45;
+      white-space: pre-wrap;
     }
 
     #tp-continue-btn {
@@ -268,7 +338,8 @@
     }
 
     #tp-speed-wrap,
-    #tp-stop-wrap {
+    #tp-stop-wrap,
+    #tp-stop-all-wrap {
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -276,6 +347,10 @@
       font-size: 12px;
       letter-spacing: 1px;
       white-space: nowrap;
+    }
+
+    #ss-hud-panel {
+      display: none !important;
     }
 
     #tp-speed-slider {
@@ -354,8 +429,13 @@
         </label>
 
         <label id="tp-stop-wrap">
-          <input id="tp-stop-checkbox" type="checkbox">
+          <input id="tp-stop-checkbox" type="checkbox" checked>
           <span>Pause at stoppable points</span>
+        </label>
+
+        <label id="tp-stop-all-wrap">
+          <input id="tp-stop-all-checkbox" type="checkbox">
+          <span>Pause at every point</span>
         </label>
 
         <span id="tp-status-pill">Idle</span>

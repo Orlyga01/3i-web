@@ -295,29 +295,31 @@
 ## Story 2.9 — Per-Point Image Upload
 
 **As a** trajectory author,
-**I want** to optionally attach an image to each data point,
-**so that** the saved trajectory file is enriched with visual reference material.
+**I want** to optionally associate an image with each data point,
+**so that** the saved trajectory file is enriched with visual reference material without requiring an upload-only workflow.
 
 ### Acceptance Criteria
 
-- [ ] Below the solar system viewer (or in an annotation panel beside the sidebar), each active point shows:
-  - An **"Upload Image"** button that opens the browser file picker
-  - A drag-and-drop target area accepting file drops
-  - Accepted formats: JPEG, PNG, WebP, GIF
+- [ ] Below the solar system viewer (or in an annotation panel beside the sidebar), each active point supports an optional image reference:
+  - The existing **"Upload Image"** flow may still be used
+  - A saved point may also carry an `image` string set directly in `trajectory.json`
+  - The stored image string may be either a local asset filename/path or an absolute URL
 - [ ] Once an image is selected:
   - A thumbnail preview (80×80px, object-fit: cover) is shown in the annotation panel
   - The same thumbnail (20×20px) appears in the sidebar row for this point
   - An **"× Remove"** button clears the image
 - [ ] If the uploaded file exceeds 5 MB, a soft warning is shown: `"Large image (X MB) — this will increase your saved data size."` The upload is still accepted; no hard block
-- [ ] Image upload is fully optional — "Save Point →" works with no image attached
+- [ ] Image upload is fully optional — "Save Point →" works with no image attached, and player playback does not require an uploaded file
 - [ ] Images are held in memory as `File` objects until exported (Story 2.12)
-- [ ] When loading a saved file (Update Mode), existing image filenames in the JSON are used to fetch and display the saved thumbnails from `data/{sanitized_name}/point_{index}.{ext}`
+- [ ] When loading a saved file (Update Mode), existing image values in the JSON are used to fetch and display saved thumbnails:
+  - Relative/local values resolve from `data/{sanitized_name}/...`
+  - Absolute URLs are used as-is
 
 ### Technical Notes
 
 - Module: `MediaAnnotator.handleImageUpload(file, pointIndex)`, `MediaAnnotator.clearImage(pointIndex)`
-- Use `URL.createObjectURL(file)` for in-memory preview thumbnails
-- Store the `File` object in `TrajectoryStore` alongside the point data; the filename is set at export time (Story 2.12)
+- Use `URL.createObjectURL(file)` for in-memory preview thumbnails when the upload flow is used
+- `points[i].image` remains a string reference in the saved JSON, whether it came from an uploaded file, a local asset path, or an absolute URL
 
 ### Dependencies
 - Story 2.7, Story 2.8
@@ -332,7 +334,7 @@
 
 ### Acceptance Criteria
 
-- [ ] In the annotation panel for each active point, a `<textarea>` is displayed below the image upload area
+- [ ] In the annotation panel for each active point, a `<textarea>` is displayed below the image area
 - [ ] Placeholder text: `"Add a note for this date… (optional)"`
 - [ ] The textarea has no character limit and accepts plain text only (no formatting controls)
 - [ ] Text is saved to `TrajectoryStore` for the current point when the user clicks "Save Point →" (captured together with the camera state — the user does not need a separate "save description" step)
@@ -360,7 +362,7 @@
 
 - [ ] Every time a point is saved (Story 2.8), the full `TrajectoryStore` state is written to `localStorage` under the key `objectMotion:{sanitized_name}`
 - [ ] Every time a point is deleted from the sidebar (Story 2.7), the full `TrajectoryStore` state is immediately rewritten to the same `localStorage` key; if the final point is deleted, the draft is cleared
-- [ ] The stored draft includes: all point data (date, jd, au, px), all saved camera states, all saved descriptions; image filenames are stored but `File` objects are not (cannot be serialised to localStorage)
+- [ ] The stored draft includes: all point data (date, jd, au, px), all saved camera states, all saved descriptions; image references are stored but `File` objects are not (cannot be serialised to localStorage)
 - [ ] On page load, after the user enters an object designation and clicks "Search", the system checks localStorage for a matching key **before** checking for a bundled file (Story 2.4) and **before** calling the API
 - [ ] If a draft is found, the user is shown: `"Resume unsaved session for '[name]' — [N] of [M] points saved"` with two buttons:
   - **"Resume"** — loads the draft into `TrajectoryStore`, skips the API call, enters the annotation workflow
@@ -370,7 +372,7 @@
 
 ### Technical Notes
 
-- Serialise with `JSON.stringify(TrajectoryStore.toPlainObject())`; `File` objects are excluded — the draft note warns: "Images are not included in the draft and will need to be re-uploaded."
+- Serialise with `JSON.stringify(TrajectoryStore.toPlainObject())`; uploaded `File` objects are excluded, but existing image reference strings remain in the draft
 - Draft key collision (same designation, different date range): overwrite the draft — only one draft per designation is kept
 
 ### Dependencies
@@ -381,7 +383,7 @@
 ## Story 2.12 — JSON Serialisation & File Save
 
 **As a** trajectory author,
-**I want** to export the annotated trajectory as a JSON file (and any attached images),
+**I want** to export the annotated trajectory as a JSON file (and any optional uploaded local images),
 **so that** the data is saved to the repository and available for future epics.
 
 ### Acceptance Criteria
@@ -390,16 +392,16 @@
 - [ ] Clicking "Save to File" serialises `TrajectoryStore` to a JSON object matching the schema in PRD Section 10.1:
   - `object`, `designation`, `createdAt`, `updatedAt`, `source`, `dateRange`, `scale`, `points[]`
   - Camera values rounded to 2 decimal places
-  - `image` field: filename string (e.g., `"point_0.jpg"`) or `null`
+  - `image` field: string reference (relative/local path, absolute URL, or uploaded filename such as `"point_0.jpg"`) or `null`
   - `description` field: string or `null`
 - [ ] **Download fallback (all browsers):**
   - `trajectory.json` is downloaded via `URL.createObjectURL(new Blob([...]))` + programmatic `<a>` click
-  - Each attached image is downloaded as a separate file: `point_{index}.{ext}`
-  - A confirmation message is shown: `"Trajectory saved — [N] points · [N images] · trajectory.json"`
+  - Any uploaded local images are downloaded as separate files: `point_{index}.{ext}`
+  - A confirmation message is shown: `"Trajectory saved — [N] points · trajectory.json"` with optional image count detail when uploaded files were written
 - [ ] **File System Access API (Chrome 86+, progressive enhancement):**
   - If `window.showDirectoryPicker` is available, an additional button **"Save to project folder"** is shown
   - Clicking it opens a directory picker; the user selects the `data/` folder
-  - The system creates (or overwrites) the subfolder `{sanitized_name}/` and writes all files into it
+  - The system creates (or overwrites) the subfolder `{sanitized_name}/` and writes `trajectory.json` plus any uploaded local image files into it
   - Falls back gracefully with a message if the user cancels the picker or if the API is unavailable
 - [ ] After a successful save, the localStorage draft for this object is cleared (Story 2.11)
 - [ ] In Update Mode, "Save to File" overwrites `trajectory.json`; `updatedAt` is set to the current timestamp; `createdAt` is preserved from the original file
@@ -408,7 +410,7 @@
 
 - Module: `FileIO.serialize(store)`, `FileIO.download(json, images)`, `FileIO.saveToDirectory(dirHandle, sanitizedName, json, images)`
 - The JSON `points[].au` values are stored at full floating-point precision (do not round AU coordinates — rounding only applies to camera state)
-- Image filename extension is derived from `file.type`: `image/jpeg` → `.jpg`, `image/png` → `.png`, `image/webp` → `.webp`, `image/gif` → `.gif`
+- When the upload flow is used, the exported image filename extension is derived from `file.type`: `image/jpeg` → `.jpg`, `image/png` → `.png`, `image/webp` → `.webp`, `image/gif` → `.gif`
 
 ### Dependencies
 - Story 2.8, Story 2.9, Story 2.10, Story 2.11
