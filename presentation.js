@@ -55,7 +55,6 @@ function getPresentationControls(state) {
   const started = Boolean(state?.started) && slideCount > 0 && currentIndex >= 0;
 
   return {
-    canStart: slideCount > 0 && !started,
     canBack: started && currentIndex > 0,
     canNext: started && currentIndex < slideCount - 1,
   };
@@ -72,24 +71,33 @@ async function loadPresentationManifest(fetchImpl = window.fetch, designation = 
 }
 
 function bootstrapPresentationPage() {
-  const titleEl = document.getElementById("presentation-title");
-  const subtitleEl = document.getElementById("presentation-subtitle");
-  const slideNameEl = document.getElementById("presentation-slide-name");
   const stageEl = document.getElementById("presentation-stage");
   const frameEl = document.getElementById("presentation-frame");
   const messageEl = document.getElementById("presentation-message");
   const messageTitleEl = document.getElementById("presentation-message-title");
   const messageCopyEl = document.getElementById("presentation-message-copy");
-  const startBtn = document.getElementById("presentation-start-btn");
   const backBtn = document.getElementById("presentation-back-btn");
   const nextBtn = document.getElementById("presentation-next-btn");
+  const pauseBtn = document.getElementById("presentation-pause-btn");
   const skipLink = document.getElementById("presentation-skip-link");
 
   const state = {
     manifest: null,
     started: false,
     currentIndex: -1,
+    cometTailPaused: false,
   };
+
+  function isCometTailSlide(slide) {
+    return String(slide?.src || "").includes("slides/3I/comet_tail.html");
+  }
+
+  function updatePauseButton() {
+    const slide = state.manifest?.slides?.[state.currentIndex];
+    const enabled = state.started && isCometTailSlide(slide);
+    pauseBtn.disabled = !enabled;
+    pauseBtn.textContent = state.cometTailPaused ? "Play" : "Pause";
+  }
 
   function updateControls() {
     const controls = getPresentationControls({
@@ -98,15 +106,14 @@ function bootstrapPresentationPage() {
       slideCount: state.manifest?.slides?.length || 0,
     });
 
-    startBtn.disabled = !controls.canStart;
     backBtn.disabled = !controls.canBack;
     nextBtn.disabled = !controls.canNext;
+    updatePauseButton();
   }
 
   function updateStage() {
     if (!state.manifest || !state.started || state.currentIndex < 0) {
       stageEl.classList.remove("started");
-      slideNameEl.textContent = "Ready to start";
       updateControls();
       return;
     }
@@ -114,13 +121,12 @@ function bootstrapPresentationPage() {
     const slide = state.manifest.slides[state.currentIndex];
     if (!slide) {
       stageEl.classList.remove("started");
-      slideNameEl.textContent = "Ready to start";
       updateControls();
       return;
     }
 
     stageEl.classList.add("started");
-    slideNameEl.textContent = slide.title;
+    state.cometTailPaused = false;
     if (frameEl.getAttribute("src") !== slide.src) {
       frameEl.setAttribute("src", slide.src);
     }
@@ -133,9 +139,11 @@ function bootstrapPresentationPage() {
     messageEl.classList.add("visible");
     messageEl.setAttribute("aria-hidden", "false");
     stageEl.classList.remove("started");
-    startBtn.disabled = true;
+    state.cometTailPaused = false;
     backBtn.disabled = true;
     nextBtn.disabled = true;
+    pauseBtn.disabled = true;
+    pauseBtn.textContent = "Pause";
   }
 
   function hideError() {
@@ -143,12 +151,15 @@ function bootstrapPresentationPage() {
     messageEl.setAttribute("aria-hidden", "true");
   }
 
-  function startPresentation() {
-    if (!state.manifest?.slides?.length) return;
-    state.started = true;
-    state.currentIndex = 0;
-    hideError();
-    updateStage();
+  function toggleCometTailPause() {
+    const slide = state.manifest?.slides?.[state.currentIndex];
+    if (!isCometTailSlide(slide) || !frameEl.contentWindow) return;
+    state.cometTailPaused = !state.cometTailPaused;
+    frameEl.contentWindow.postMessage(
+      { type: "comet-tail-toggle-pause" },
+      "*"
+    );
+    updatePauseButton();
   }
 
   function moveBy(delta) {
@@ -161,18 +172,20 @@ function bootstrapPresentationPage() {
     updateStage();
   }
 
-  startBtn.addEventListener("click", startPresentation);
   backBtn.addEventListener("click", () => moveBy(-1));
   nextBtn.addEventListener("click", () => moveBy(1));
+  pauseBtn.addEventListener("click", toggleCometTailPause);
+  window.addEventListener("message", event => {
+    if (event.source !== frameEl.contentWindow) return;
+    if (event.data?.type !== "comet-tail-pause-state") return;
+    state.cometTailPaused = Boolean(event.data.paused);
+    updatePauseButton();
+  });
 
   document.addEventListener("keydown", event => {
     if (event.key === " " || event.code === "Space") {
       event.preventDefault();
-      if (!state.started) {
-        startPresentation();
-      } else {
-        moveBy(1);
-      }
+      moveBy(1);
       return;
     }
 
@@ -185,10 +198,11 @@ function bootstrapPresentationPage() {
   loadPresentationManifest(window.fetch, designation)
     .then(manifest => {
       state.manifest = manifest;
+      state.started = manifest.slides.length > 0;
+      state.currentIndex = state.started ? 0 : -1;
       document.title = `${manifest.title} · 3i-web`;
-      titleEl.textContent = manifest.title;
-      subtitleEl.textContent = manifest.subtitle || "JSON-driven slideshow shell with iframe-based slides";
       skipLink.href = manifest.mainHref;
+      hideError();
       updateStage();
     })
     .catch(error => {

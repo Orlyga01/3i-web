@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How a Comet Tail Forms</title>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 75% 38%, rgba(255, 191, 88, 0.15), transparent 18%),
+        radial-gradient(circle at top, rgba(64, 104, 184, 0.16), transparent 30%),
+        linear-gradient(180deg, #020611 0%, #040b1d 100%);
+    }
+
+    body {
+      font-family: Georgia, serif;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+  </style>
+</head>
+<body>
+  <canvas id="scene" aria-label="Animated comet-tail formation scene"></canvas>
+
+  <script>
+    const canvas = document.getElementById("scene");
+    const ctx = canvas.getContext("2d");
+
+    const COMET_FINAL_URL = "https://cdn.mos.cms.futurecdn.net/zwCmiEtaUidG37zts6Cw4A-650-80.jpg.webp";
+    const assets = {};
+    const assetMetrics = {};
+    const DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+    const startDelayMs = 1000;
+    const sceneDurationMs = 22600;
+    const BURST_ROTATION_OFFSET = 20 * Math.PI / 180;
+
+    const timeline = {
+      approachEnd: 3600,
+      heatEnd: 5600,
+      zoomEnd: 7700,
+      burstEnd: 9700,
+      tailEnd: 16600,
+      finalEnd: sceneDurationMs,
+    };
+    let isPaused = false;
+    let pauseStartedAt = 0;
+    let totalPausedMs = 0;
+    let lastElapsed = 0;
+    let animationStartMs = 0;
+
+    const stars = Array.from({ length: 180 }, (_, index) => {
+      const seed = index + 1;
+      return {
+        x: (Math.sin(seed * 12.9898) * 43758.5453) % 1,
+        y: (Math.sin(seed * 78.233) * 12345.6789) % 1,
+        size: 0.5 + ((seed * 17) % 100) / 100,
+        phase: seed * 0.21,
+        depth: 0.25 + ((seed * 23) % 100) / 100,
+      };
+    }).map(star => ({
+      ...star,
+      x: star.x < 0 ? star.x + 1 : star.x,
+      y: star.y < 0 ? star.y + 1 : star.y,
+    }));
+
+    function loadImage(name, src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.decoding = "async";
+        img.onload = () => {
+          assets[name] = img;
+          resolve(img);
+        };
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    function analyzeOpaqueBounds(image) {
+      const probeCanvas = document.createElement("canvas");
+      probeCanvas.width = image.naturalWidth || image.width;
+      probeCanvas.height = image.naturalHeight || image.height;
+      const probeCtx = probeCanvas.getContext("2d", { willReadFrequently: true });
+      probeCtx.drawImage(image, 0, 0);
+
+      const { width, height } = probeCanvas;
+      const pixels = probeCtx.getImageData(0, 0, width, height).data;
+      let minX = width;
+      let minY = height;
+      let maxX = -1;
+      let maxY = -1;
+
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const alpha = pixels[(y * width + x) * 4 + 3];
+          if (alpha <= 8) continue;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+
+      if (maxX < minX || maxY < minY) {
+        return {
+          visibleWidthNorm: 1,
+          visibleHeightNorm: 1,
+          centerOffsetXNorm: 0,
+          centerOffsetYNorm: 0,
+        };
+      }
+
+      const visibleWidth = maxX - minX + 1;
+      const visibleHeight = maxY - minY + 1;
+      const centerX = (minX + maxX + 1) * 0.5;
+      const centerY = (minY + maxY + 1) * 0.5;
+
+      return {
+        visibleWidthNorm: visibleWidth / width,
+        visibleHeightNorm: visibleHeight / height,
+        centerOffsetXNorm: (centerX - width * 0.5) / width,
+        centerOffsetYNorm: (centerY - height * 0.5) / height,
+      };
+    }
+
+    function resizeCanvas() {
+      const width = Math.round(window.innerWidth * DPR);
+      const height = Math.round(window.innerHeight * DPR);
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function easeInOutCubic(value) {
+      return value < 0.5
+        ? 4 * value * value * value
+        : 1 - Math.pow(-2 * value + 2, 3) / 2;
+    }
+
+    function easeOutCubic(value) {
+      return 1 - Math.pow(1 - value, 3);
+    }
+
+    function easeOutQuad(value) {
+      return 1 - (1 - value) * (1 - value);
+    }
+
+    function segmentProgress(time, start, end, easing = easeInOutCubic) {
+      if (end <= start) return time >= end ? 1 : 0;
+      const raw = clamp((time - start) / (end - start), 0, 1);
+      return easing(raw);
+    }
+
+    function getRockMetrics(size) {
+      const meta = assetMetrics.cometRock || {
+        visibleWidthNorm: 1,
+        visibleHeightNorm: 1,
+        centerOffsetXNorm: 0,
+        centerOffsetYNorm: 0,
+      };
+
+      return {
+        radius: Math.max(meta.visibleWidthNorm, meta.visibleHeightNorm) * size * 0.5,
+        centerOffsetX: meta.centerOffsetXNorm * size,
+        centerOffsetY: meta.centerOffsetYNorm * size,
+      };
+    }
+
+    function getCometImpactPoint(x, y, size) {
+      const rockMetrics = getRockMetrics(size);
+      return {
+        hotX: x + rockMetrics.centerOffsetX + rockMetrics.radius * 0.98,
+        hotY: y + rockMetrics.centerOffsetY - rockMetrics.radius * 0.04,
+        radius: rockMetrics.radius,
+      };
+    }
+
+    function drawBackground(time, width, height, cameraShiftX, cameraShiftY) {
+      const background = ctx.createLinearGradient(0, 0, 0, height);
+      background.addColorStop(0, "#030815");
+      background.addColorStop(1, "#071122");
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.save();
+      for (const star of stars) {
+        const driftX = cameraShiftX * star.depth * 0.13;
+        const driftY = cameraShiftY * star.depth * 0.13;
+        const x = ((star.x * width + driftX + width) % width);
+        const y = ((star.y * height + driftY + height) % height);
+        const twinkle = 0.45 + 0.55 * Math.sin(time * 0.0013 + star.phase);
+        const radius = star.size * (0.65 + twinkle * 0.8);
+        ctx.globalAlpha = 0.35 + twinkle * 0.55;
+        ctx.fillStyle = twinkle > 0.78 ? "rgba(210, 232, 255, 1)" : "rgba(255, 255, 255, 0.95)";
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawSun(sunX, sunY, sunRadius, flareStrength, time, opacity = 1) {
+      if (opacity <= 0.01) return;
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.globalCompositeOperation = "screen";
+
+      const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunRadius * 2.8);
+      glow.addColorStop(0, "rgba(255, 249, 228, 0.98)");
+      glow.addColorStop(0.25, "rgba(255, 204, 116, 0.78)");
+      glow.addColorStop(0.55, "rgba(255, 149, 56, 0.28)");
+      glow.addColorStop(1, "rgba(255, 120, 48, 0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, sunRadius * 2.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (let index = 0; index < 10; index += 1) {
+        const angle = Math.sin(time * 0.001 + index * 0.6) * 0.2 + (index / 10) * Math.PI * 2;
+        const inner = sunRadius * 1.05;
+        const outer = sunRadius * (1.35 + flareStrength * 0.55);
+        const alpha = 0.12 + flareStrength * 0.12;
+        ctx.strokeStyle = `rgba(255, 196, 108, ${alpha.toFixed(3)})`;
+        ctx.lineWidth = sunRadius * 0.06;
+        ctx.beginPath();
+        ctx.moveTo(sunX + Math.cos(angle) * inner, sunY + Math.sin(angle) * inner);
+        ctx.lineTo(sunX + Math.cos(angle) * outer, sunY + Math.sin(angle) * outer);
+        ctx.stroke();
+      }
+
+      const disc = ctx.createRadialGradient(
+        sunX - sunRadius * 0.22,
+        sunY - sunRadius * 0.18,
+        sunRadius * 0.15,
+        sunX,
+        sunY,
+        sunRadius
+      );
+      disc.addColorStop(0, "rgba(255, 250, 232, 1)");
+      disc.addColorStop(0.6, "rgba(255, 212, 115, 0.98)");
+      disc.addColorStop(1, "rgba(255, 148, 60, 0.95)");
+      ctx.fillStyle = disc;
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawCometBody(config) {
+      const {
+        x,
+        y,
+        size,
+        rotation,
+        heatedAmount,
+        showFinalComet,
+        opacity = 1,
+      } = config;
+
+      const image = showFinalComet ? assets.cometFinal : assets.cometRock;
+      const renderedRotation = showFinalComet ? -Math.PI / 2 : rotation + Math.PI;
+      const impactPoint = getCometImpactPoint(x, y, size);
+      if (!image) return impactPoint;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(renderedRotation);
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(image, -size * 0.5, -size * 0.5, size, size);
+      ctx.restore();
+
+      if (!showFinalComet) {
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        const heat = ctx.createRadialGradient(
+          impactPoint.hotX,
+          impactPoint.hotY,
+          0,
+          impactPoint.hotX,
+          impactPoint.hotY,
+          size * 0.28
+        );
+        heat.addColorStop(0, `rgba(255, 245, 212, ${0.16 + heatedAmount * 0.54})`);
+        heat.addColorStop(0.45, `rgba(255, 172, 88, ${heatedAmount * 0.34})`);
+        heat.addColorStop(1, "rgba(255, 120, 40, 0)");
+        ctx.fillStyle = heat;
+        ctx.beginPath();
+        ctx.arc(impactPoint.hotX, impactPoint.hotY, size * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      return impactPoint;
+    }
+
+    function drawSolarRays(sunX, sunY, targetX, targetY, amount, time) {
+      if (amount <= 0.01) return;
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      const dx = targetX - sunX;
+      const dy = targetY - sunY;
+      const angle = Math.atan2(dy, dx);
+      for (let index = 0; index < 8; index += 1) {
+        const spread = (index - 3.5) * 0.08;
+        const wave = Math.sin(time * 0.004 + index) * 16;
+        ctx.strokeStyle = `rgba(255, 205, 142, ${(0.06 + amount * 0.14).toFixed(3)})`;
+        ctx.lineWidth = 2 + amount * 4;
+        ctx.beginPath();
+        ctx.moveTo(
+          sunX + Math.cos(angle + spread) * 40,
+          sunY + Math.sin(angle + spread) * 40
+        );
+        ctx.quadraticCurveTo(
+          lerp(sunX, targetX, 0.55) + Math.cos(angle + Math.PI / 2) * wave,
+          lerp(sunY, targetY, 0.55) + Math.sin(angle + Math.PI / 2) * wave,
+          targetX,
+          targetY
+        );
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawSolarWind(width, height, targetX, targetY, amount, time, opacity = 1) {
+      if (amount <= 0.01 || opacity <= 0.01) return;
+
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = opacity;
+
+      for (let index = 0; index < 6; index += 1) {
+        const laneOffset = (index - 2.5) * height * 0.055;
+        const drift = ((time * 0.22 + index * 140) % 220) / 220;
+        const startX = width + 40 - drift * width * 0.28;
+        const startY = targetY + laneOffset + Math.sin(time * 0.003 + index * 0.7) * height * 0.018;
+        const midX = lerp(startX, targetX, 0.45);
+        const endX = lerp(width * 0.9, targetX, 0.72);
+        const curveBend = Math.sin(time * 0.004 + index) * height * 0.025;
+
+        ctx.strokeStyle = `rgba(255, 220, 96, ${(0.12 + amount * 0.2).toFixed(3)})`;
+        ctx.lineWidth = 2 + amount * 3.2;
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.quadraticCurveTo(
+          midX,
+          startY + curveBend,
+          endX,
+          targetY + laneOffset * 0.25
+        );
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawBurstImage(image, x, y, width, height, rotation, opacity, tint, revealProgress) {
+      if (!image || opacity <= 0.01 || revealProgress <= 0.01) return;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+      ctx.globalAlpha = opacity;
+      ctx.globalCompositeOperation = "screen";
+      const drawX = -width * 0.04;
+      const drawY = -height * 0.5;
+      const clippedAngle = (Math.PI / 2) * clamp(revealProgress, 0, 1);
+      const clipRadius = Math.max(width, height) * 1.1;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, clipRadius, -clippedAngle, clippedAngle);
+      ctx.closePath();
+      ctx.clip();
+      ctx.filter = tint;
+      ctx.drawImage(image, drawX, drawY, width, height);
+      ctx.filter = "none";
+      ctx.restore();
+    }
+
+    function drawCometCoverSweep(centerX, centerY, cometRadius, sweepAmount, tailAmount, settleAmount) {
+      if (sweepAmount <= 0.01) return;
+
+      const fillProgress = clamp(sweepAmount / 0.72, 0, 1);
+      const rightFadeProgress = clamp((tailAmount - 0.2) / 0.45, 0, 1);
+      const fadeOutProgress = clamp((settleAmount - 0.72) / 0.28, 0, 1);
+      const coveredWidth = cometRadius * fillProgress;
+      const coverStartX = centerX + cometRadius - coveredWidth;
+      const coverEndX = centerX + cometRadius;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, cometRadius, 0, Math.PI * 2);
+      ctx.clip();
+
+      const cover = ctx.createLinearGradient(centerX, centerY, centerX + cometRadius, centerY);
+      cover.addColorStop(0, `rgba(96, 210, 255, ${0.48 + fillProgress * 0.06})`);
+      cover.addColorStop(0.5, `rgba(116, 255, 188, ${0.56 + fillProgress * 0.06})`);
+      cover.addColorStop(1, `rgba(96, 210, 255, ${0.68 + fillProgress * 0.04})`);
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = 0.7 * (1 - fadeOutProgress * 0.92);
+      ctx.fillStyle = cover;
+      ctx.fillRect(coverStartX, centerY - cometRadius * 1.15, coveredWidth, cometRadius * 2.3);
+
+      if (rightFadeProgress > 0.01) {
+        ctx.globalCompositeOperation = "destination-out";
+        const dissolve = ctx.createLinearGradient(
+          centerX + cometRadius - cometRadius * 0.52,
+          centerY,
+          coverEndX,
+          centerY
+        );
+        dissolve.addColorStop(0, "rgba(0, 0, 0, 0)");
+        dissolve.addColorStop(1, `rgba(0, 0, 0, ${(0.18 + rightFadeProgress * 0.72).toFixed(3)})`);
+        ctx.fillStyle = dissolve;
+        ctx.fillRect(
+          centerX + cometRadius - cometRadius * 0.52,
+          centerY - cometRadius * 1.2,
+          cometRadius * 0.52,
+          cometRadius * 2.4
+        );
+      }
+
+      ctx.restore();
+    }
+
+    function drawTail(originX, originY, width, height, amount, time) {
+      if (amount <= 0.01) return;
+
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = 0.7;
+
+      const cometRadius = height;
+      const tailLength = cometRadius * (2.6 + amount * 5.8);
+      const tailHalfWidth = cometRadius;
+      const sway = Math.sin(time * 0.0025) * cometRadius * 0.08;
+      const headStartX = originX + cometRadius * 0.34;
+      const headBaseX = originX - cometRadius * 0.18;
+      ctx.globalCompositeOperation = "screen";
+      const tailFill = ctx.createLinearGradient(headStartX, originY, originX - tailLength, originY);
+      tailFill.addColorStop(0, `rgba(128, 255, 190, ${0.05 + amount * 0.05})`);
+      tailFill.addColorStop(0.18, `rgba(128, 255, 190, ${0.34 + amount * 0.12})`);
+      tailFill.addColorStop(0.42, `rgba(124, 224, 255, ${0.56 + amount * 0.16})`);
+      tailFill.addColorStop(1, "rgba(124, 224, 255, 0)");
+      ctx.fillStyle = tailFill;
+      ctx.beginPath();
+      ctx.moveTo(headStartX, originY - tailHalfWidth);
+      ctx.bezierCurveTo(
+        originX + cometRadius * 0.08,
+        originY - tailHalfWidth * 0.98 + sway * 0.18,
+        originX - tailLength * 0.12,
+        originY - tailHalfWidth + sway,
+        originX - tailLength * 0.58,
+        originY - tailHalfWidth * 0.92 + sway,
+        originX - tailLength,
+        originY - tailHalfWidth * 0.35
+      );
+      ctx.lineTo(originX - tailLength, originY + tailHalfWidth * 0.35);
+      ctx.bezierCurveTo(
+        originX - tailLength * 0.58,
+        originY + tailHalfWidth * 0.92 + sway,
+        originX - tailLength * 0.12,
+        originY + tailHalfWidth + sway,
+        originX + cometRadius * 0.08,
+        originY + tailHalfWidth * 0.98 + sway * 0.18,
+        headStartX,
+        originY + tailHalfWidth
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      const coreTail = ctx.createLinearGradient(headBaseX, originY, originX - tailLength * 0.92, originY);
+      coreTail.addColorStop(0, `rgba(176, 255, 220, ${0.04 + amount * 0.04})`);
+      coreTail.addColorStop(0.22, `rgba(176, 255, 220, ${0.28 + amount * 0.1})`);
+      coreTail.addColorStop(0.55, `rgba(170, 235, 255, ${0.6 + amount * 0.14})`);
+      coreTail.addColorStop(1, "rgba(170, 235, 255, 0)");
+      ctx.fillStyle = coreTail;
+      ctx.beginPath();
+      ctx.moveTo(headBaseX, originY - tailHalfWidth * 0.46);
+      ctx.bezierCurveTo(
+        originX + cometRadius * 0.02,
+        originY - tailHalfWidth * 0.54,
+        originX - tailLength * 0.1,
+        originY - tailHalfWidth * 0.62,
+        originX - tailLength * 0.44,
+        originY - tailHalfWidth * 0.44 + sway * 0.6,
+        originX - tailLength * 0.9,
+        originY - tailHalfWidth * 0.14
+      );
+      ctx.lineTo(originX - tailLength * 0.9, originY + tailHalfWidth * 0.14);
+      ctx.bezierCurveTo(
+        originX - tailLength * 0.44,
+        originY + tailHalfWidth * 0.44 + sway * 0.6,
+        originX - tailLength * 0.1,
+        originY + tailHalfWidth * 0.62,
+        originX + cometRadius * 0.02,
+        originY + tailHalfWidth * 0.54,
+        headBaseX,
+        originY + tailHalfWidth * 0.46
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function renderFrame(elapsed) {
+      resizeCanvas();
+
+      const width = canvas.width / DPR;
+      const height = canvas.height / DPR;
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      const t = clamp(elapsed - startDelayMs, 0, sceneDurationMs);
+      const approach = segmentProgress(t, 0, timeline.approachEnd);
+      const heatUp = segmentProgress(t, timeline.approachEnd * 0.65, timeline.heatEnd, easeOutCubic);
+      const waterStart = timeline.heatEnd + 250;
+      const waterRevealEnd = waterStart + 2000;
+      const dustStart = waterRevealEnd;
+      const dustRevealEnd = dustStart + 2000;
+      const buildStart = dustRevealEnd + 350;
+      const buildEnd = buildStart + 2000;
+      const coverStart = buildStart;
+      const coverEnd = buildEnd;
+      const tailStart = buildStart;
+      const tailEnd = buildEnd;
+      const tail = segmentProgress(t, tailStart, tailEnd, easeOutQuad);
+      const settleStart = tailEnd + 3000;
+      const settle = segmentProgress(t, settleStart, timeline.finalEnd);
+      const waterAmount = segmentProgress(t, waterStart, waterRevealEnd, easeOutCubic);
+      const dustAmount = segmentProgress(t, dustStart, dustRevealEnd, easeOutCubic);
+      const coverAmount = segmentProgress(t, coverStart, coverEnd, easeOutCubic);
+      const effectsOpacity = 1 - settle;
+      const burstFade = 1 - segmentProgress(t, coverStart - 160, coverStart + 260, easeOutCubic);
+
+      const cameraShiftX = lerp(0, 70, approach) - lerp(0, 78, settle);
+      const cameraShiftY = lerp(0, -24, approach) + lerp(0, 20, settle);
+
+      drawBackground(t, width, height, cameraShiftX, cameraShiftY);
+
+      const sunX = lerp(width * 0.96, width * 0.9, approach) + lerp(0, 10, settle);
+      const sunY = lerp(height * 0.28, height * 0.36, approach);
+      const sunRadius = lerp(width * 0.035, width * 0.07, approach) + lerp(0, width * 0.03, heatUp) - lerp(0, width * 0.008, settle);
+      drawSun(sunX, sunY, sunRadius, Math.max(heatUp, tail * 0.7), t, effectsOpacity);
+
+      const cometX = lerp(width * 0.41, width * 0.49, approach) - lerp(0, 34, settle) + lerp(0, width * 0.1, settle);
+      const cometY = lerp(height * 0.54, height * 0.48, approach) + lerp(0, 10, settle) + lerp(0, height * 0.04, settle);
+      const showFinalComet = settle > 0.55;
+      const finalCometScale = showFinalComet
+        ? lerp(1, 2, segmentProgress(t, settleStart, timeline.finalEnd, easeOutCubic))
+        : 1;
+      const cometSize = (
+        lerp(height * 0.74, height * 0.38, approach) - lerp(0, height * 0.12, settle)
+      ) * finalCometScale;
+      const cometRotation = lerp(-0.12, -0.3, approach) + lerp(0, 0.1, settle);
+      const heatedAmount = clamp(heatUp + Math.max(waterAmount, dustAmount) * 0.35, 0, 1);
+      const hotSpot = getCometImpactPoint(cometX, cometY, cometSize);
+      const solarWindAmount = clamp((tail - 0.38) / 0.62, 0, 1);
+      drawSolarWind(width, height, hotSpot.hotX, hotSpot.hotY, solarWindAmount, t, effectsOpacity);
+
+      const burstScale = 0.22 + waterAmount * 0.28;
+      drawBurstImage(
+        assets.waterSplash,
+        hotSpot.hotX - cometSize * 0.035,
+        hotSpot.hotY + cometSize * 0.01,
+        cometSize * burstScale,
+        cometSize * burstScale,
+        cometRotation + Math.PI * 2 + BURST_ROTATION_OFFSET,
+        waterAmount * burstFade,
+        "drop-shadow(0 0 24px rgba(120, 220, 255, 0.42)) saturate(1.05)",
+        waterAmount
+      );
+
+      drawBurstImage(
+        assets.greenDust,
+        hotSpot.hotX - cometSize * 0.02,
+        hotSpot.hotY - cometSize * 0.03,
+        cometSize * (0.24 + dustAmount * 0.3),
+        cometSize * (0.24 + dustAmount * 0.3),
+        cometRotation + Math.PI * 1.97 + BURST_ROTATION_OFFSET,
+        dustAmount * burstFade,
+        "drop-shadow(0 0 18px rgba(154, 255, 160, 0.34)) saturate(0.88)",
+        dustAmount
+      );
+
+      drawCometBody({
+        x: cometX,
+        y: cometY,
+        size: cometSize,
+        rotation: cometRotation,
+        heatedAmount,
+        showFinalComet,
+        opacity: showFinalComet ? lerp(1, 0.98, tail) : 1,
+      });
+
+      if (!showFinalComet) {
+        drawTail(cometX, cometY, width, hotSpot.radius, tail * effectsOpacity, t);
+        drawCometCoverSweep(cometX, cometY, hotSpot.radius, coverAmount, tail, settle);
+      }
+
+      const plasmaAmount = clamp((tail - 0.28) / 0.72, 0, 1);
+      drawSolarRays(sunX, sunY, hotSpot.hotX, hotSpot.hotY, plasmaAmount * effectsOpacity, t);
+
+      if (t < 500) {
+        ctx.save();
+        ctx.globalAlpha = 1 - t / 500;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.38)";
+        ctx.fillRect(0, 0, width, height);
+        ctx.restore();
+      }
+    }
+
+    function syncPauseState() {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          {
+            type: "comet-tail-pause-state",
+            paused: isPaused,
+          },
+          "*"
+        );
+      }
+    }
+
+    function setPaused(nextPaused) {
+      if (nextPaused === isPaused) return;
+      if (!nextPaused) {
+        totalPausedMs += performance.now() - pauseStartedAt;
+      } else {
+        pauseStartedAt = performance.now();
+      }
+      isPaused = nextPaused;
+      syncPauseState();
+    }
+
+    function togglePause() {
+      setPaused(!isPaused);
+    }
+
+    function startAnimation() {
+      animationStartMs = performance.now();
+      syncPauseState();
+
+      function frame(now) {
+        if (isPaused) {
+          renderFrame(lastElapsed);
+          requestAnimationFrame(frame);
+          return;
+        }
+
+        const elapsed = now - animationStartMs - totalPausedMs;
+        lastElapsed = elapsed;
+        renderFrame(elapsed);
+        if (elapsed < startDelayMs + sceneDurationMs) {
+          requestAnimationFrame(frame);
+        }
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    Promise.all([
+      loadImage("cometRock", "../../assets/comet_rock.png"),
+      loadImage("waterSplash", "../../assets/water_splash.png"),
+      loadImage("greenDust", "../../assets/green_dust.png"),
+      loadImage("cometFinal", COMET_FINAL_URL),
+    ])
+      .then(() => {
+        assetMetrics.cometRock = analyzeOpaqueBounds(assets.cometRock);
+        resizeCanvas();
+        startAnimation();
+      })
+      .catch(error => {
+        console.error("[comet_tail] Failed to load slide assets.", error);
+        resizeCanvas();
+        renderFrame(startDelayMs + sceneDurationMs);
+      });
+
+    window.addEventListener("resize", resizeCanvas);
+    window.addEventListener("message", event => {
+      if (event.data?.type === "comet-tail-toggle-pause") {
+        togglePause();
+      }
+    });
+  </script>
+</body>
+</html>

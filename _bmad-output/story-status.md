@@ -105,8 +105,8 @@
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
-| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added `presentation.html` + `presentation.js` shell, JSON manifest loading, iframe slide hosting, Start/Back/Next/Skip controls, and Space-bar advance; no slide counter by current request |
-| 5.2 | Wow! Signal Opening Slide | 🚧 In Progress | Added starter standalone slide HTML with initial presenter-friendly copy |
+| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added `presentation.html` + `presentation.js` shell, JSON manifest loading, iframe slide hosting, Back/Next/Skip controls, Space-bar advance, and a shell-level pause control for the comet animation slide |
+| 5.2 | Wow! Signal Opening Slide | 🚧 In Progress | Renamed the first slide to `Small Bodies Overview` and added a separate auto-play comet-tail animation slide after it, including the refined right-to-left half-sphere transition, a same-radius tail overlay over the rock, a continuous sphere during tail build, a 1-second auto-start, a 2-second sphere+tail build with no gap, a 3-second hold before the ending, yellow solar-wind motion from the right, and a larger less-zoomed final comet reveal |
 | 5.3 | Comets 101 Slide | 🚧 In Progress | Added starter standalone slide HTML with plain-language comet basics |
 | 5.4 | Gravity & Orbit Basics Slide | 🚧 In Progress | Added starter standalone slide HTML with simple gravity/orbit explanation |
 | 5.5 | Lagrange Points Slide | 🚧 In Progress | Added starter standalone slide HTML with first-pass Lagrange summary |
@@ -239,3 +239,24 @@
 | 2026-03-13 | Added Epic 4 Story 4.8 with a shared localStorage kill switch; homepage now hides local source choices and editor/player bypass local drafts when the flag is off | dev agent |
 | 2026-03-14 | Compacted the trajectory-player floating stats box by removing its fixed minimum width and switching the attached date label to a numeric 2-digit-year format; marked Story 3.9 in progress because the live stats feature now exists in code but still differs from the original top-right spec | dev agent |
 | 2026-03-14 | Started Epic 5 implementation with a new JSON-driven `presentation` shell, iframe slide loading, homepage Presentation button, keyboard Space advance, and starter standalone slide files for the planned topics | dev agent |
+| 2026-03-14 | Reordered the opening slideshow so the 3-box comparison is first as `Small Bodies Overview`, then added a new single-run comet-tail animation slide with a 2-second delayed auto-start | dev agent |
+| 2026-03-14 | Removed the slideshow header so slides start at the top, floated the nav controls over the stage, and compressed the first slide to fit the viewport without a scrollbar | dev agent |
+| 2026-03-14 | Removed the `Start` step so the presentation opens directly on the first slide and Space now always advances to the next slide | dev agent |
+| 2026-03-14 | Rotated the comet nucleus 180 degrees in the tail-formation canvas and rotated the water and dust burst sprites to match | dev agent |
+| 2026-03-14 | Removed the zoom-in beat, moved the impact point to the rock’s right side, and changed the water/dust burst reveal to a center-out vertical spread with dust starting after water completes | dev agent |
+| 2026-03-14 | Refined the comet-tail canvas again: reduced Sun size and spacing overlap, shrank the burst sprites, moved their center to the rock’s right edge, and switched to a 1-second angular reveal that opens from the right side for water first and dust second | dev agent |
+| 2026-03-14 | Updated the tail phase so burst sprites disappear once plasma starts forming the tail, and the ending now fades out the Sun/effects to leave only the final comet image | dev agent |
+| 2026-03-14 | Reworked the tail phase with 1.2-second water/dust reveals plus a 2-second hold, replaced the old dotted tail with a measured blue-green orb dissolving into a smooth tail behind the comet, and removed the small particle circles | dev agent |
+| 2026-03-14 | Rotated the final comet image to -90 degrees from its source orientation and increased the final zoom-out so the end transition pulls back more before the reveal | dev agent |
+| 2026-03-14 | Corrected the first orb transition so it now sweeps from the comet’s left edge only to the center, covering half the nucleus before dissolving smoothly into the existing tail flow | dev agent |
+| 2026-03-14 | Moved the water/dust burst sprites slightly left and behind the comet, rotated them by 20 degrees, and slowed each image reveal to 2 seconds | dev agent |
+| 2026-03-14 | Separated the comet-cover sweep from the tail renderer so the blue/green sphere is now visibly drawn over the comet’s right half while the tail remains behind it | dev agent |
+| 2026-03-14 | Slowed and strengthened the comet-cover sweep so it reads more clearly on screen, extended the tail phase timing, and added a pause/play button directly on the comet animation slide | dev agent |
+| 2026-03-14 | Separated the sphere and tail timing properly so the sphere completes before the tail begins, and increased the sphere opacity to about 70% for a clearer half-cover transition | dev agent |
+| 2026-03-14 | Moved the comet pause control into the main slideshow navigation beside `Next`, reversed the half-sphere to sweep right-to-left, and delayed the sphere fade so its right edge turns transparent before the full orb fades out | dev agent |
+| 2026-03-14 | Moved the tail layer in front of the comet nucleus and regraded its head so the rock overlap starts transparent on the right and grows more solid toward the left | dev agent |
+| 2026-03-14 | Enlarged the final comet reveal to about 2x and softened the ending camera pullback so the last shot is less zoomed out | dev agent |
+| 2026-03-14 | Fixed the half-sphere continuity bug by keeping the sphere visible through the tail-build phase and only tying its fade-out to the final settle instead of the initial sweep progress | dev agent |
+| 2026-03-14 | Matched the tail head more closely to the sphere’s height and opacity, shortened the initial autoplay delay to 1 second, and inserted a 3-second hold before the final reveal continues | dev agent |
+| 2026-03-14 | Slowed the sphere sweep slightly, reduced the tail head so it stays below the sphere height, and added animated yellow solar-wind streaks entering from the right during the tail phase | dev agent |
+| 2026-03-14 | Made the tail head match the sphere radius, started the tail at the same moment as the sphere with a shared 2-second build, and delayed the yellow right-side glow until after the sphere-start moment | dev agent |

@@ -14,68 +14,39 @@
       box-sizing: border-box;
     }
 
+    html,
     body {
       margin: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
       min-height: 100vh;
       font-family: Georgia, serif;
       color: rgba(214, 232, 255, 0.95);
       background:
         radial-gradient(circle at top, rgba(22, 58, 115, 0.38), transparent 34%),
         linear-gradient(180deg, #01040c 0%, #030916 100%);
+      overflow: hidden;
     }
 
     #presentation-shell {
+      position: relative;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      padding: 24px;
-    }
-
-    #presentation-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    #presentation-title {
-      font-size: 20px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: rgba(220, 235, 255, 0.96);
-      text-shadow: 0 0 22px rgba(100, 180, 255, 0.5);
-    }
-
-    #presentation-subtitle {
-      margin-top: 8px;
-      font-size: 12px;
-      letter-spacing: 1px;
-      color: rgba(164, 199, 245, 0.72);
-    }
-
-    #presentation-slide-name {
-      font-size: 13px;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-      color: rgba(149, 191, 246, 0.78);
     }
 
     #presentation-stage {
       position: relative;
-      flex: 1;
-      min-height: 68vh;
-      border-radius: 20px;
-      border: 1px solid rgba(100, 160, 255, 0.22);
+      min-height: 100vh;
       background: rgba(0, 8, 28, 0.84);
-      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
       overflow: hidden;
     }
 
     #presentation-frame {
       width: 100%;
       height: 100%;
-      min-height: 68vh;
+      min-height: 100vh;
       border: 0;
       display: none;
       background: transparent;
@@ -85,7 +56,6 @@
       display: block;
     }
 
-    #presentation-intro,
     #presentation-message {
       position: absolute;
       inset: 0;
@@ -95,7 +65,6 @@
       padding: 32px;
     }
 
-    #presentation-stage.started #presentation-intro,
     #presentation-stage.started #presentation-message {
       display: none;
     }
@@ -135,11 +104,17 @@
     }
 
     #presentation-controls {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      z-index: 10;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 14px;
+      pointer-events: none;
     }
 
     .presentation-control-group {
@@ -165,6 +140,8 @@
       text-decoration: none;
       cursor: pointer;
       transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+      pointer-events: auto;
+      backdrop-filter: blur(8px);
     }
 
     button:hover,
@@ -178,24 +155,13 @@
       cursor: default;
     }
 
-    #presentation-start-btn {
-      background: rgba(88, 146, 255, 0.2);
-      border-color: rgba(112, 170, 255, 0.48);
-    }
-
-    #presentation-start-btn:hover {
-      background: rgba(102, 158, 255, 0.3);
-    }
-
     @media (max-width: 720px) {
-      #presentation-shell {
-        padding: 16px;
-      }
-
-      #presentation-header,
       #presentation-controls {
         align-items: stretch;
         flex-direction: column;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
       }
 
       .presentation-control-group {
@@ -211,14 +177,6 @@
 </head>
 <body>
   <main id="presentation-shell">
-    <section id="presentation-header">
-      <div>
-        <div id="presentation-title">3I Atlas Presentation</div>
-        <div id="presentation-subtitle">JSON-driven slideshow shell with iframe-based slides</div>
-      </div>
-      <div id="presentation-slide-name">Ready to start</div>
-    </section>
-
     <section id="presentation-stage" aria-live="polite">
       <iframe
         id="presentation-frame"
@@ -226,14 +184,6 @@
         loading="eager"
         referrerpolicy="no-referrer"
       ></iframe>
-
-      <div id="presentation-intro">
-        <div class="presentation-card">
-          <h1>3I Atlas</h1>
-          <p>This presentation is driven by a JSON manifest. Each slide is a standalone HTML page loaded into the frame.</p>
-          <p>Use <strong>Start</strong> to begin, <strong>Next</strong> to advance, or tap the <strong>Space</strong> key while presenting.</p>
-        </div>
-      </div>
 
       <div id="presentation-message" aria-hidden="true">
         <div class="presentation-card">
@@ -245,9 +195,9 @@
 
     <section id="presentation-controls">
       <div class="presentation-control-group">
-        <button id="presentation-start-btn" type="button">Start</button>
         <button id="presentation-back-btn" type="button" disabled>Back</button>
         <button id="presentation-next-btn" type="button" disabled>Next</button>
+        <button id="presentation-pause-btn" type="button" disabled>Pause</button>
       </div>
       <div class="presentation-control-group">
         <a id="presentation-skip-link" class="presentation-link" href="trajectory_player?designation=3I&source=web">Skip to Player</a>

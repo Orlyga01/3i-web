@@ -5,9 +5,14 @@
   "mainHref": "trajectory_player?designation=3I&source=web",
   "slides": [
     {
-      "id": "wow-signal",
-      "title": "Wow! Signal",
+      "id": "small-bodies-overview",
+      "title": "Small Bodies Overview",
       "src": "slides/3I/wow_signal.html"
+    },
+    {
+      "id": "comet-tail-formation",
+      "title": "How a Comet Tail Forms",
+      "src": "slides/3I/comet_tail.html"
     },
     {
       "id": "comets-101",
