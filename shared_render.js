@@ -103,7 +103,7 @@ planets.forEach(loadPlanetTexture);
 
 // Load comet texture
 const cometImage = new Image();
-cometImage.src = 'assets/green_aura_transparent.png';
+cometImage.src = 'assets/comet.png';
 
 function parseCometTint(col) {
   if (Array.isArray(col) && col.length >= 3) {
@@ -194,11 +194,25 @@ function getRecoloredCometImage(image, tint) {
   return scratch;
 }
 
-function drawTintedSprite(targetCtx, image, x, y, width, height, alpha, tint) {
+function drawTintedSprite(targetCtx, image, x, y, width, height, alpha, tint, sourceRect) {
   const variant = getRecoloredCometImage(image, tint);
   targetCtx.save();
   targetCtx.globalAlpha = alpha;
-  targetCtx.drawImage(variant, x, y, width, height);
+  if (sourceRect) {
+    targetCtx.drawImage(
+      variant,
+      sourceRect.x,
+      sourceRect.y,
+      sourceRect.width,
+      sourceRect.height,
+      x,
+      y,
+      width,
+      height,
+    );
+  } else {
+    targetCtx.drawImage(variant, x, y, width, height);
+  }
   targetCtx.restore();
 }
 
@@ -211,13 +225,26 @@ function drawCometBillboard(targetCtx, options = {}) {
     alpha = 1,
     tint = parseCometTint(),
     image = cometImage,
+    tailReveal = 1,
   } = options;
 
   if (image?.complete && image.naturalWidth > 0) {
+    const reveal = eio(clamp(tailReveal, 0, 1));
+    const imgW = image.naturalWidth || image.width;
+    const imgH = image.naturalHeight || image.height;
+    const drawH = size;
+    const drawW = drawH * (imgW / Math.max(imgH, 1));
+    const anchorY = drawH * 0.9;
+    const visibleFrac = lerp(0.2, 1, reveal);
+    const srcY = imgH * (1 - visibleFrac);
+    const srcH = imgH - srcY;
+    const destY = -anchorY + (srcY / imgH) * drawH;
+    const destH = drawH * visibleFrac;
+
     targetCtx.save();
     targetCtx.translate(x, y);
     targetCtx.rotate(rotationAngle);
-    const coreGlowRadius = Math.max(size * 0.18, 10);
+    const coreGlowRadius = Math.max(size * (0.16 + reveal * 0.06), 10);
     const coreGlow = targetCtx.createRadialGradient(0, 0, 0, 0, 0, coreGlowRadius);
     coreGlow.addColorStop(0, `rgba(${tint.r},${tint.g},${tint.b},${0.32 * alpha})`);
     coreGlow.addColorStop(0.65, `rgba(${tint.r},${tint.g},${tint.b},${0.14 * alpha})`);
@@ -226,7 +253,17 @@ function drawCometBillboard(targetCtx, options = {}) {
     targetCtx.arc(0, 0, coreGlowRadius, 0, Math.PI * 2);
     targetCtx.fillStyle = coreGlow;
     targetCtx.fill();
-    drawTintedSprite(targetCtx, image, -size / 2, -size / 2, size, size, alpha, tint);
+    drawTintedSprite(
+      targetCtx,
+      image,
+      -drawW / 2,
+      destY,
+      drawW,
+      destH,
+      alpha,
+      tint,
+      { x: 0, y: srcY, width: imgW, height: srcH },
+    );
     const nucleusRadius = Math.max(size * 0.06, 3.5);
     const nucleus = targetCtx.createRadialGradient(0, 0, 0, 0, 0, nucleusRadius);
     nucleus.addColorStop(0, `rgba(255,255,255,${Math.min(1, alpha)})`);
@@ -456,32 +493,40 @@ function drawPlaneFlash() {
 }
 
 // ── COMET DRAW ────────────────────────────────────────────────
-function drawComet(wx, wy, wz, alpha, col, sizeMultiplier) {
+function drawComet(wx, wy, wz, alpha, col, options = {}) {
   const tint = parseCometTint(col);
-  sizeMultiplier = sizeMultiplier || 1;
+  const {
+    sizeMultiplier = 1,
+    tailReveal = 1,
+    image = cometImage,
+  } = options;
   const { sx, sy, depth } = project3(wx, wy, wz);
   if (depth < 5) return;
   const sc = getScale(depth);
   
   // If comet image is loaded, use it
-  if (cometImage.complete && cometImage.naturalWidth > 0) {
-    // Calculate direction TOWARD Sun (at origin 0,0,0)
+  if (image.complete && image.naturalWidth > 0) {
+    // Calculate direction AWAY from the Sun so the tail always points anti-sunward.
     const d3 = Math.sqrt(wx * wx + wy * wy + wz * wz) || 1;
-    const sunDirX = -wx / d3;  // normalized direction toward sun
-    const sunDirY = -wy / d3;
+    const awaySunX = wx / d3;
+    const awaySunY = wy / d3;
+    const awaySunZ = wz / d3;
     
-    // Project sun direction to screen space to get rotation angle
+    // Project that anti-sun direction into screen space to rotate the sprite.
     const pointLen = 100;
-    const { sx: sunSx, sy: sunSy } = project3(wx + sunDirX * pointLen, wy + sunDirY * pointLen, wz);
-    const screenAngle = Math.atan2(sunSy - sy, sunSx - sx);
+    const { sx: tailSx, sy: tailSy } = project3(
+      wx + awaySunX * pointLen,
+      wy + awaySunY * pointLen,
+      wz + awaySunZ * pointLen,
+    );
+    const screenAngle = Math.atan2(tailSy - sy, tailSx - sx);
     
-    // The image has tail at right-bottom corner (315 degrees or -45 degrees)
-    // Adding 90 degrees correction based on user feedback
-    const imageBaseTailAngle = (-45 + 90) * Math.PI / 180;
+    // `assets/comet.png` has its tail pointing straight up in image space.
+    const imageBaseTailAngle = -Math.PI / 2;
     const rotationAngle = screenAngle - imageBaseTailAngle;
     
-    // Size of the comet image on screen
-    const cometSize = 80 * sc * sizeMultiplier;
+    // The sprite is tall, so treat `size` as the on-screen height.
+    const cometSize = 125 * sc * sizeMultiplier;
     
     drawCometBillboard(ctx, {
       x: sx,
@@ -490,14 +535,18 @@ function drawComet(wx, wy, wz, alpha, col, sizeMultiplier) {
       rotationAngle,
       alpha,
       tint,
+      image,
+      tailReveal,
     });
   } else {
     drawCometBillboard(ctx, {
       x: sx,
       y: sy,
-      size: 80 * sc * sizeMultiplier,
+      size: 125 * sc * sizeMultiplier,
       alpha,
       tint,
+      image,
+      tailReveal,
     });
   }
 }

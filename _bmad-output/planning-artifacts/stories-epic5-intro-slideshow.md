@@ -14,12 +14,12 @@
 |---|---|---|
 | [5.1](#story-51--intro-slideshow-shell--navigation) | Intro Slideshow Shell & Navigation | 🔲 Pending |
 | [5.2](#story-52--wow-signal-opening-slide) | Wow! Signal Opening Slide | 🔲 Pending |
-| [5.3](#story-53--comets-101-slide) | Comets 101 Slide | 🔲 Pending |
+| [5.3](#story-53--comets-101-slide) | Comets 101 Slide | 🚫 Cancelled |
 | [5.4](#story-54--gravity--orbit-basics-slide) | Gravity & Orbit Basics Slide | 🔲 Pending |
 | [5.5](#story-55--lagrange-points-slide) | Lagrange Points Slide | 🔲 Pending |
-| [5.6](#story-56--perseids-on-12-august--debris-formation) | Perseids on 12 August & Debris Formation | 🔲 Pending |
-| [5.7](#story-57--solar-wind-vs-solar-flare-slide) | Solar Wind vs Solar Flare Slide | 🔲 Pending |
-| [5.8](#story-58--mars-transfer-vs-lagrange-mission-slide) | Mars Transfer vs Lagrange Mission Slide | 🔲 Pending |
+| [5.6](#story-56--perseids-on-12-august--debris-formation) | Perseids on 12 August & Debris Formation | 🚫 Cancelled |
+| [5.7](#story-57--solar-wind-vs-solar-flare-slide) | Solar Wind vs Solar Flare Slide | 🚫 Cancelled |
+| [5.8](#story-58--mars-transfer-vs-lagrange-mission-slide) | Mars Transfer vs Lagrange Mission Slide | 🚫 Cancelled |
 
 ---
 
@@ -46,18 +46,25 @@
 
 ## Story 5.2 — Wow! Signal Opening Slide
 
+**Status:** 🚧 In Progress
+
+**Note:** Scope updated by user request on 2026-03-14: the `Wow! Signal` content is now a dedicated ending slide that should always appear last in the slideshow.
+
 **As a** viewer,
-**I want** the first slide to introduce the `Wow! signal`,
-**so that** I start with a strong mystery and historical hook.
+**I want** a dedicated `Wow! Signal` slide in the slideshow,
+**so that** I end with a strong mystery and historical hook.
 
 ### Acceptance Criteria
 
-- [ ] The first slide is about the `Wow! signal`
+- [ ] A dedicated slide is about the `Wow! signal`
 - [ ] The slide explains that it was detected in `1977`
+- [ ] The slide shows the historical printout image
+- [ ] The slide includes the date `12 Aug 1977`
 - [ ] The slide mentions Jerry Ehman writing `Wow!` on the printout
 - [ ] The slide notes the signal lasted about `72 seconds`
 - [ ] The slide explains that it has never been conclusively identified or repeated
 - [ ] The wording stays short enough for slideshow narration
+- [ ] The slide is always the last slide in the slideshow order
 
 ### File List
 
@@ -68,6 +75,10 @@
 ---
 
 ## Story 5.3 — Comets 101 Slide
+
+**Status:** 🚫 Cancelled
+
+**Note:** Removed from the Epic 5 slideshow scope by user request on 2026-03-14.
 
 **As a** viewer,
 **I want** a simple explanation of comets,
@@ -131,6 +142,10 @@
 
 ## Story 5.6 — Perseids on 12 August & Debris Formation
 
+**Status:** 🚫 Cancelled
+
+**Note:** Removed from the Epic 5 slideshow scope by user request on 2026-03-14.
+
 **As a** viewer,
 **I want** to understand why `12 August` matters and where meteor debris comes from,
 **so that** I can connect comet motion with what we see in Earth's sky.
@@ -153,6 +168,10 @@
 
 ## Story 5.7 — Solar Wind vs Solar Flare Slide
 
+**Status:** 🚫 Cancelled
+
+**Note:** Removed from the Epic 5 slideshow scope by user request on 2026-03-14.
+
 **As a** viewer,
 **I want** a simple explanation of solar activity,
 **so that** I do not confuse solar wind with solar flares.
@@ -173,6 +192,10 @@
 ---
 
 ## Story 5.8 — Mars Transfer vs Lagrange Mission Slide
+
+**Status:** 🚫 Cancelled
+
+**Note:** Removed from the Epic 5 slideshow scope by user request on 2026-03-14.
 
 **As a** viewer,
 **I want** a simple comparison between a Mars mission path and a Lagrange point mission,

@@ -105,14 +105,14 @@
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
-| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added `presentation.html` + `presentation.js` shell, JSON manifest loading, iframe slide hosting, Back/Next/Skip controls, Space-bar advance, and a shell-level pause control for the comet animation slide |
-| 5.2 | Wow! Signal Opening Slide | 🚧 In Progress | Renamed the first slide to `Small Bodies Overview` and added a separate auto-play comet-tail animation slide after it, including the refined right-to-left half-sphere transition, a same-radius tail overlay over the rock, a continuous sphere during tail build, a 1-second auto-start, a 2-second sphere+tail build with no gap, a 3-second hold before the ending, yellow solar-wind motion from the right, and a larger less-zoomed final comet reveal |
-| 5.3 | Comets 101 Slide | 🚧 In Progress | Added starter standalone slide HTML with plain-language comet basics |
+| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added `presentation.html` + `presentation.js` shell, JSON manifest loading, iframe slide hosting, Back/Next/Skip controls, Space-bar advance, shell-level comet pause support, and inserted `solar_comet.html`, `hill_radius.html`, and `spherex.html` before the final Wow! slide |
+| 5.2 | Wow! Signal Opening Slide | 🚧 In Progress | Added a dedicated final `Wow! Signal` slide with the historical printout image and `12 Aug 1977` date; manifest now keeps it as the last slide |
+| 5.3 | Comets 101 Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
 | 5.4 | Gravity & Orbit Basics Slide | 🚧 In Progress | Added starter standalone slide HTML with simple gravity/orbit explanation |
 | 5.5 | Lagrange Points Slide | 🚧 In Progress | Added starter standalone slide HTML with first-pass Lagrange summary |
-| 5.6 | Perseids on 12 August & Debris Formation | 🚧 In Progress | Added starter standalone slide HTML covering Perseids timing and debris formation |
-| 5.7 | Solar Wind vs Solar Flare Slide | 🚧 In Progress | Added starter standalone slide HTML distinguishing solar wind from solar flare |
-| 5.8 | Mars Transfer vs Lagrange Mission Slide | 🚧 In Progress | Added starter standalone slide HTML comparing Mars transfers with Lagrange missions |
+| 5.6 | Perseids on 12 August & Debris Formation | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
+| 5.7 | Solar Wind vs Solar Flare Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
+| 5.8 | Mars Transfer vs Lagrange Mission Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
 
 **Progress: 0 / 8 stories complete**
 
@@ -171,6 +171,15 @@
 
 | Date | Change | By |
 |---|---|---|
+| 2026-03-14 | Added new `3I` presentation slides for `hill_radius.jpg` and `spherex.webp`, placing both after `solar_comet.html` and before the final `Wow! Signal` slide | dev agent |
+| 2026-03-14 | Added `solar_comet.html` to the `3I` presentation manifest as the slide immediately before the final `Wow! Signal` page | dev agent |
+| 2026-03-14 | Widened the opening `solar_comet` scene-2 establishing phase further so the whole first segment stays much more zoomed out before the comet handoff | dev agent |
+| 2026-03-14 | Reframed the `solar_comet` pre-comet intro to start on a full-solar-system view and extended that establishing section so the wide shot reads before the comet handoff | dev agent |
+| 2026-03-14 | Extended the `solar_comet` pre-comet establishing move to about 3 seconds and increased the zoom-out distance so the transition reads less abruptly | dev agent |
+| 2026-03-14 | Added a 1.5 second pre-comet zoom-out/zoom-in intro to `solar_comet` scene 2 so the comet sequence starts after a brief wider establishing move | dev agent |
+| 2026-03-14 | Reworked the second `solar_comet` flyby onto a Sun-centered arc so the visible deflection is centered on the Sun rather than an off-axis curve | dev agent |
+| 2026-03-14 | Clarified the second `solar_comet` flyby by adding a visible trajectory path and exaggerating the near-Sun deflection so the gravity bend reads clearly | dev agent |
+| 2026-03-14 | Refined `solar_comet` pacing and scene-2 comet choreography: shorter intro, reordered comet reveal, anti-sun tail alignment, staged tail growth, and a near-Sun bent trajectory | dev agent |
 | 2026-03-08 | Created tracker; assessed Epic 2 as 13/15 done from code review | PM agent |
 | 2026-03-08 | Stories 2.14, 2.15 added to Epic 2; all Epic 3 stories defined | PM agent |
 | 2026-03-09 | Stories 2.14 and 2.15 implemented; Epic 2 now 15/15 complete | dev agent |
@@ -260,3 +269,5 @@
 | 2026-03-14 | Matched the tail head more closely to the sphere’s height and opacity, shortened the initial autoplay delay to 1 second, and inserted a 3-second hold before the final reveal continues | dev agent |
 | 2026-03-14 | Slowed the sphere sweep slightly, reduced the tail head so it stays below the sphere height, and added animated yellow solar-wind streaks entering from the right during the tail phase | dev agent |
 | 2026-03-14 | Made the tail head match the sphere radius, started the tail at the same moment as the sphere with a shared 2-second build, and delayed the yellow right-side glow until after the sphere-start moment | dev agent |
+| 2026-03-14 | Removed Epic 5 slides `Comets 101`, `Perseids and Debris`, `Solar Wind and Solar Flare`, and `Mars vs Lagrange Missions` from the presentation manifest, cancelled Stories 5.3/5.6/5.7/5.8, and deleted their standalone slide files | dev agent |
+| 2026-03-14 | Added a new dedicated `Wow! Signal` slideshow ending slide using the historical printout image and `12 Aug 1977`, and pinned it as the final manifest entry | dev agent |
