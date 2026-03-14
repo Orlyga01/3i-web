@@ -7,11 +7,20 @@ class TrajectoryLoadError extends Error {
   }
 }
 
+const MoreInfoHelpers = window.MoreInfoShared || {};
+const AnomaliesPanelApi = window.AnomaliesPanel || {};
+const APP_CONFIG = window.AppConfigShared?.readAppConfig?.(window.AppConfig) || { useLocalStorage: false };
+
 class TrajectoryLoader {
   static readDesignationFromUrl(search = location.search) {
     const params = new URLSearchParams(search);
     const rawValue = params.get('designation') ?? params.get('d');
     return this.decodeDesignation(rawValue);
+  }
+
+  static readSourceFromUrl(search = location.search) {
+    const params = new URLSearchParams(search);
+    return this.normalizeRequestedSource(params.get('source') ?? params.get('s'));
   }
 
   static decodeDesignation(value) {
@@ -28,6 +37,17 @@ class TrajectoryLoader {
 
   static sanitize(name) {
     return String(name || '').replace(/[\s/]/g, '_');
+  }
+
+  static normalizeRequestedSource(value) {
+    const normalized = String(value || '').trim().toLowerCase();
+    return normalized === 'local' || normalized === 'web' ? normalized : '';
+  }
+
+  static resolveRequestedSource(value) {
+    const requestedSource = this.normalizeRequestedSource(value);
+    if (requestedSource !== 'local') return requestedSource;
+    return APP_CONFIG.useLocalStorage ? 'local' : 'web';
   }
 
   static buildPath(designation) {
@@ -94,7 +114,57 @@ class TrajectoryLoader {
     };
   }
 
-  static async load(designation) {
+  static parseLoadedData(parsed, designation, details = {}) {
+    if (!parsed || !Array.isArray(parsed.points) || parsed.points.length === 0) {
+      throw new TrajectoryLoadError(
+        'invalid-json',
+        `The trajectory file for '${designation}' could not be read. It may be corrupt.`,
+        details
+      );
+    }
+
+    const points = parsed.points.map((point, index) => this.normalizePoint(point, index, designation));
+    return {
+      designation,
+      sanitizedName: details.sanitizedName ?? this.sanitize(designation),
+      path: details.path ?? '',
+      data: parsed,
+      points,
+      source: details.source || 'web',
+    };
+  }
+
+  static loadFromLocal(designation, sanitizedName) {
+    const key = `objectMotion:${sanitizedName}`;
+    const raw = localStorage.getItem(key);
+
+    if (!raw) {
+      throw new TrajectoryLoadError(
+        'not-found',
+        `No local trajectory found for '${designation}'. Open it in the Object Motion Tracker first.`,
+        { designation, sanitizedName, source: 'local', key }
+      );
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_) {
+      throw new TrajectoryLoadError(
+        'invalid-json',
+        `The local trajectory for '${designation}' could not be read. It may be corrupt.`,
+        { designation, sanitizedName, source: 'local', key }
+      );
+    }
+
+    return this.parseLoadedData(parsed, designation, {
+      sanitizedName,
+      path: key,
+      source: 'local',
+    });
+  }
+
+  static async load(designation, options = {}) {
     if (!designation) {
       throw new TrajectoryLoadError(
         'missing-designation',
@@ -103,6 +173,11 @@ class TrajectoryLoader {
     }
 
     const { sanitizedName, path } = this.buildPath(designation);
+    const requestedSource = this.resolveRequestedSource(options.source);
+
+    if (requestedSource === 'local') {
+      return this.loadFromLocal(designation, sanitizedName);
+    }
 
     let response;
     try {
@@ -142,23 +217,12 @@ class TrajectoryLoader {
       );
     }
 
-    if (!parsed || !Array.isArray(parsed.points) || parsed.points.length === 0) {
-      throw new TrajectoryLoadError(
-        'invalid-json',
-        `The trajectory file for '${designation}' could not be read. It may be corrupt.`,
-        { designation, sanitizedName, path }
-      );
-    }
-
-    const points = parsed.points.map((point, index) => this.normalizePoint(point, index, designation));
-
-    return {
+    return this.parseLoadedData(parsed, designation, {
       designation,
       sanitizedName,
       path,
-      data: parsed,
-      points,
-    };
+      source: 'web',
+    });
   }
 }
 
@@ -224,6 +288,7 @@ class PlaybackController {
     this.timelineScrubber = options.timelineScrubber;
     this.annotationOverlay = options.annotationOverlay;
     this.referenceConnectorRenderer = options.referenceConnectorRenderer;
+    this.anomaliesPanelController = options.anomaliesPanelController || null;
     this.state = 'idle';
     this.speedMultiplier = 1;
     this.currentPointIndex = 0;
@@ -280,17 +345,18 @@ class PlaybackController {
 
     window.SolarSystem.layers.register('trajectory-player-object', () => {
       if (!this.currentWorldPosition || typeof drawComet !== 'function') return;
-      const alpha = 0.82 + Math.sin(this.engine.pulsePhase) * 0.08;
+      const objectAlpha = 0.98;
+      const ringAlpha = 0.22;
       const tint = this.currentAppearance?.rgb || getNamedVisualColorRgb(TP_DEFAULT_VISUAL_COLOR);
       drawComet(
         this.currentWorldPosition.wx,
         this.currentWorldPosition.wy,
         this.currentWorldPosition.wz,
-        alpha,
+        objectAlpha,
         `${tint.r},${tint.g},${tint.b}`,
         0.95
       );
-      drawTrajectoryObjectColorRing(this.currentWorldPosition, tint, alpha);
+      drawTrajectoryObjectColorRing(this.currentWorldPosition, tint, ringAlpha);
     });
   }
 
@@ -350,6 +416,7 @@ class PlaybackController {
         this.state = 'stopped-at-point';
         this.annotationOverlay.hide();
         this.controlBar.setContinueVisible(true);
+        this.applyAnomaliesDate(this.currentPoint);
         this.syncUi();
         return;
       }
@@ -404,10 +471,11 @@ class PlaybackController {
     this.currentPointIndex = clampedIndex;
     this.currentPoint = point;
     this.segmentElapsedMs = 0;
-    this.state = this.state === 'stopped' ? 'paused' : this.state;
+    this.state = (this.state === 'stopped' || this.state === 'stopped-manual') ? 'paused' : this.state;
     this.annotationOverlay.hide();
     this.controlBar.setContinueVisible(false);
     this.applyPointFrame(clampedIndex, { snapCamera });
+    this.applyAnomaliesDate(point);
 
     if (resetTrail) {
       this.trailRenderer.reset(point.px);
@@ -444,6 +512,8 @@ class PlaybackController {
     if (window.SolarSystem?.camera?.setRawState && camera) {
       window.SolarSystem.camera.setRawState(camera);
     }
+
+    this.applyAnomaliesDate(point);
   }
 
   findNearestCamera(index) {
@@ -495,7 +565,7 @@ class PlaybackController {
   }
 
   continueFromStop() {
-    if (this.state !== 'stopped-at-point') return;
+    if (this.state !== 'stopped-at-point' && this.state !== 'stopped-manual') return;
     this.controlBar.setContinueVisible(false);
     this.annotationOverlay.hide();
     this.state = 'playing';
@@ -520,12 +590,14 @@ class PlaybackController {
     if (shouldIgnorePlaybackShortcut(event.target)) return;
 
     if (event.code === 'Space') {
-      event.preventDefault();
-      if (this.state === 'stopped-at-point') {
-        this.continueFromStop();
-      } else {
-        this.togglePlayPause();
+      if (shouldHandleAnomalyPlayShortcut(this.state, this.anomaliesPanelController?.hasPendingPlayStep?.())) {
+        event.preventDefault();
+        this.anomaliesPanelController.playQueueStep();
+        return;
       }
+      event.preventDefault();
+      if (this.state === 'stopped-at-point' || this.state === 'stopped-manual') return;
+      this.togglePlayPause();
       return;
     }
 
@@ -549,16 +621,18 @@ class PlaybackController {
       return;
     }
 
-    if (event.code === 'Enter' && this.state === 'stopped-at-point') {
+    if (event.code === 'Enter' && (this.state === 'stopped-at-point' || this.state === 'stopped-manual')) {
       event.preventDefault();
-      this.continueFromStop();
     }
   }
 
   handleCanvasClick(event) {
     if (event.defaultPrevented) return;
-    if (this.state === 'stopped') return;
-    this.togglePlayPause();
+    if (getCanvasClickAction(this.state) !== 'stop') return;
+    this.controlBar.setContinueVisible(true);
+    this.annotationOverlay.hide();
+    this.state = 'stopped-manual';
+    this.syncUi();
   }
 
   handleCanvasInteractionGate(event) {
@@ -613,7 +687,14 @@ class PlaybackController {
       point: this.currentPoint,
       appearance: this.currentAppearance,
       sanitizedName: this.sanitizedName,
+      designation: this.designation,
     });
+  }
+
+  applyAnomaliesDate(point) {
+    const date = getAnomaliesDateForPoint(point);
+    if (!date || !this.anomaliesPanelController?.applyDate) return;
+    this.anomaliesPanelController.applyDate(date);
   }
 
   syncUi() {
@@ -845,10 +926,12 @@ class TimelineScrubber {
 }
 
 class AnnotationOverlay {
-  constructor(root) {
+  constructor(root, moreInfoModal = null) {
     this.root = root;
+    this.moreInfoModal = moreInfoModal;
     this.modelKey = '';
     this.failedImageSrc = null;
+    this.currentContext = null;
     if (!this.root) return;
 
     this.root.innerHTML = `
@@ -861,6 +944,9 @@ class AnnotationOverlay {
           <div class="tp-overlay-no-image">Image unavailable.</div>
         </div>
         <div class="tp-overlay-description"></div>
+        <div class="tp-overlay-actions">
+          <button class="tp-more-info-btn" type="button">More Info</button>
+        </div>
       </div>
     `;
 
@@ -871,10 +957,28 @@ class AnnotationOverlay {
     this.imageEl = this.root.querySelector('.tp-overlay-image');
     this.noImageEl = this.root.querySelector('.tp-overlay-no-image');
     this.descriptionEl = this.root.querySelector('.tp-overlay-description');
+    this.actionsEl = this.root.querySelector('.tp-overlay-actions');
+    this.moreInfoBtn = this.root.querySelector('.tp-more-info-btn');
+
+    this.moreInfoBtn?.addEventListener('click', event => {
+      if (!this.currentContext?.point) return;
+      event.preventDefault();
+      event.stopPropagation();
+      this.moreInfoModal?.show({
+        point: this.currentContext.point,
+        designation: this.currentContext.designation,
+        dateText: formatDisplayDate(this.currentContext.point?.date),
+        description: this.currentContext.point?.description || '',
+      });
+    });
   }
 
   show(context) {
     if (!this.root) return;
+    this.currentContext = {
+      point: context?.point || null,
+      designation: context?.designation || '',
+    };
     const nextKey = getTrajectoryOverlayKey(context);
     if (this.modelKey !== nextKey) {
       this.modelKey = nextKey;
@@ -897,6 +1001,9 @@ class AnnotationOverlay {
     if (this.descriptionEl) {
       this.descriptionEl.textContent = model.description;
       this.descriptionEl.style.display = model.showDescription ? 'block' : 'none';
+    }
+    if (this.actionsEl) {
+      this.actionsEl.classList.toggle('visible', model.showMoreInfo);
     }
     if (this.mediaShellEl) {
       this.mediaShellEl.style.display = 'flex';
@@ -942,6 +1049,7 @@ class AnnotationOverlay {
     this.root.classList.remove('is-image-mode');
     this.modelKey = '';
     this.failedImageSrc = null;
+    this.currentContext = null;
     if (this.imageEl) {
       this.imageEl.onload = null;
       this.imageEl.onerror = null;
@@ -963,7 +1071,7 @@ class StatsDisplay {
 
   update(dateValue, sunDistance, worldPosition) {
     if (!dateValue) return;
-    this.dateEl.textContent = formatDisplayDate(dateValue);
+    this.dateEl.textContent = formatCompactStatsDate(dateValue);
     this.distanceEl.textContent = `Sun: ${Number(sunDistance || 0).toFixed(2)} AU`;
     this.updatePosition(worldPosition);
   }
@@ -974,8 +1082,8 @@ class StatsDisplay {
     const layout = getFloatingStatsLayout(
       projected,
       {
-        width: this.root.offsetWidth || 190,
-        height: this.root.offsetHeight || 56,
+        width: this.root.offsetWidth || 104,
+        height: this.root.offsetHeight || 34,
       },
       {
         width: window.innerWidth,
@@ -1214,8 +1322,12 @@ function shouldPauseAtPoint(point, pauseAtStoppablePoints, pauseAtEveryPoint = f
   return Boolean(pauseAtEveryPoint || (pauseAtStoppablePoints && point?.stoppable));
 }
 
+function getCanvasClickAction(state) {
+  return state === 'playing' ? 'stop' : 'noop';
+}
+
 function getPlayAction(state, source = 'toggle') {
-  if (state === 'stopped-at-point') return 'noop';
+  if (state === 'stopped-at-point' || state === 'stopped-manual') return 'noop';
   if (state === 'stopped') return source === 'button' ? 'restart' : 'noop';
   return state === 'playing' ? 'pause' : 'play';
 }
@@ -1233,13 +1345,15 @@ function getControlBarState(state, currentPointIndex, totalPoints) {
       ? 'Playing'
       : state === 'paused'
         ? 'Paused'
-        : state === 'stopped'
+        : state === 'stopped-manual'
+          ? 'Paused'
+          : state === 'stopped'
           ? 'Stopped'
           : state === 'stopped-at-point'
             ? 'Paused at point'
             : 'Idle',
     playText: state === 'playing' ? '⏸' : '▶',
-    playDisabled: state === 'stopped-at-point',
+    playDisabled: state === 'stopped-at-point' || state === 'stopped-manual',
     prevDisabled: secondaryDisabled || atStart,
     nextDisabled: secondaryDisabled || atEnd,
     secondaryDisabled,
@@ -1350,6 +1464,9 @@ function buildTrajectoryOverlayModel(context = {}, imageState = 'ready') {
   const showStoppedImage = context.state === 'stopped-at-point' && Boolean(stopImageSrc);
   const description = normalizeAnnotationDescription(point?.description);
   const colorName = appearance.name || TP_DEFAULT_VISUAL_COLOR;
+  const showMoreInfo = typeof MoreInfoHelpers.hasMoreInfoContent === 'function'
+    ? MoreInfoHelpers.hasMoreInfoContent(point, context.designation || sanitizedName || '')
+    : false;
 
   return {
     mode: showStoppedImage ? 'image' : 'preview',
@@ -1361,6 +1478,7 @@ function buildTrajectoryOverlayModel(context = {}, imageState = 'ready') {
     showNoImageState: showStoppedImage && imageState === 'error',
     showPreview: !showStoppedImage || imageState === 'error',
     showDescription: Boolean(description),
+    showMoreInfo,
     previewAppearance: appearance,
   };
 }
@@ -1425,16 +1543,17 @@ function drawTrajectoryObjectColorRing(worldPosition, tint, alpha = 1) {
   if (projected.depth < 5) return;
 
   const scale = typeof getScale === 'function' ? getScale(projected.depth) : 1;
-  const radius = Math.max(12, Math.min(26, scale * 16));
-  const lineWidth = Math.max(1.8, Math.min(3.4, scale * 2.2));
+  const radius = Math.max(11, Math.min(22, scale * 14));
+  const lineWidth = Math.max(1.4, Math.min(2.4, scale * 1.7));
+  const strokeAlpha = tpClamp(alpha, 0.14, 0.38);
 
   ctx.save();
   ctx.beginPath();
   ctx.arc(projected.sx, projected.sy, radius, 0, Math.PI * 2);
-  ctx.strokeStyle = `rgba(${tint.r},${tint.g},${tint.b},${Math.max(0.5, alpha)})`;
+  ctx.strokeStyle = `rgba(${tint.r},${tint.g},${tint.b},${strokeAlpha})`;
   ctx.lineWidth = lineWidth;
-  ctx.shadowBlur = 14;
-  ctx.shadowColor = `rgba(${tint.r},${tint.g},${tint.b},0.45)`;
+  ctx.shadowBlur = 8;
+  ctx.shadowColor = `rgba(${tint.r},${tint.g},${tint.b},${strokeAlpha * 0.7})`;
   ctx.stroke();
   ctx.restore();
 }
@@ -1446,6 +1565,7 @@ function getAnnotationOverlayKey(point, sanitizedName) {
     date: point?.date ?? '',
     description: normalizeAnnotationDescription(point?.description),
     image: point?.image ?? null,
+    moreInfo: point?.more_info ?? null,
   });
 }
 
@@ -1460,26 +1580,52 @@ function formatDisplayDate(value) {
   });
 }
 
+function formatCompactStatsDate(value) {
+  const date = parseTrajectoryDate(value);
+  if (Number.isNaN(date.getTime())) return '--';
+  return date.toLocaleDateString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: '2-digit',
+    timeZone: 'UTC',
+  });
+}
+
+function getAnomaliesDateForPoint(point) {
+  const value = typeof point?.date === 'string' ? point.date.trim() : '';
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : '';
+}
+
+function shouldHandleAnomalyPlayShortcut(state, hasPendingAnomalyStep) {
+  return Boolean(hasPendingAnomalyStep && state !== 'playing');
+}
+
 function setSubtitle(text) {
   const el = document.getElementById('tp-subtitle');
   if (el) el.textContent = text;
 }
 
-function buildObjectMotionHref(designation) {
-  return `object_motion?designation=${encodeURIComponent(designation || '3I')}`;
+function buildObjectMotionHref(designation, source = '') {
+  const params = new URLSearchParams({ designation: designation || '3I' });
+  const normalizedSource = TrajectoryLoader.normalizeRequestedSource(source);
+  if (normalizedSource) params.set('source', normalizedSource);
+  return `object_motion?${params.toString()}`;
 }
 
-function buildTrajectoryPlayerHref(designation) {
-  return `trajectory_player?designation=${encodeURIComponent(designation || '3I')}`;
+function buildTrajectoryPlayerHref(designation, source = '') {
+  const params = new URLSearchParams({ designation: designation || '3I' });
+  const normalizedSource = TrajectoryLoader.normalizeRequestedSource(source);
+  if (normalizedSource) params.set('source', normalizedSource);
+  return `trajectory_player?${params.toString()}`;
 }
 
-function syncPlayerUrl(designation) {
+function syncPlayerUrl(designation, source = '') {
   if (!window.history?.replaceState) return;
-  window.history.replaceState(null, '', buildTrajectoryPlayerHref(designation));
+  window.history.replaceState(null, '', buildTrajectoryPlayerHref(designation, source));
 }
 
-function updateObjectMotionLinks(designation) {
-  const href = buildObjectMotionHref(designation);
+function updateObjectMotionLinks(designation, source = '') {
+  const href = buildObjectMotionHref(designation, source);
   const backLink = document.getElementById('tp-back-link');
   const errorLink = document.getElementById('tp-error-link');
   if (backLink) backLink.href = href;
@@ -1513,25 +1659,54 @@ async function bootstrapTrajectoryPlayer() {
 
   try {
     const designation = TrajectoryLoader.readDesignationFromUrl();
+    const requestedSource = TrajectoryLoader.resolveRequestedSource(TrajectoryLoader.readSourceFromUrl());
     if (designation) {
-      syncPlayerUrl(designation);
-      setSubtitle(`Loading ${designation}`);
+      syncPlayerUrl(designation, requestedSource);
+      setSubtitle(`Loading ${designation}${requestedSource ? ` (${requestedSource})` : ''}`);
     } else {
       setSubtitle('Waiting for trajectory');
     }
-    updateObjectMotionLinks(designation || '3I');
+    updateObjectMotionLinks(designation || '3I', requestedSource);
 
-    const result = await TrajectoryLoader.load(designation);
+    const result = await TrajectoryLoader.load(designation, { source: requestedSource });
 
     hideLoadingCard();
-    setSubtitle(`Playing ${result.designation}`);
+    setSubtitle(`Playing ${result.designation}${result.source === 'local' ? ' · Local draft' : ''}`);
 
     const controlBar = new ControlBar(document.getElementById('tp-controls'));
     const statsDisplay = new StatsDisplay(document.getElementById('tp-stats'));
     const trailRenderer = new TrailRenderer();
     const timelineScrubber = new TimelineScrubber(document.getElementById('tp-timeline-shell'));
-    const annotationOverlay = new AnnotationOverlay(document.getElementById('tp-overlay'));
+    const moreInfoModal = (window.MoreInfoModalShared?.createModalController)
+      ? window.MoreInfoModalShared.createModalController(document.getElementById('tp-more-info-modal'), {
+        title: 'Point More Info',
+      })
+      : null;
+    const annotationOverlay = new AnnotationOverlay(document.getElementById('tp-overlay'), moreInfoModal);
     const referenceConnectorRenderer = new ReferenceConnectorRenderer(getFixedConnectorConfiguration(result.points));
+    const anomaliesPanelController = (typeof AnomaliesPanelApi.createPanelController === 'function')
+      ? AnomaliesPanelApi.createPanelController(document.getElementById('tp-anomalies-panel'), {
+        initialCollapsed: true,
+        designation: result.designation,
+      })
+      : null;
+
+    if (anomaliesPanelController) {
+      try {
+        const dataset = await AnomaliesPanelApi.loadAnomaliesDataset(result.designation);
+        anomaliesPanelController.setDataset(dataset);
+      } catch (error) {
+        const fallbackDataset = typeof AnomaliesPanelApi.createUnavailableDataset === 'function'
+          ? AnomaliesPanelApi.createUnavailableDataset(result.designation, error)
+          : {
+            title: `${result.designation} anomalies`,
+            subtitle: error?.message || 'Anomaly data is unavailable.',
+            entries: [],
+            visibleEntries: [],
+          };
+        anomaliesPanelController.setDataset(fallbackDataset);
+      }
+    }
 
     const controller = new PlaybackController({
       designation: result.designation,
@@ -1543,6 +1718,7 @@ async function bootstrapTrajectoryPlayer() {
       timelineScrubber,
       annotationOverlay,
       referenceConnectorRenderer,
+      anomaliesPanelController,
     });
 
     controlBar.connect(controller);
@@ -1551,7 +1727,7 @@ async function bootstrapTrajectoryPlayer() {
     requestAnimationFrame(() => controller.bootstrap());
   } catch (error) {
     if (error instanceof TrajectoryLoadError) {
-      updateObjectMotionLinks(error.details?.designation || '3I');
+      updateObjectMotionLinks(error.details?.designation || '3I', error.details?.source || '');
       showError(error);
       return;
     }

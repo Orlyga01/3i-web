@@ -1,0 +1,43 @@
+{
+  "designation": "3I",
+  "title": "3I Atlas Presentation",
+  "subtitle": "Epic 5 slideshow shell with iframe-based slides.",
+  "mainHref": "trajectory_player?designation=3I&source=web",
+  "slides": [
+    {
+      "id": "wow-signal",
+      "title": "Wow! Signal",
+      "src": "slides/3I/wow_signal.html"
+    },
+    {
+      "id": "comets-101",
+      "title": "Comets 101",
+      "src": "slides/3I/comets_101.html"
+    },
+    {
+      "id": "gravity-orbit",
+      "title": "Gravity and Orbit",
+      "src": "slides/3I/gravity_orbit.html"
+    },
+    {
+      "id": "lagrange-points",
+      "title": "Lagrange Points",
+      "src": "slides/3I/lagrange_points.html"
+    },
+    {
+      "id": "perseids-debris",
+      "title": "Perseids and Debris",
+      "src": "slides/3I/perseids_debris.html"
+    },
+    {
+      "id": "solar-activity",
+      "title": "Solar Wind and Solar Flare",
+      "src": "slides/3I/solar_activity.html"
+    },
+    {
+      "id": "mars-vs-lagrange",
+      "title": "Mars vs Lagrange Missions",
+      "src": "slides/3I/mars_vs_lagrange.html"
+    }
+  ]
+}

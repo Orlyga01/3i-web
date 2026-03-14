@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Object Motion Tracker · 3I/ATLAS</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon-jupiter.svg">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="more_info_modal.css">
   <style>
     /* ── Canvas — always full-screen background ── */
     #c {
@@ -522,6 +524,24 @@
     #om-description:focus { border-color: rgba(100, 180, 255, 0.4); }
     #om-description::placeholder { color: rgba(130, 160, 210, 0.4); }
 
+    #om-more-info-btn {
+      display: none;
+      font-size: 11px;
+      letter-spacing: 1px;
+      padding: 7px 14px;
+      border-radius: 14px;
+      background: rgba(40, 100, 200, 0.18);
+      border: 1px solid rgba(100, 170, 255, 0.34);
+      color: rgba(180, 220, 255, 0.92);
+      cursor: pointer;
+      transition: background .2s, border-color .2s;
+    }
+    #om-more-info-btn.visible { display: inline-flex; align-self: flex-start; }
+    #om-more-info-btn:hover {
+      background: rgba(40, 100, 200, 0.32);
+      border-color: rgba(130, 190, 255, 0.46);
+    }
+
     /* ── Save area (bottom of sidebar) ── */
     #om-save-area {
       border-top: 1px solid rgba(80, 120, 200, 0.15);
@@ -938,6 +958,158 @@
       border-radius: 18px;
     }
 
+    /* ── More Info modal ── */
+    #om-more-info-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 35;
+      background: rgba(0, 1, 15, 0.78);
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      box-sizing: border-box;
+    }
+    #om-more-info-modal.visible { display: flex; }
+
+    #om-more-info-content {
+      width: min(960px, 100%);
+      max-height: min(88vh, 900px);
+      display: flex;
+      flex-direction: column;
+      background: rgba(5, 12, 38, 0.98);
+      border: 1px solid rgba(100, 160, 255, 0.28);
+      border-radius: 16px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.42);
+      overflow: hidden;
+    }
+
+    #om-more-info-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid rgba(100, 160, 255, 0.14);
+    }
+
+    #om-more-info-kicker {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(140, 196, 255, 0.72);
+    }
+
+    #om-more-info-date {
+      margin-top: 6px;
+      color: rgba(215, 235, 255, 0.95);
+      font: 600 22px Georgia, serif;
+      letter-spacing: 0.4px;
+    }
+
+    #om-more-info-close {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    #om-more-info-body {
+      overflow: auto;
+      padding: 18px 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .om-more-info-empty {
+      color: rgba(175, 205, 245, 0.74);
+      font: 14px Georgia, serif;
+      line-height: 1.6;
+    }
+
+    .om-more-info-section-title {
+      margin-bottom: 10px;
+      font-size: 11px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: rgba(145, 200, 255, 0.8);
+    }
+
+    .om-more-info-text {
+      color: rgba(205, 224, 255, 0.88);
+      font: 15px Georgia, serif;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .om-more-info-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .om-more-info-image-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .om-more-info-image {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      display: block;
+      border-radius: 10px;
+      border: 1px solid rgba(130, 180, 255, 0.2);
+      background: rgba(6, 18, 40, 0.92);
+    }
+
+    .om-more-info-caption {
+      color: rgba(175, 205, 245, 0.76);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .om-more-info-video-frame,
+    .om-more-info-page-frame {
+      width: 100%;
+      border: 1px solid rgba(130, 180, 255, 0.2);
+      border-radius: 10px;
+      background: rgba(6, 18, 40, 0.92);
+    }
+
+    .om-more-info-video-frame {
+      aspect-ratio: 16 / 9;
+      min-height: 320px;
+    }
+
+    .om-more-info-page-frame {
+      min-height: min(62vh, 640px);
+    }
+
+    .om-more-info-video {
+      width: 100%;
+      max-height: min(62vh, 520px);
+      border-radius: 10px;
+      background: rgba(6, 18, 40, 0.92);
+    }
+
+    .om-more-info-link {
+      color: rgba(160, 214, 255, 0.94);
+      text-decoration: none;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+    .om-more-info-link:hover { color: rgba(220, 235, 255, 1); }
+
     /* ── Mobile: sidebar collapses to top bar ── */
     @media (max-width: 767px) {
       #om-form-card { padding: 22px 18px; }
@@ -981,7 +1153,7 @@
 
   <!-- Form overlay — visible initially, hidden once trajectory data loads -->
   <div id="om-form-overlay">
-    <a href="solar_system.html" id="om-back-link">← Solar System</a>
+    <a href="index.html" id="om-back-link">← Projects</a>
 
     <div id="om-page">
       <div id="om-header">
@@ -1177,6 +1349,7 @@
 
         <textarea id="om-description"
                   placeholder="Add a note for this date… (optional)"></textarea>
+        <button id="om-more-info-btn" type="button">More Info</button>
       </div>
 
       <!-- Save area — Stories 2.8 + 2.12 -->
@@ -1213,6 +1386,12 @@
     </div>
   </div>
 
+  <div id="om-more-info-modal" role="dialog" aria-modal="true" aria-label="Point more info"></div>
+
+  <script src="app_config.js"></script>
+  <script src="app_config_shared.js"></script>
+  <script src="more_info_shared.js"></script>
+  <script src="more_info_modal.js"></script>
   <script src="shared_render.js"></script>
   <script src="solar_system.js"></script>
   <script src="object_motion.js"></script>

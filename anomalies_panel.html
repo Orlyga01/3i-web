@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anomalies Panel · 3I-web</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon-jupiter.svg">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="anomalies_panel.css">
+</head>
+<body>
+  <div id="anp-page">
+    <div id="anp-panel-root"></div>
+
+    <div id="anp-page-shell">
+      <div id="anp-page-title">Date-Driven Anomalies Panel</div>
+      <div id="anp-page-subtitle">
+        Load `data/&lt;designation&gt;/anomalies.json`, then apply dates manually to rehearse the reveal flow before using it inside the trajectory player.
+      </div>
+
+      <div id="anp-page-controls">
+        <label class="anp-field">
+          <span class="anp-field-label">Designation</span>
+          <input id="anp-designation-input" type="text" placeholder="3I" value="3I">
+        </label>
+
+        <div class="anp-field-actions">
+          <button id="anp-load-btn" type="button">Load Dataset</button>
+        </div>
+
+        <label class="anp-field">
+          <span class="anp-field-label">Test Date</span>
+          <input id="anp-date-input" type="date">
+        </label>
+
+        <div class="anp-field-actions">
+          <button id="anp-apply-date-btn" type="button">Apply Date</button>
+        </div>
+      </div>
+
+      <div id="anp-page-status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <script src="anomalies_shared.js"></script>
+  <script src="anomalies_panel.js"></script>
+</body>
+</html>

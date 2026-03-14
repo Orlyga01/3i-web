@@ -2,7 +2,7 @@
   "object": "3I",
   "designation": "3I",
   "createdAt": "2026-03-08T00:00:00Z",
-  "updatedAt": "2026-03-09T17:12:14Z",
+  "updatedAt": "2026-03-10T15:18:13.695Z",
   "source": "JPL Horizons VECTORS",
   "dateRange": "2024-10-01 → 2026-03-16",
   "scale": {
@@ -29,7 +29,7 @@
         "az": 0.89,
         "zoom": -25,
         "tx": -154.28,
-        "ty": -482.83,
+        "ty": -653,
         "tz": -10.53
       },
       "description": "Pre-discovery — 13.8 AU from Sun, between Saturn and Uranus orbits, approaching inner solar system",
@@ -51,15 +51,22 @@
       "durationPct": 100,
       "stoppable": false,
       "camera": {
-        "el": 3.4,
-        "az": 0.96,
+        "el": 5.4,
+        "az": 1.12,
         "zoom": -25,
-        "tx": 0,
-        "ty": 0,
-        "tz": 0
+        "tx": -154.28,
+        "ty": -753,
+        "tz": -40.53
       },
       "description": "Pre-discovery — 9.9 AU from Sun, near Saturn's orbit, approaching inner solar system",
-      "image": null
+      "image": null,
+      "more_info": {
+        "images": [
+          {
+            "url": "https://miro.medium.com/v2/resize:fit:720/format:webp/1*XFLkNu3T9rtWL9WZvV7p-Q.jpeg"
+          }
+        ]
+      }
     },
     {
       "jd": 2460796.5,
@@ -88,6 +95,7 @@
       "image": null
     },
     {
+      "color": "green",
       "jd": 2460857.5,
       "date": "2025-07-01",
       "au": {
@@ -102,13 +110,12 @@
       },
       "durationPct": 100,
       "stoppable": true,
-      "color": "green",
       "camera": {
         "el": 4.6,
         "az": 0.08,
-        "zoom": 25,
-        "tx": 60,
-        "ty": 0,
+        "zoom": 10,
+        "tx": 160,
+        "ty": 60,
         "tz": 0
       },
       "description": "Discovery — 4.5 AU from Sun",
@@ -132,8 +139,8 @@
       "camera": {
         "el": 4.6,
         "az": 0.08,
-        "zoom": 30,
-        "tx": 60,
+        "zoom": 20,
+        "tx": 150,
         "ty": 40,
         "tz": 0
       },
@@ -183,11 +190,11 @@
       "stoppable": false,
       "camera": {
         "el": 5.4,
-        "az": 0.09,
-        "zoom": 53,
-        "tx": -70,
-        "ty": 32.76,
-        "tz": -9.72
+        "az": 0.21,
+        "zoom": 38,
+        "tx": 10,
+        "ty": 30,
+        "tz": 0
       },
       "description": null,
       "image": null
@@ -209,16 +216,17 @@
       "stoppable": false,
       "camera": {
         "el": 5.2,
-        "az": 0.08,
-        "zoom": 55,
-        "tx": -70.49,
-        "ty": 80,
+        "az": 0.29,
+        "zoom": 45,
+        "tx": -120.49,
+        "ty": 110,
         "tz": 0
       },
       "description": null,
       "image": null
     },
     {
+      "color": "blue",
       "jd": 2460932.5,
       "date": "2025-09-14",
       "au": {
@@ -232,18 +240,17 @@
         "wz": 30
       },
       "durationPct": 100,
-      "stoppable": false,
+      "stoppable": true,
       "camera": {
         "el": 5.4,
-        "az": 0.09,
-        "zoom": 67,
-        "tx": -140.28,
-        "ty": 65,
-        "tz": -2.95
+        "az": 1.14,
+        "zoom": 55,
+        "tx": -180.28,
+        "ty": 25,
+        "tz": 17.05
       },
       "description": null,
-      "image": null,
-      "color": "blue"
+      "image": null
     },
     {
       "jd": 2460947.5,
@@ -262,8 +269,8 @@
       "stoppable": false,
       "camera": {
         "el": 5.4,
-        "az": 1,
-        "zoom": 62,
+        "az": 1.14,
+        "zoom": 60,
         "tx": -350.28,
         "ty": 76,
         "tz": 0
@@ -288,10 +295,10 @@
       "stoppable": true,
       "camera": {
         "el": 5,
-        "az": 1,
+        "az": 1.23,
         "zoom": 75,
-        "tx": -330,
-        "ty": 0,
+        "tx": -320,
+        "ty": -30,
         "tz": 0
       },
       "description": "Mars close approach — ~0.194 AU from Mars",
@@ -314,10 +321,10 @@
       "stoppable": false,
       "camera": {
         "el": 5,
-        "az": 0.09,
+        "az": -0.08,
         "zoom": 85,
-        "tx": -153.26,
-        "ty": -13.54,
+        "tx": -143.26,
+        "ty": 26.46,
         "tz": 3.26
       },
       "description": null,
@@ -340,10 +347,10 @@
       "stoppable": true,
       "camera": {
         "el": 3.8,
-        "az": 0.09,
+        "az": 0.18,
         "zoom": 90,
-        "tx": -215.48,
-        "ty": -29.85,
+        "tx": -205.48,
+        "ty": -9.85,
         "tz": 15.13
       },
       "description": "Perihelion — closest approach to Sun, 1.356 AU. Peak brightness.",
@@ -366,10 +373,10 @@
       "stoppable": false,
       "camera": {
         "el": 3.91,
-        "az": 0.09,
-        "zoom": 88,
-        "tx": -216.95,
-        "ty": -28.4,
+        "az": 0.07,
+        "zoom": 68,
+        "tx": -196.95,
+        "ty": 201.6,
         "tz": 14.59
       },
       "description": null,
@@ -389,16 +396,17 @@
         "wz": 10
       },
       "durationPct": 100,
-      "stoppable": false,
+      "stoppable": true,
       "camera": {
         "el": 4.6,
         "az": 0.09,
         "zoom": 75,
         "tx": -226.51,
-        "ty": -18.97,
+        "ty": 261.03,
         "tz": 11.05
       },
-      "description": {
+      "description": "After Perihelion — looks like it starts to break apart",
+      "more_info": {
         "images": [
           {
             "url": "https://c.ndtvimg.com/2025-11/5mrdu7s8_interstellar-object-3iatlas_625x300_10_November_25.jpeg?downsize=773:435"
@@ -427,16 +435,17 @@
       "stoppable": false,
       "camera": {
         "el": 4.6,
-        "az": 0.09,
-        "zoom": 95,
+        "az": 0.14,
+        "zoom": 75,
         "tx": -226.51,
-        "ty": -18.97,
+        "ty": 281.03,
         "tz": 11.05
       },
       "description": null,
       "image": null
     },
     {
+      "color": "green",
       "jd": 2461022.5,
       "date": "2025-12-13",
       "au": {
@@ -449,24 +458,27 @@
         "wy": 238,
         "wz": -1
       },
-      "color": "green",
       "durationPct": 100,
-      "stoppable": false,
+      "stoppable": true,
       "camera": {
         "el": 5.2,
         "az": 0.09,
         "zoom": 80,
         "tx": -231.31,
-        "ty": 134.77,
-        "tz": -16.67
+        "ty": 234.77,
+        "tz": 23.33
       },
       "description": null,
-      "image": "https://www.futura-sciences.com/en/wp-content/uploads/2025/12/Hubble_reobserves_3I_ATLAS_pillars-1.jpeg"
+      "image": "https://www.futura-sciences.com/en/wp-content/uploads/2025/12/Hubble_reobserves_3I_ATLAS_pillars-1.jpeg",
+      "more_info": {
+        "page_name": "more_info_2025_12_13.html"
+      }
     },
     {
+      "color": "red",
+      "video": "https://www.youtube.com/watch?v=9t-OV6Wmbkw",
       "jd": 2461037.5,
       "date": "2025-12-28",
-      "color": "red",
       "au": {
         "x": -1.68,
         "y": 1.9086,
@@ -484,16 +496,16 @@
         "az": 0.09,
         "zoom": 90,
         "tx": -224,
-        "ty": 138.35,
+        "ty": 258.35,
         "tz": 15.3
       },
       "description": "Earth closest approach — ~1.8 AU. Earth enters ion tail.",
-      "video": "https://www.youtube.com/watch?v=9t-OV6Wmbkw",
       "image": null
     },
     {
+      "color": "yellow",
       "jd": 2461061.5,
-      "date": "2026-01-21",
+      "date": "2026-01-22",
       "au": {
         "x": -1.7762,
         "y": 2.7778,
@@ -506,7 +518,6 @@
       },
       "durationPct": 100,
       "stoppable": true,
-      "color": "yellow",
       "camera": {
         "el": 7,
         "az": -0.25,

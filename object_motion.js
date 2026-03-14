@@ -236,21 +236,41 @@ const TrajectoryStore = (() => {
             source: 'JPL Horizons VECTORS',
             dateRange: pts.length ? `${pts[0].date} \u2192 ${pts[pts.length - 1].date}` : '',
             scale: { auToPx: AU_TO_PX },
-            points: pts.map((p, i) => ({
-                jd: p.jd,
-                date: p.date,
-                au: p.au,
-                px: {
-                    wx: p.wx,
-                    wy: p.wy,
-                    wz: p.wz,
-                },
-                durationPct: p.durationPct ?? 100,
-                stoppable: p.stoppable ?? false,
-                camera: normalizeCameraState(p.camera),
-                description: p.description,
-                image: p.image instanceof File ? p.image.name : p.image,
-            })),
+            // Preserve arbitrary per-point metadata such as color, video, and
+            // future fields while still canonicalizing the core trajectory keys.
+            points: pts.map((p, i) => {
+                const {
+                    jd,
+                    date,
+                    au,
+                    wx,
+                    wy,
+                    wz,
+                    camera,
+                    description,
+                    image,
+                    durationPct,
+                    stoppable,
+                    ...extraFields
+                } = p;
+
+                return {
+                    ...extraFields,
+                    jd,
+                    date,
+                    au,
+                    px: {
+                        wx,
+                        wy,
+                        wz,
+                    },
+                    durationPct: durationPct ?? 100,
+                    stoppable: stoppable ?? false,
+                    camera: normalizeCameraState(camera),
+                    description,
+                    image: image instanceof File ? image.name : image,
+                };
+            }),
         };
     }
 
@@ -783,10 +803,18 @@ const FileIO = (() => {
 
 function sanitize(name) { return name.replace(/[\s/]/g, '_'); }
 
-function syncObjectMotionUrl(designation) {
+function normalizeRequestedSource(value) {
+    const normalized = String(value || '').trim().toLowerCase();
+    return (normalized === 'local' || normalized === 'web') ? normalized : '';
+}
+
+function syncObjectMotionUrl(designation, source = '') {
     const value = (designation || '').trim();
     if (!value || !window.history?.replaceState) return;
-    window.history.replaceState(null, '', `object_motion?designation=${encodeURIComponent(value)}`);
+    const params = new URLSearchParams({ designation: value });
+    const normalizedSource = normalizeRequestedSource(source);
+    if (normalizedSource) params.set('source', normalizedSource);
+    window.history.replaceState(null, '', `object_motion?${params.toString()}`);
 }
 
 function normalizeCameraState(camera) {
@@ -797,6 +825,13 @@ function normalizeCameraState(camera) {
         ty: Number(camera.ty ?? 0),
         tz: Number(camera.tz ?? 0),
     };
+}
+
+const MoreInfoHelpers = window.MoreInfoShared || {};
+const APP_CONFIG = window.AppConfigShared?.readAppConfig?.(window.AppConfig) || { useLocalStorage: false };
+
+function isLocalStorageEnabled() {
+    return APP_CONFIG.useLocalStorage && typeof window.localStorage !== 'undefined';
 }
 
 function resolveStep(dropdownEl, customEl) {
@@ -887,6 +922,12 @@ function formatTrajDate(str) {
     const playSaveFirstBtn = document.getElementById('om-play-save-first-btn');
     const playAnywayBtn = document.getElementById('om-play-anyway-btn');
 
+    const moreInfoBtn = document.getElementById('om-more-info-btn');
+    const moreInfoModal = document.getElementById('om-more-info-modal');
+    const moreInfoModalController = (window.MoreInfoModalShared?.createModalController && moreInfoModal)
+        ? window.MoreInfoModalShared.createModalController(moreInfoModal, { title: 'Point More Info' })
+        : null;
+
     // ── Form status helpers ───────────────────────────────────
 
     function setStatus(mode, text) {
@@ -916,11 +957,39 @@ function formatTrajDate(str) {
         viewerStatus.style.display = 'none';
     }
 
+    function pointHasMoreInfo(point) {
+        if (typeof MoreInfoHelpers.hasMoreInfoContent === 'function') {
+            return MoreInfoHelpers.hasMoreInfoContent(point, TrajectoryStore.getDesignation());
+        }
+        return false;
+    }
+
+    function syncMoreInfoButton(point) {
+        if (!moreInfoBtn) return;
+        moreInfoBtn.classList.toggle('visible', pointHasMoreInfo(point));
+    }
+
+    function closeMoreInfoModal() {
+        moreInfoModalController?.hide();
+    }
+
+    function openMoreInfoModal() {
+        const point = TrajectoryStore.getPoint(WorkflowController.getCurrent());
+        if (!pointHasMoreInfo(point) || !moreInfoModalController) return;
+        moreInfoModalController.show({
+            point,
+            designation: TrajectoryStore.getDesignation(),
+            dateText: formatTrajDate(point?.date),
+            description: point?.description || '',
+        });
+    }
+
     // ── UI state helpers ─────────────────────────────────────
 
     function hideDraftCard() { draftCard.classList.remove('visible'); }
 
     function showDraftCard(designation, savedCount, total) {
+        if (!isLocalStorageEnabled()) return;
         draftCardMsg.textContent =
             `Resume unsaved session for '${designation}' \u2014 ${savedCount} of ${total} points saved`;
         draftCard.classList.add('visible');
@@ -972,6 +1041,7 @@ function formatTrajDate(str) {
 
         sidebar.classList.add('visible');
         MediaAnnotator.loadAnnotationPanel(idx);
+        syncMoreInfoButton(points[idx]);
         updateCounter();
         updateSaveButtons();
 
@@ -1004,6 +1074,8 @@ function formatTrajDate(str) {
         viewerControls.style.display = 'none';
         viewerControls.setAttribute('aria-hidden', 'true');
         formOverlay.style.display = '';
+        syncMoreInfoButton(null);
+        closeMoreInfoModal();
         clearViewerStatus();
     }
 
@@ -1033,6 +1105,7 @@ function formatTrajDate(str) {
 
         ProgressPanel.setActive(index);
         MediaAnnotator.loadAnnotationPanel(index);
+        syncMoreInfoButton(p);
 
         // Story 2.14: reflect saved (or default) duration & stoppable
         if (durationPctEl) durationPctEl.value = p.durationPct ?? 100;
@@ -1056,6 +1129,7 @@ function formatTrajDate(str) {
         if (remaining <= 0) {
             ObjectMarker.setPoint(null, TrajectoryStore.getDesignation());
             _clearDraft();
+            closeMoreInfoModal();
             deactivateViewer();
             setStatus('success', 'All points deleted from the draft.');
             return;
@@ -1127,6 +1201,10 @@ function formatTrajDate(str) {
 
     // Keyboard shortcut: Space or Enter when no input is focused
     document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && moreInfoModal?.classList.contains('visible')) {
+            closeMoreInfoModal();
+            return;
+        }
         if (viewerControls.style.display === 'none' ||
             viewerControls.getAttribute('aria-hidden') === 'true') return;
         const tag = (document.activeElement?.tagName || '').toLowerCase();
@@ -1225,8 +1303,9 @@ function formatTrajDate(str) {
     // ── Play Video button & confirm modal (Story 2.15) ────────
 
     function _openPlayer() {
-        const name = sanitize(TrajectoryStore.getDesignation());
-        window.open(`trajectory_player?designation=${encodeURIComponent(name)}`, '_blank');
+        const designation = (TrajectoryStore.getDesignation() || '').trim() || '3I';
+        const params = new URLSearchParams({ designation, source: 'local' });
+        window.open(`trajectory_player?${params.toString()}`, '_blank');
     }
 
     if (playVideoBtn) {
@@ -1279,11 +1358,16 @@ function formatTrajDate(str) {
         });
     }
 
+    if (moreInfoBtn) {
+        moreInfoBtn.addEventListener('click', openMoreInfoModal);
+    }
+
     // ── LocalStorage helpers (Story 2.11) ────────────────────
 
     function _draftKey(name) { return `objectMotion:${name}`; }
 
     function _saveDraft() {
+        if (!isLocalStorageEnabled()) return;
         const rawDesignation = TrajectoryStore.getDesignation();
         const name = sanitize(rawDesignation);
         const key = _draftKey(name);
@@ -1312,6 +1396,7 @@ function formatTrajDate(str) {
     }
 
     function _clearDraft() {
+        if (!isLocalStorageEnabled()) return;
         const name = sanitize(TrajectoryStore.getDesignation());
         try { localStorage.removeItem(_draftKey(name)); } catch (_) { }
     }
@@ -1365,17 +1450,19 @@ function formatTrajDate(str) {
         resetToStep1();
 
         // Check for a localStorage draft first (Story 2.11)
-        try {
-            const raw = localStorage.getItem(_draftKey(name));
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                const saved = (parsed.points || []).filter(p => p.camera !== null).length;
-                const total = (parsed.points || []).length;
-                updateSearchButton();
-                showDraftCard(designation, saved, total);
-                return;
-            }
-        } catch (_) { }
+        if (isLocalStorageEnabled()) {
+            try {
+                const raw = localStorage.getItem(_draftKey(name));
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    const saved = (parsed.points || []).filter(p => p.camera !== null).length;
+                    const total = (parsed.points || []).length;
+                    updateSearchButton();
+                    showDraftCard(designation, saved, total);
+                    return;
+                }
+            } catch (_) { }
+        }
 
         await _runNormalSearch(designation);
     });
@@ -1387,6 +1474,10 @@ function formatTrajDate(str) {
     // ── Draft card buttons (Story 2.11) ──────────────────────
 
     resumeBtn.addEventListener('click', () => {
+        if (!isLocalStorageEnabled()) {
+            setStatus('error', 'Local draft storage is disabled in this build.');
+            return;
+        }
         const designation = designationEl.value.trim();
         const name = sanitize(designation);
         hideDraftCard();
@@ -1403,7 +1494,9 @@ function formatTrajDate(str) {
     startFreshBtn.addEventListener('click', async () => {
         const designation = designationEl.value.trim();
         const name = sanitize(designation);
-        try { localStorage.removeItem(_draftKey(name)); } catch (_) { }
+        if (isLocalStorageEnabled()) {
+            try { localStorage.removeItem(_draftKey(name)); } catch (_) { }
+        }
         hideDraftCard();
         await _runNormalSearch(designation);
     });
@@ -1415,19 +1508,35 @@ function formatTrajDate(str) {
         const createdAt = json.createdAt || null;
         const raw = json.points || [];
 
-        const points = raw.map(p => ({
-            jd: p.jd,
-            date: p.date,
-            au: p.au,
-            wx: p.wx ?? p.px?.wx ?? (p.au?.x * AU_TO_PX) ?? 0,
-            wy: p.wy ?? p.px?.wy ?? (p.au?.y * AU_TO_PX) ?? 0,
-            wz: p.wz ?? p.px?.wz ?? (p.au?.z * AU_TO_PX) ?? 0,
-            camera: normalizeCameraState(p.camera),
-            description: p.description ?? null,
-            image: p.image ?? null,
-            durationPct: p.durationPct ?? 100,
-            stoppable: p.stoppable ?? false,
-        }));
+        const points = raw.map(p => {
+            const {
+                px,
+                wx,
+                wy,
+                wz,
+                camera,
+                description,
+                image,
+                durationPct,
+                stoppable,
+                ...extraFields
+            } = p;
+
+            return {
+                ...extraFields,
+                jd: p.jd,
+                date: p.date,
+                au: p.au,
+                wx: wx ?? px?.wx ?? (p.au?.x * AU_TO_PX) ?? 0,
+                wy: wy ?? px?.wy ?? (p.au?.y * AU_TO_PX) ?? 0,
+                wz: wz ?? px?.wz ?? (p.au?.z * AU_TO_PX) ?? 0,
+                camera: normalizeCameraState(camera),
+                description: description ?? null,
+                image: image ?? null,
+                durationPct: durationPct ?? 100,
+                stoppable: stoppable ?? false,
+            };
+        });
 
         if (points.length === 0) {
             setStatus('error', 'No trajectory points found in this file.');
@@ -1565,33 +1674,44 @@ function formatTrajDate(str) {
         if (!paramVal) return;
         const value = decodeURIComponent(paramVal).trim();
         if (!value) return;
+        const requestedSource = normalizeRequestedSource(params.get('source') || params.get('s'));
         designationEl.value = value;
         updateSearchButton();
 
         const name = sanitize(value);
         const key = _draftKey(name);
 
-        // 1. Auto-restore localStorage draft if present
-        try {
-            const draftRaw = localStorage.getItem(key);
-            if (draftRaw) {
-                const parsed = JSON.parse(draftRaw);
-                const withTx = (parsed.points || []).filter(p => p.camera && 'tx' in p.camera).length;
-                console.log('[PAN] _applyUrlParam: restoring draft — pts:', parsed.points?.length,
-                    '| cameras with tx field:', withTx,
-                    '| pt[0] cam:', JSON.stringify(parsed.points?.[0]?.camera));
-                if (parsed && (parsed.points || []).length > 0) {
-                    // Defer until after DOMContentLoaded so solar_system.js _init() has run
-                    // before activateViewer sets the camera (otherwise _init() resets aEl=5).
-                    if (document.readyState === 'loading') {
-                        await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once: true }));
+        // 1. Auto-restore localStorage draft if present unless the URL explicitly asks for web.
+        if (requestedSource === 'local' && !isLocalStorageEnabled()) {
+            setStatus('error', `Local draft storage is disabled for '${value}'. Falling back to bundled data if available.`);
+        } else if (requestedSource !== 'web' && isLocalStorageEnabled()) {
+            try {
+                const draftRaw = localStorage.getItem(key);
+                if (draftRaw) {
+                    const parsed = JSON.parse(draftRaw);
+                    const withTx = (parsed.points || []).filter(p => p.camera && 'tx' in p.camera).length;
+                    console.log('[PAN] _applyUrlParam: restoring draft — pts:', parsed.points?.length,
+                        '| cameras with tx field:', withTx,
+                        '| pt[0] cam:', JSON.stringify(parsed.points?.[0]?.camera));
+                    if (parsed && (parsed.points || []).length > 0) {
+                        // Defer until after DOMContentLoaded so solar_system.js _init() has run
+                        // before activateViewer sets the camera (otherwise _init() resets aEl=5).
+                        if (document.readyState === 'loading') {
+                            await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once: true }));
+                        }
+                        loadTrajectoryFromData(parsed);
+                        return;
                     }
-                    loadTrajectoryFromData(parsed);
-                    return;
                 }
+            } catch (err) {
+                console.error('[PAN] _applyUrlParam: ERROR reading draft:', err);
             }
-        } catch (err) {
-            console.error('[PAN] _applyUrlParam: ERROR reading draft:', err);
+        } else if (requestedSource === 'web') {
+            console.log('[PAN] _applyUrlParam: source=web, skipping draft restore');
+        }
+
+        if (requestedSource === 'local' && isLocalStorageEnabled()) {
+            setStatus('error', `No local draft found for '${value}'. Falling back to bundled data if available.`);
         }
 
         // 2. Fall back to bundled data file on disk

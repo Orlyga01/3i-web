@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3I/ATLAS Materials · 2025-12-13</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #030816;
+      --panel: rgba(10, 20, 44, 0.9);
+      --panel-strong: rgba(14, 28, 58, 0.96);
+      --line: rgba(126, 182, 255, 0.24);
+      --text: rgba(232, 243, 255, 0.95);
+      --muted: rgba(184, 209, 242, 0.84);
+      --accent: #81c8ff;
+      --accent-strong: #7cf6ff;
+      --highlight: #ffd76d;
+      --shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(39, 86, 160, 0.22), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(27, 89, 141, 0.18), transparent 28%),
+        var(--bg);
+    }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(270px, 0.72fr) minmax(0, 1.28fr);
+      min-height: 480px;
+    }
+
+    .hero-side {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: space-between;
+    }
+
+    .section-kicker {
+      color: var(--accent);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    .hero-media {
+      min-height: 100%;
+      background: #071126;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero-media-title {
+      display: none;
+      padding: 12px 14px 0;
+      font: 600 20px Georgia, serif;
+      color: var(--text);
+      background: rgba(8, 18, 38, 0.96);
+    }
+
+    .hero-media-title.is-visible {
+      display: block;
+    }
+
+    .hero-media img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .hero-media-copy {
+      display: none;
+      padding: 12px 14px 14px;
+      border-top: 1px solid rgba(132, 176, 246, 0.18);
+      background: rgba(8, 18, 38, 0.96);
+    }
+
+    .hero-media-copy.is-visible {
+      display: block;
+    }
+
+    .hero-media.is-experiment-view img {
+      flex: 0 0 auto;
+      height: auto;
+      max-height: 180px;
+      object-fit: contain;
+      padding: 12px 12px 0;
+      background: rgba(8, 18, 38, 0.96);
+    }
+
+    .hero-media.is-experiment-view .hero-media-title {
+      display: block;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .play-button,
+    .reset-button {
+      border: 1px solid rgba(135, 201, 255, 0.34);
+      border-radius: 999px;
+      background: rgba(28, 77, 156, 0.22);
+      color: var(--text);
+      padding: 8px 14px;
+      font-size: 12px;
+      letter-spacing: 0.6px;
+      cursor: pointer;
+    }
+
+    .play-button:hover,
+    .reset-button:hover {
+      background: rgba(40, 104, 204, 0.3);
+    }
+
+    .play-button[disabled],
+    .reset-button[disabled] {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .section {
+      padding: 16px;
+      background: var(--panel-strong);
+    }
+
+    .section-header {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .section-header p {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .materials-grid,
+    .compact-materials {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .compact-materials {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .material-card {
+      position: relative;
+      padding: 12px 12px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(132, 176, 246, 0.2);
+      background: linear-gradient(180deg, rgba(14, 30, 66, 0.98), rgba(7, 18, 40, 0.98));
+      overflow: hidden;
+    }
+
+    .material-card::after {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border-radius: 10px;
+      border: 2px solid transparent;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.35s ease, transform 0.35s ease, border-color 0.35s ease;
+      pointer-events: none;
+    }
+
+    .material-card.is-highlighted::after {
+      opacity: 1;
+      transform: scale(1);
+      border-color: var(--highlight);
+      animation: ringPulse 1.3s ease-in-out infinite;
+    }
+
+    .material-card.is-organics-highlight::after {
+      opacity: 1;
+      transform: scale(1);
+      border-color: #ff9b3d;
+      animation: ringPulse 1.3s ease-in-out infinite;
+    }
+
+    .material-card h3 {
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+
+    .formula {
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .material-meta {
+      color: rgba(255, 224, 141, 0.95);
+      font-size: 11px;
+      margin-bottom: 0;
+    }
+
+    .experiment-figure img {
+      width: 100%;
+      display: block;
+      border-radius: 12px;
+      border: 1px solid rgba(132, 176, 246, 0.2);
+      margin-bottom: 10px;
+    }
+
+    .caption,
+    .footnote {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .hero-media-list {
+      margin: 0;
+      padding-left: 22px;
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .hero-media-list li+li {
+      margin-top: 10px;
+    }
+
+    .hero-media-term {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .comparison-list {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .comparison-list strong {
+      color: var(--text);
+    }
+
+    .callout {
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 215, 109, 0.2);
+      background: rgba(44, 35, 12, 0.28);
+      color: rgba(245, 233, 193, 0.94);
+      line-height: 1.6;
+    }
+
+    a {
+      color: var(--accent-strong);
+    }
+
+    @keyframes ringPulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(255, 215, 109, 0.38);
+      }
+
+      70% {
+        box-shadow: 0 0 0 12px rgba(255, 215, 109, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(255, 215, 109, 0);
+      }
+    }
+
+    @media (max-width: 960px) {
+      body {
+        padding: 16px;
+      }
+
+      .hero,
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-media {
+        min-height: 240px;
+      }
+    }
+
+    @media (max-width: 640px) {
+
+      .hero-side,
+      .controls,
+      .section {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .materials-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <section class="panel hero">
+      <div class="hero-side">
+        <div class="controls">
+          <button id="play-sequence" class="play-button" type="button" aria-label="Play material comparison">▶</button>
+          <button id="reset-sequence" class="reset-button" type="button">Reset</button>
+        </div>
+        <div class="compact-materials">
+          <article class="material-card" data-material="co2">
+            <h3><span class="formula">CO&#8322;</span> · Carbon Dioxide</h3>
+            <div class="material-meta">About 87% of gas mass</div>
+          </article>
+
+          <article class="material-card" data-material="co">
+            <h3><span class="formula">CO</span> · Carbon Monoxide</h3>
+            <div class="material-meta">About 9% of gas mass</div>
+          </article>
+
+          <article class="material-card is-experiment" data-material="h2o">
+            <h3><span class="formula">H&#8322;O</span> · Water</h3>
+            <div class="material-meta">About 4% pre-perihelion</div>
+          </article>
+
+          <article class="material-card" data-material="cn">
+            <h3><span class="formula">CN</span> · Cyanide</h3>
+            <div class="material-meta">Newly appeared after perihelion</div>
+          </article>
+
+          <article class="material-card" data-material="organics">
+            <h3><span class="formula">C-H</span> · Organics</h3>
+            <div class="material-meta">Detected at 3.2–3.6 microns</div>
+          </article>
+
+          <article class="material-card is-experiment" data-material="ch4">
+            <h3><span class="formula">CH&#8324;</span> · Methane</h3>
+            <div class="material-meta">Reported post-perihelion</div>
+          </article>
+
+          <article class="material-card" data-material="nickel">
+            <h3><span class="formula">Ni</span> · Nickel without Iron</h3>
+            <div class="material-meta">Deeply anomalous</div>
+          </article>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div id="hero-image-title" class="hero-media-title">The Miller-Urey Experiment (1953)</div>
+        <img id="hero-image" src="assets/materials.jpg" alt="3I/ATLAS materials image">
+        <div id="hero-image-copy" class="hero-media-copy">
+          <ul class="hero-media-list">
+            <li>
+              Scientists mixed water, hydrogen, ammonia, and methane, simulating early Earth's atmosphere, zapped it
+              with electrical sparks, and shockingly produced amino acids, the building blocks of life, from scratch.
+            </li>
+            <li>
+              <span class="hero-media-term">Panspermia:</span>
+              The theory that life's ingredients, or even life itself, can travel across the galaxy carried by objects
+              like comets, asteroids, or interstellar visitors like 3I/ATLAS, potentially seeding life on other planets.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const playButton = document.getElementById('play-sequence');
+      const resetButton = document.getElementById('reset-sequence');
+      const heroMedia = document.querySelector('.hero-media');
+      const heroImageTitle = document.getElementById('hero-image-title');
+      const heroImage = document.getElementById('hero-image');
+      const heroImageCopy = document.getElementById('hero-image-copy');
+      const defaultHeroImageSrc = 'assets/materials.jpg';
+      const defaultHeroImageAlt = '3I/ATLAS materials image';
+      const experimentImageSrc = 'https://media-cldnry.s-nbcnews.com/image/upload/t_fit-1000w,f_auto,q_auto:best/msnbc/Components/Photos/070523/070523_millerlab_hmed_12p.jpg';
+      const experimentImageAlt = 'Stanley Miller laboratory image referenced by NBC News';
+      const cards = {
+        h2o: document.querySelector('[data-material="h2o"]'),
+        organics: document.querySelector('[data-material="organics"]'),
+        ch4: document.querySelector('[data-material="ch4"]')
+      };
+      const timers = [];
+
+      function clearHighlights() {
+        Object.values(cards).forEach(card => {
+          if (!card) return;
+          card.classList.remove('is-highlighted');
+          card.classList.remove('is-organics-highlight');
+        });
+      }
+
+      function stopTimers() {
+        while (timers.length) {
+          clearTimeout(timers.pop());
+        }
+      }
+
+      function resetSequence() {
+        stopTimers();
+        clearHighlights();
+        playButton.disabled = false;
+        heroImage.src = defaultHeroImageSrc;
+        heroImage.alt = defaultHeroImageAlt;
+        heroMedia.classList.remove('is-experiment-view');
+        heroImageTitle.classList.remove('is-visible');
+        heroImageCopy.classList.remove('is-visible');
+      }
+
+      function schedule(delay, fn) {
+        timers.push(setTimeout(fn, delay));
+      }
+
+      function runSequence() {
+        resetSequence();
+        playButton.disabled = true;
+        heroImage.src = experimentImageSrc;
+        heroImage.alt = experimentImageAlt;
+        heroMedia.classList.add('is-experiment-view');
+        heroImageTitle.classList.add('is-visible');
+        heroImageCopy.classList.add('is-visible');
+
+        schedule(250, function () {
+          cards.h2o.classList.add('is-highlighted');
+        });
+
+        schedule(2200, function () {
+          clearHighlights();
+          cards.ch4.classList.add('is-highlighted');
+        });
+
+        schedule(4300, function () {
+          clearHighlights();
+          cards.h2o.classList.add('is-highlighted');
+          cards.organics.classList.add('is-organics-highlight');
+          cards.ch4.classList.add('is-highlighted');
+        });
+
+        schedule(6900, function () {
+          playButton.disabled = false;
+        });
+      }
+
+      playButton.addEventListener('click', runSequence);
+      resetButton.addEventListener('click', resetSequence);
+      document.addEventListener('keydown', function (event) {
+        if (event.code !== 'Space') return;
+        event.preventDefault();
+        if (!playButton.disabled) playButton.click();
+      });
+    })();
+  </script>
+</body>
+
+</html>

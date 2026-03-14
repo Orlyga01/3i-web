@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <clipPath id="planet-clip">
+      <circle cx="32" cy="32" r="26"/>
+    </clipPath>
+    <linearGradient id="planet-base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0e8c7"/>
+      <stop offset="1" stop-color="#ddd3ac"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" fill="#03060f"/>
+  <circle cx="32" cy="32" r="26" fill="url(#planet-base)"/>
+
+  <g clip-path="url(#planet-clip)">
+    <path d="M-4 20 C10 12, 22 26, 38 18 S58 23, 70 16 L70 24 C58 31, 45 27, 32 31 S9 30,-4 36 Z" fill="#e8aa61"/>
+    <path d="M-4 26 C10 24, 24 27, 40 23 S58 21, 70 19 L70 24 C56 28, 42 31, 27 31 S8 32,-4 33 Z" fill="#8d4f25"/>
+    <path d="M-4 30 C11 28, 22 32, 38 29 S56 26, 70 24 L70 30 C56 34, 43 37, 28 37 S9 37,-4 39 Z" fill="#bfe6ef"/>
+    <path d="M-4 38 C10 32, 22 46, 38 39 S57 42, 70 35 L70 43 C57 48, 44 45, 29 49 S10 49,-4 54 Z" fill="#e3a159"/>
+    <path d="M-4 46 C11 41, 24 50, 39 45 S56 46, 70 41 L70 47 C56 51, 42 54, 28 56 S9 55,-4 58 Z" fill="#8d4f25"/>
+    <path d="M-4 48 C12 44, 24 47, 40 44 S57 43, 70 40 L70 45 C56 49, 42 51, 27 53 S8 53,-4 55 Z" fill="#ccecf3" opacity="0.9"/>
+    <ellipse cx="40" cy="17" rx="10" ry="2.8" fill="#c6743d"/>
+    <ellipse cx="18" cy="24" rx="3.1" ry="2.3" fill="#f2edcf" opacity="0.95"/>
+    <ellipse cx="44" cy="34" rx="3" ry="2.1" fill="#e9dfbc" opacity="0.95"/>
+    <ellipse cx="23" cy="45" rx="2.7" ry="1.9" fill="#e9dfbc" opacity="0.95"/>
+  </g>
+
+  <ellipse cx="24" cy="25" rx="13" ry="21" fill="#ffffff" opacity="0.12" transform="rotate(22 24 25)"/>
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#f6f0d2" stroke-width="1.2" opacity="0.55"/>
+</svg>

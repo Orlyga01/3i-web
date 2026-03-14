@@ -32,6 +32,22 @@ function readDesignationFromUrl(search = '') {
     return decodeDesignation(rawValue);
 }
 
+function normalizeRequestedSource(value) {
+    const normalized = String(value || '').trim().toLowerCase();
+    return normalized === 'local' || normalized === 'web' ? normalized : '';
+}
+
+function readSourceFromUrl(search = '') {
+    const params = new URLSearchParams(search);
+    return normalizeRequestedSource(params.get('source') ?? params.get('s'));
+}
+
+function resolveRequestedSource(value, useLocalStorage = true) {
+    const requestedSource = normalizeRequestedSource(value);
+    if (requestedSource !== 'local') return requestedSource;
+    return useLocalStorage ? 'local' : 'web';
+}
+
 function sanitize(name) {
     return String(name || '').replace(/[\s/]/g, '_');
 }
@@ -100,12 +116,18 @@ function normalizePoint(point, index, designation) {
     };
 }
 
-function buildObjectMotionHref(designation) {
-    return `object_motion?designation=${encodeURIComponent(designation || '3I')}`;
+function buildObjectMotionHref(designation, source = '') {
+    const params = new URLSearchParams({ designation: designation || '3I' });
+    const normalizedSource = normalizeRequestedSource(source);
+    if (normalizedSource) params.set('source', normalizedSource);
+    return `object_motion?${params.toString()}`;
 }
 
-function buildTrajectoryPlayerHref(designation) {
-    return `trajectory_player?designation=${encodeURIComponent(designation || '3I')}`;
+function buildTrajectoryPlayerHref(designation, source = '') {
+    const params = new URLSearchParams({ designation: designation || '3I' });
+    const normalizedSource = normalizeRequestedSource(source);
+    if (normalizedSource) params.set('source', normalizedSource);
+    return `trajectory_player?${params.toString()}`;
 }
 
 const AU_IN_KM = 149597870.7;
@@ -339,8 +361,12 @@ function shouldPauseAtPoint(point, pauseAtStoppablePoints, pauseAtEveryPoint = f
     return Boolean(pauseAtEveryPoint || (pauseAtStoppablePoints && point?.stoppable));
 }
 
+function getCanvasClickAction(state) {
+    return state === 'playing' ? 'stop' : 'noop';
+}
+
 function getPlayAction(state, source = 'toggle') {
-    if (state === 'stopped-at-point') return 'noop';
+    if (state === 'stopped-at-point' || state === 'stopped-manual') return 'noop';
     if (state === 'stopped') return source === 'button' ? 'restart' : 'noop';
     return state === 'playing' ? 'pause' : 'play';
 }
@@ -358,13 +384,15 @@ function getControlBarState(state, currentPointIndex, totalPoints) {
             ? 'Playing'
             : state === 'paused'
                 ? 'Paused'
+                : state === 'stopped-manual'
+                    ? 'Paused'
                 : state === 'stopped'
                     ? 'Stopped'
                     : state === 'stopped-at-point'
                         ? 'Paused at point'
                         : 'Idle',
         playText: state === 'playing' ? '⏸' : '▶',
-        playDisabled: state === 'stopped-at-point',
+        playDisabled: state === 'stopped-at-point' || state === 'stopped-manual',
         prevDisabled: secondaryDisabled || atStart,
         nextDisabled: secondaryDisabled || atEnd,
         secondaryDisabled,
@@ -418,6 +446,15 @@ function shouldShowReferenceConnector(currentDate, visibleFrom = REFERENCE_CONNE
     const start = parseDate(visibleFrom);
     if (Number.isNaN(date.getTime()) || Number.isNaN(start.getTime())) return false;
     return date.getTime() >= start.getTime();
+}
+
+function getAnomaliesDateForPoint(point) {
+    const value = typeof point?.date === 'string' ? point.date.trim() : '';
+    return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : '';
+}
+
+function shouldHandleAnomalyPlayShortcut(state, hasPendingAnomalyStep) {
+    return Boolean(hasPendingAnomalyStep && state !== 'playing');
 }
 
 function normalizeAnnotationDescription(description) {
@@ -512,6 +549,9 @@ module.exports = {
     TrajectoryLoadError,
     decodeDesignation,
     readDesignationFromUrl,
+    normalizeRequestedSource,
+    readSourceFromUrl,
+    resolveRequestedSource,
     sanitize,
     buildPath,
     buildObjectMotionHref,
@@ -532,6 +572,7 @@ module.exports = {
     getCameraTargetForSegment,
     lerpCameraState,
     shouldPauseAtPoint,
+    getCanvasClickAction,
     getPlayAction,
     areSecondaryControlsDisabled,
     getControlBarState,
@@ -543,6 +584,8 @@ module.exports = {
     getWorldPositionAtDate,
     getFixedConnectorConfiguration,
     shouldShowReferenceConnector,
+    getAnomaliesDateForPoint,
+    shouldHandleAnomalyPlayShortcut,
     normalizeAnnotationDescription,
     isAbsoluteImageUrl,
     resolveAnnotationImageSrc,

@@ -7,7 +7,10 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "jest tests/"
+    "generate:objects": "node scripts/generate-object-manifest.js",
+    "prepare:hosting": "npm run generate:objects && node scripts/prepare-hosting.js",
+    "deploy:hosting": "npm run prepare:hosting && firebase deploy --only hosting",
+    "test": "npm run generate:objects && jest tests/"
   },
   "repository": {
     "type": "git",

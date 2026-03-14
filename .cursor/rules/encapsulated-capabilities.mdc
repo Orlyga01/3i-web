@@ -1,0 +1,22 @@
+# Encapsulated Capability Rule
+
+When adding new functional capabilities, prefer implementing them as **encapsulated parts** instead of expanding existing page controllers with large inline blocks.
+
+## Preferred approach
+
+- Put reusable parsing, rendering, and behavior in dedicated shared modules when the capability appears on more than one page
+- Keep page-level files focused on wiring, state flow, and event hookup
+- Prefer small single-purpose classes or helpers over long procedural blocks
+- Prefer shared CSS/JS assets for repeated UI capabilities instead of duplicating the same implementation in multiple pages
+
+## Apply this especially when
+
+- The same feature appears in both `object_motion` and `trajectory_player`
+- A modal, overlay, gallery, zoom viewer, or other self-contained UI is being added
+- The new behavior can reasonably be tested in isolation
+
+## Avoid
+
+- Copy-pasting the same modal or viewer logic into multiple page scripts
+- Growing a page controller with large feature-specific rendering code when that code can live in its own module
+- Mixing unrelated new capabilities into existing functions when a focused helper or component boundary would keep the code clearer

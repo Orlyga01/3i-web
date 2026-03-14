@@ -1,0 +1,18 @@
+# Agent Workflow Preferences
+
+When working in this project, follow these preferences unless the user explicitly says otherwise.
+
+## Approval Before Edits
+
+- Explain what you are about to change before making code or file edits.
+- Ask for approval before making changes.
+
+## Review Process
+
+- Do not require a second agent before adding or changing code.
+- Instead, do a careful self-review and run relevant tests when possible.
+
+## Running the App
+
+- Do not run the app or start a dev server without the user's explicit consent.
+- In particular, do not run `flutter run` without consent.

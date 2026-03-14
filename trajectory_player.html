@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trajectory Player · 3I-web</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon-jupiter.svg">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="anomalies_panel.css">
+  <link rel="stylesheet" href="more_info_modal.css">
   <style>
     #c {
       position: fixed;
@@ -27,6 +30,43 @@
 
     #tp-back-link:hover {
       color: rgba(205, 230, 255, 0.95);
+    }
+
+    #tp-anomalies-panel {
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 60;
+      pointer-events: none;
+    }
+
+    #tp-anomalies-panel .anp-panel {
+      z-index: 60;
+    }
+
+    #tp-anomalies-panel .anp-panel.is-collapsed {
+      transform: translateX(-100%);
+    }
+
+    #tp-anomalies-panel .anp-tab {
+      position: absolute;
+      top: 50%;
+      right: -34px;
+      width: 34px;
+      transform: translateY(-50%);
+      min-height: 110px;
+      padding: 8px 6px;
+      z-index: 61;
+      background: rgba(20, 48, 96, 0.98);
+      border: 1px solid rgba(150, 205, 255, 0.55);
+      border-left: none;
+      box-shadow: 0 0 18px rgba(90, 170, 255, 0.45);
+      pointer-events: auto;
+    }
+
+    #tp-anomalies-panel .anp-tab-title {
+      font-size: 9px;
+      letter-spacing: 1.4px;
+      color: rgba(236, 245, 255, 0.98);
     }
 
     #tp-shell {
@@ -115,9 +155,11 @@
       position: fixed;
       top: 0;
       left: 0;
-      min-width: 190px;
-      padding: 8px 12px;
-      border-radius: 8px;
+      width: max-content;
+      max-width: calc(100vw - 32px);
+      padding: 5px 7px;
+      box-sizing: border-box;
+      border-radius: 7px;
       border: 1px solid rgba(130, 180, 255, 0.2);
       background: rgba(0, 1, 14, 0.75);
       color: rgba(200, 230, 255, 0.92);
@@ -130,15 +172,19 @@
     }
 
     #tp-stats-date {
-      font-size: 15px;
-      letter-spacing: 1px;
+      font-size: 12px;
+      letter-spacing: 0.2px;
+      line-height: 1.1;
+      white-space: nowrap;
     }
 
     #tp-stats-distance {
-      margin-top: 4px;
-      font-size: 12px;
+      margin-top: 2px;
+      font-size: 10px;
       color: rgba(170, 205, 255, 0.82);
-      letter-spacing: 0.8px;
+      letter-spacing: 0.2px;
+      line-height: 1.1;
+      white-space: nowrap;
     }
 
     #tp-overlay {
@@ -164,6 +210,7 @@
       padding: 12px 12px 14px;
       color: rgba(180, 210, 255, 0.85);
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34);
+      pointer-events: auto;
     }
 
     .tp-overlay-kicker {
@@ -229,6 +276,189 @@
       font: 12px Georgia, serif;
       line-height: 1.45;
       white-space: pre-wrap;
+    }
+
+    .tp-overlay-actions {
+      display: none;
+      margin-top: 10px;
+      justify-content: flex-start;
+    }
+
+    .tp-overlay-actions.visible {
+      display: flex;
+    }
+
+    .tp-more-info-btn {
+      padding: 6px 12px;
+      border-radius: 14px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      background: rgba(40, 100, 200, 0.18);
+      border: 1px solid rgba(100, 170, 255, 0.34);
+      color: rgba(180, 220, 255, 0.92);
+    }
+
+    .tp-more-info-btn:hover {
+      background: rgba(40, 100, 200, 0.32);
+      border-color: rgba(130, 190, 255, 0.46);
+    }
+
+    #tp-more-info-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      background: rgba(0, 1, 15, 0.78);
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      box-sizing: border-box;
+      pointer-events: auto;
+    }
+
+    #tp-more-info-modal.visible {
+      display: flex;
+    }
+
+    #tp-more-info-content {
+      width: min(960px, 100%);
+      max-height: min(88vh, 900px);
+      display: flex;
+      flex-direction: column;
+      background: rgba(5, 12, 38, 0.98);
+      border: 1px solid rgba(100, 160, 255, 0.28);
+      border-radius: 16px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.42);
+      overflow: hidden;
+    }
+
+    #tp-more-info-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid rgba(100, 160, 255, 0.14);
+    }
+
+    #tp-more-info-kicker {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(140, 196, 255, 0.72);
+    }
+
+    #tp-more-info-date {
+      margin-top: 6px;
+      color: rgba(215, 235, 255, 0.95);
+      font: 600 22px Georgia, serif;
+      letter-spacing: 0.4px;
+    }
+
+    #tp-more-info-close {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    #tp-more-info-body {
+      overflow: auto;
+      padding: 18px 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .tp-more-info-empty {
+      color: rgba(175, 205, 245, 0.74);
+      font: 14px Georgia, serif;
+      line-height: 1.6;
+    }
+
+    .tp-more-info-section-title {
+      margin-bottom: 10px;
+      font-size: 11px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: rgba(145, 200, 255, 0.8);
+    }
+
+    .tp-more-info-text {
+      color: rgba(205, 224, 255, 0.88);
+      font: 15px Georgia, serif;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .tp-more-info-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .tp-more-info-image-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .tp-more-info-image {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      display: block;
+      border-radius: 10px;
+      border: 1px solid rgba(130, 180, 255, 0.2);
+      background: rgba(6, 18, 40, 0.92);
+    }
+
+    .tp-more-info-caption {
+      color: rgba(175, 205, 245, 0.76);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .tp-more-info-video-frame,
+    .tp-more-info-page-frame {
+      width: 100%;
+      border: 1px solid rgba(130, 180, 255, 0.2);
+      border-radius: 10px;
+      background: rgba(6, 18, 40, 0.92);
+    }
+
+    .tp-more-info-video-frame {
+      aspect-ratio: 16 / 9;
+      min-height: 320px;
+    }
+
+    .tp-more-info-page-frame {
+      min-height: min(62vh, 640px);
+    }
+
+    .tp-more-info-video {
+      width: 100%;
+      max-height: min(62vh, 520px);
+      border-radius: 10px;
+      background: rgba(6, 18, 40, 0.92);
+    }
+
+    .tp-more-info-link {
+      color: rgba(160, 214, 255, 0.94);
+      text-decoration: none;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    .tp-more-info-link:hover {
+      color: rgba(220, 235, 255, 1);
     }
 
     #tp-continue-btn {
@@ -381,6 +611,7 @@
 </head>
 <body>
   <canvas id="c"></canvas>
+  <div id="tp-anomalies-panel"></div>
 
   <a id="tp-back-link" href="object_motion?designation=3I">← Back to Object Motion Tracker</a>
 
@@ -403,6 +634,8 @@
     </div>
 
     <div id="tp-overlay" aria-live="polite"></div>
+
+    <div id="tp-more-info-modal" role="dialog" aria-modal="true" aria-label="Point more info"></div>
 
     <button id="tp-continue-btn" type="button">Continue →</button>
 
@@ -444,6 +677,12 @@
     </div>
   </div>
 
+  <script src="app_config.js"></script>
+  <script src="app_config_shared.js"></script>
+  <script src="anomalies_shared.js"></script>
+  <script src="anomalies_panel.js"></script>
+  <script src="more_info_shared.js"></script>
+  <script src="more_info_modal.js"></script>
   <script src="shared_render.js"></script>
   <script src="solar_system.js"></script>
   <script src="trajectory_player.js"></script>

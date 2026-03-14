@@ -1,7 +1,7 @@
 # 3i-web — Story Status Tracker
 
 **Project:** 3i-web
-**Last updated:** 2026-03-10
+**Last updated:** 2026-03-14
 **Maintained by:** All agents — update this file whenever a story's implementation status changes.
 
 > **Rule:** Any agent (dev, PM, QA, architect) that completes, partially completes, or discovers a status change for any story **must** update the relevant row in this file before ending their session. The status values are defined below.
@@ -62,17 +62,94 @@
 | 3.1 | Player Page Shell & URL Loading | ✅ Done | Added player shell, URL loader, friendly error states, and manual-start playback wiring per latest user request |
 | 3.2 | Animation Engine (Spline + Camera Lerp) | ✅ Done | Catmull-Rom playback, per-frame date/AU interpolation, and pan-aware camera lerp implemented |
 | 3.3 | Motion Trail | ✅ Done | Glowing projected trail now accumulates during playback and resets cleanly on restart / point jumps |
-| 3.4 | Playback Controls & Keyboard Shortcuts | ✅ Done | Wired ⏮⏪⏸▶⏩ controls, disabled edge states, canvas click toggle, and Space/←/→/F shortcuts |
+| 3.4 | Playback Controls & Keyboard Shortcuts | ✅ Done | Wired ⏮⏪⏸▶⏩ controls, disabled edge states, screen-click stop with Continue-only resume, and Space/←/→/F shortcuts |
 | 3.5 | Speed Ruler | 🚧 In Progress | Playback pacing rebased so centered `1×` now matches the former `0.25×` default; total-duration readout still pending |
 | 3.6 | Stop-at-Points Mode | 🚧 In Progress | Stoppable pauses plus temporary any-point option implemented; single overlay now stays live and swaps to point images on stop |
 | 3.7 | Timeline Scrubber | 🔲 Pending | Drag-to-seek + notch markers; depends on 3.2, 3.4 |
 | 3.8 | Annotation Overlay | ✅ Done | Auto-shows only on automatic annotated pauses, resolves local/remote images, and dismisses on Continue/manual navigation |
-| 3.9 | Live Stats Display | 🔲 Pending | Date + Sun distance; depends on 3.2 |
+| 3.9 | Live Stats Display | 🚧 In Progress | Floating object-attached date + Sun distance panel exists; compacted box/date styling updated, but it still differs from the original top-right story spec |
 | 3.10 | Fullscreen Mode | 🔲 Pending | requestFullscreen + F key; depends on 3.4 |
 | 3.11 | Fixed Reference Point & Connector Line | ✅ Done | Static Jupiter-to-Atlas connector now stays rendered from 2025-10-31 onward, without dropping out when the camera swings behind an endpoint |
 | 3.12 | Large Annotated Image Window | ✅ Done | Added larger paused-point media window with local/remote/root-asset image support, top-right placement, and graceful no-image fallback |
 
 **Progress: 7 / 12 stories complete**
+
+---
+
+## Epic 4 — Project Index & Source Selection
+
+**Source stories:** `_bmad-output/planning-artifacts/stories-epic4-project-index.md`
+**Source PRD:** `_bmad-output/planning-artifacts/prd-epic4-project-index.md`
+**Files:** `index.html`, `index.js`, `app_config.js`, `app_config_shared.js`, `object_motion.html`, `object_motion.js`, `trajectory_player.html`, `trajectory_player.js`, `data/objects.json`, `scripts/generate-object-manifest.js`, `scripts/prepare-hosting.js`, `firebase.json`, `.github/workflows/deploy-hosting.yml`
+
+| Story | Title | Status | Notes |
+|---|---|---|---|
+| 4.1 | Root Project Index Shell & Firebase Init | ✅ Done | Added new root `index.html` + `index.js` homepage, Firebase web init, and local Firebase Hosting config files |
+| 4.2 | Bundled + Local Project Catalog | ✅ Done | Homepage now merges bundled objects with `objectMotion:*` local drafts and deduplicates by sanitized designation |
+| 4.3 | Source Selection & Action Routing | ✅ Done | Mixed local/web rows now require a source choice; editor/player honor `source=local|web`; tracker Play Video now opens local draft |
+| 4.4 | Create New Object Entry Point | ✅ Done | Added `+` modal flow to enter a designation and open the Object Motion Tracker |
+| 4.5 | Bundled Object Manifest | ✅ Done | Bundled homepage objects now load from `data/objects.json` with safe fallback behavior for static hosting |
+| 4.6 | Generated Manifest from `data/` Folders | ✅ Done | Added a repo script that scans `data/*/trajectory.json` and rewrites `data/objects.json`; `npm test` now refreshes the manifest first |
+| 4.7 | Firebase Hosting Bundle & GitHub Deploy | ✅ Done | Hosting now publishes from generated `site/`, uses clean extensionless HTML URLs, and includes prepare/deploy scripts plus GitHub auto-deploy on `main` |
+| 4.8 | Global LocalStorage Kill Switch | ✅ Done | Added shared config flag; with local storage off, homepage is web-only and editor/player bypass local drafts even if `source=local` is requested |
+
+**Progress: 8 / 8 stories complete**
+
+---
+
+## Epic 5 — Intro Slideshow
+
+**Source stories:** `_bmad-output/planning-artifacts/stories-epic5-intro-slideshow.md`
+**Source PRD:** `_bmad-output/planning-artifacts/prd-epic5-intro-slideshow.md`
+**Files:** `index.html`, `index.js`, `assets/`
+
+| Story | Title | Status | Notes |
+|---|---|---|---|
+| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added `presentation.html` + `presentation.js` shell, JSON manifest loading, iframe slide hosting, Start/Back/Next/Skip controls, and Space-bar advance; no slide counter by current request |
+| 5.2 | Wow! Signal Opening Slide | 🚧 In Progress | Added starter standalone slide HTML with initial presenter-friendly copy |
+| 5.3 | Comets 101 Slide | 🚧 In Progress | Added starter standalone slide HTML with plain-language comet basics |
+| 5.4 | Gravity & Orbit Basics Slide | 🚧 In Progress | Added starter standalone slide HTML with simple gravity/orbit explanation |
+| 5.5 | Lagrange Points Slide | 🚧 In Progress | Added starter standalone slide HTML with first-pass Lagrange summary |
+| 5.6 | Perseids on 12 August & Debris Formation | 🚧 In Progress | Added starter standalone slide HTML covering Perseids timing and debris formation |
+| 5.7 | Solar Wind vs Solar Flare Slide | 🚧 In Progress | Added starter standalone slide HTML distinguishing solar wind from solar flare |
+| 5.8 | Mars Transfer vs Lagrange Mission Slide | 🚧 In Progress | Added starter standalone slide HTML comparing Mars transfers with Lagrange missions |
+
+**Progress: 0 / 8 stories complete**
+
+---
+
+## Epic 6 — Point More Info Modal
+
+**Source stories:** `_bmad-output/planning-artifacts/stories-epic6-more-info-modal.md`
+**Source PRD:** `_bmad-output/planning-artifacts/prd-epic6-more-info-modal.md`
+**Files:** `object_motion.html`, `object_motion.js`, `trajectory_player.html`, `trajectory_player.js`, `more_info_shared.js`, `more_info_modal.js`, `more_info_modal.css`, `scripts/prepare-hosting.js`
+
+| Story | Title | Status | Notes |
+|---|---|---|---|
+| 6.1 | Shared `more_info` Model & Editor Modal Entry Point | ✅ Done | Refactored modal behavior into shared assets with taller layout, header description, expand/collapse, and image zoom |
+| 6.2 | Player Overlay Entry Point & Custom Page iframe | ✅ Done | Player now uses the shared modal too, with fullscreen-style expansion, vertical images, iframe `page_name`, and hosting/test coverage |
+| 6.3 | Curated Science Page for a Selected Point | ✅ Done | Added a custom embedded science page for `2025-12-13` with external media and play-triggered Miller comparison highlights |
+
+**Progress: 3 / 3 stories complete**
+
+---
+
+## Epic 7 — Date-Driven Anomalies Panel
+
+**Source stories:** `_bmad-output/planning-artifacts/stories-epic7-date-driven-anomalies-panel.md`
+**Source PRD:** `_bmad-output/planning-artifacts/prd-epic7-date-driven-anomalies-panel.md`
+**Files:** `anomalies_panel.html`, `anomalies_panel.css`, `anomalies_panel.js`, `anomalies_shared.js`, `data/3I/anomalies.json`, `trajectory_player.html`, `trajectory_player.js`
+
+| Story | Title | Status | Notes |
+|---|---|---|---|
+| 7.1 | Anomalies JSON Schema & 3I Seed Data | ✅ Done | Imported all 18 rows from `data/3I/3i_atlas_anomalies.xlsx - 3I-ATLAS Anomalies.csv` with explicit `triggerDate` values and preserved `skip` flags |
+| 7.2 | Shared Anomalies Model & Date Queue API | ✅ Done | Added `anomalies_shared.js` normalization helpers plus reusable date queue controller and tests |
+| 7.3 | Standalone Panel Shell & Left Tab | ✅ Done | Added left-side slide-in anomalies panel with persistent tab, title, and subtitle rendering |
+| 7.4 | Incremental Table Reveal Workflow | ✅ Done | Reworked reveal flow to use a cumulative `Play` sequence: anomaly text first, probability on the next play, then a combined `1 out of X` row for multi-anomaly dates, while keeping previously shown rows visible and auto-scrolling to the latest entry |
+| 7.5 | Standalone Page Wiring & JSON Loading | ✅ Done | Added standalone `anomalies_panel.html` page with designation/date controls and friendly unavailable states |
+| 7.6 | Trajectory Player Handoff Integration | ✅ Done | `trajectory_player` now hosts the shared anomalies panel, syncs date changes on stoppable pauses and manual point jumps, and lets Space trigger anomaly play steps when queued |
+
+**Progress: 6 / 6 stories complete**
 
 ---
 
@@ -82,7 +159,11 @@
 |---|---|---|---|---|
 | Epic 2 | Object Motion Tracker | 16 | 16 | 100% |
 | Epic 3 | Trajectory Player | 7 | 12 | 58% |
-| **Total** | | **23** | **28** | **82%** |
+| Epic 4 | Project Index & Source Selection | 8 | 8 | 100% |
+| Epic 5 | Intro Slideshow | 0 | 8 | 0% |
+| Epic 6 | Point More Info Modal | 3 | 3 | 100% |
+| Epic 7 | Date-Driven Anomalies Panel | 6 | 6 | 100% |
+| **Total** | | **40** | **53** | **75%** |
 
 ---
 
@@ -127,3 +208,34 @@
 | 2026-03-10 | Added `yellow` as a supported trajectory-driven comet color so the player now respects green, blue, red, and yellow values from `data/3I/trajectory.json` | dev agent |
 | 2026-03-10 | Moved the single trajectory overlay back to the top of the screen and added a hollow color ring over the media area to show the current trajectory color on both preview and stopped-image states | dev agent |
 | 2026-03-10 | Moved the hollow color ring off the overlay box and onto the flying object itself so the ring tracks the live object instead of covering preview or stop images | dev agent |
+| 2026-03-10 | Updated `object_motion.js` save/load paths to preserve arbitrary per-point metadata such as `color`, `video`, and future fields when exporting or reopening `trajectory.json` | dev agent |
+| 2026-03-10 | Refined comet recoloring to preserve more luminance and highlight detail so blue states stay crisp instead of looking vague or washed out | dev agent |
+| 2026-03-10 | Added a new Jupiter-inspired SVG favicon and linked it from the main project pages so the tab icon matches the attached reference style | dev agent |
+| 2026-03-10 | Added a generated root `favicon.ico` so browsers requesting the default icon path no longer receive a 404 even though SVG favicon links are present | dev agent |
+| 2026-03-10 | Added Epic 4 planning docs and implemented a new root `index.html` project homepage with Firebase init, bundled/local source selection, and source-aware editor/player routing | dev agent |
+| 2026-03-10 | Added `data/objects.json` manifest infrastructure so bundled homepage objects can scale beyond `3I` without changing `index.js` | dev agent |
+| 2026-03-10 | Added `scripts/generate-object-manifest.js` plus package scripts/tests so `data/objects.json` can be regenerated automatically from the `data/` folders | dev agent |
+| 2026-03-10 | Added root `firebase.json` and `.firebaserc` so Firebase Hosting can serve the repo directly and default to project `astro-489617` locally | dev agent |
+| 2026-03-10 | Switched Firebase Hosting to generated `site/` output, added `prepare-hosting` automation, ignored generated Hosting files in git, and added GitHub Actions deploy-on-push for `main` | dev agent |
+| 2026-03-10 | Enabled Firebase Hosting `cleanUrls` so extensionless routes like `/trajectory_player` and `/object_motion` resolve to their `.html` files in production | dev agent |
+| 2026-03-10 | Added Epic 5 planning docs for an intro slideshow covering the `Wow! signal`, comets, the Perseids around `12 August`, comet debris formation, and solar wind vs solar flare | dev agent |
+| 2026-03-10 | Expanded Epic 5 planning to include gravity, orbit, Lagrange points, and a Mars transfer vs Lagrange mission comparison with external explainer references | dev agent |
+| 2026-03-10 | Added Epic 6 planning docs and implemented shared point-level `more_info` modals in both the tracker and player, including iframe `page_name` support and hosting/test updates | dev agent |
+| 2026-03-10 | Refactored `more_info` UI into shared modal assets with header description, taller expandable layout, vertical full-width images, click-to-zoom support, and a new encapsulated-capabilities workspace rule | dev agent |
+| 2026-03-11 | Added Epic 7 planning docs for a standalone date-driven anomalies panel with `data/3I/anomalies.json`, left slide-in UI, animated reveal-by-date workflow, typewriter anomaly text, and later `trajectory_player` handoff | dev agent |
+| 2026-03-11 | Implemented Epic 7 Stories 7.2-7.6 with shared anomaly queue logic, standalone panel/page, player handoff integration, and Jest coverage; Story 7.1 remains blocked pending the source CSV import | dev agent |
+| 2026-03-11 | Completed Story 7.1 by importing the provided anomaly CSV into `data/3I/anomalies.json` with preserved header copy, all 18 rows, explicit trigger dates, and `skip` flags | dev agent |
+| 2026-03-11 | Refined Epic 7 reveal UX: removed the old status box, switched to Play-driven anomaly/probability steps, synced player anomaly dates on point jumps, and mapped Space to anomaly play when rows are queued | dev agent |
+| 2026-03-11 | Slowed the Epic 7 typewriter animation so anomaly text reveals more deliberately while keeping the Play-first, probability-second interaction model | dev agent |
+| 2026-03-11 | Added a final Play step for multi-anomaly dates that inserts a full-width combined probability line in `1 out of X` form using parsed numeric probabilities (treating `<` values as their numeric bound) | dev agent |
+| 2026-03-11 | Updated the anomalies panel to keep previously revealed rows on screen across later stoppable points, while filtering future queues to only unseen rows for the newly active date | dev agent |
+| 2026-03-11 | Added a red alert dot on the anomalies tab so the collapsed panel signals when a `Play` step is currently available | dev agent |
+| 2026-03-11 | Added anomalies-table auto-scroll so long reveal sequences show a scrollbar and jump to the newest content at the bottom each time Play adds or completes a step | dev agent |
+| 2026-03-11 | Fixed the anomalies-table scroll container so overflow now lives on the panel wrapper and Play-driven auto-scroll follows the real scrollable element | dev agent |
+| 2026-03-12 | Updated trajectory-player screen-click behavior so canvas clicks can stop playback but cannot resume it; resume now uses the existing Continue control | dev agent |
+| 2026-03-12 | Added Epic 6 Story 6.3 and started a custom `2025-12-13` More Info science page with play-triggered material highlights | dev agent |
+| 2026-03-12 | Completed Epic 6 Story 6.3 with a custom `2025-12-13` science page, external media, hosting support, and verification | dev agent |
+| 2026-03-13 | Tuned trajectory-player object rendering to remove pulse/blink behavior, reduce the live ring, and make the comet sprite read more solid on screen | dev agent |
+| 2026-03-13 | Added Epic 4 Story 4.8 with a shared localStorage kill switch; homepage now hides local source choices and editor/player bypass local drafts when the flag is off | dev agent |
+| 2026-03-14 | Compacted the trajectory-player floating stats box by removing its fixed minimum width and switching the attached date label to a numeric 2-digit-year format; marked Story 3.9 in progress because the live stats feature now exists in code but still differs from the original top-right spec | dev agent |
+| 2026-03-14 | Started Epic 5 implementation with a new JSON-driven `presentation` shell, iframe slide loading, homepage Presentation button, keyboard Space advance, and starter standalone slide files for the planned topics | dev agent |

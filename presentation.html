@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3i-web · Presentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon-jupiter.svg">
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Georgia, serif;
+      color: rgba(214, 232, 255, 0.95);
+      background:
+        radial-gradient(circle at top, rgba(22, 58, 115, 0.38), transparent 34%),
+        linear-gradient(180deg, #01040c 0%, #030916 100%);
+    }
+
+    #presentation-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 24px;
+    }
+
+    #presentation-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    #presentation-title {
+      font-size: 20px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(220, 235, 255, 0.96);
+      text-shadow: 0 0 22px rgba(100, 180, 255, 0.5);
+    }
+
+    #presentation-subtitle {
+      margin-top: 8px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      color: rgba(164, 199, 245, 0.72);
+    }
+
+    #presentation-slide-name {
+      font-size: 13px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: rgba(149, 191, 246, 0.78);
+    }
+
+    #presentation-stage {
+      position: relative;
+      flex: 1;
+      min-height: 68vh;
+      border-radius: 20px;
+      border: 1px solid rgba(100, 160, 255, 0.22);
+      background: rgba(0, 8, 28, 0.84);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
+      overflow: hidden;
+    }
+
+    #presentation-frame {
+      width: 100%;
+      height: 100%;
+      min-height: 68vh;
+      border: 0;
+      display: none;
+      background: transparent;
+    }
+
+    #presentation-stage.started #presentation-frame {
+      display: block;
+    }
+
+    #presentation-intro,
+    #presentation-message {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+    }
+
+    #presentation-stage.started #presentation-intro,
+    #presentation-stage.started #presentation-message {
+      display: none;
+    }
+
+    .presentation-card {
+      width: min(680px, 100%);
+      padding: 30px 32px;
+      border-radius: 22px;
+      border: 1px solid rgba(120, 170, 255, 0.2);
+      background: rgba(5, 17, 44, 0.72);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+    }
+
+    .presentation-card h1 {
+      margin: 0 0 12px;
+      font-size: clamp(28px, 3.4vw, 44px);
+      color: rgba(231, 241, 255, 0.97);
+    }
+
+    .presentation-card p {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.7;
+      color: rgba(185, 211, 250, 0.84);
+    }
+
+    .presentation-card p + p {
+      margin-top: 12px;
+    }
+
+    #presentation-message {
+      display: none;
+    }
+
+    #presentation-message.visible {
+      display: flex;
+    }
+
+    #presentation-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .presentation-control-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button,
+    a.presentation-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(214, 232, 255, 0.95);
+      font: inherit;
+      font-size: 14px;
+      letter-spacing: 0.8px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+    }
+
+    button:hover,
+    a.presentation-link:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.38);
+    }
+
+    button:disabled {
+      opacity: 0.46;
+      cursor: default;
+    }
+
+    #presentation-start-btn {
+      background: rgba(88, 146, 255, 0.2);
+      border-color: rgba(112, 170, 255, 0.48);
+    }
+
+    #presentation-start-btn:hover {
+      background: rgba(102, 158, 255, 0.3);
+    }
+
+    @media (max-width: 720px) {
+      #presentation-shell {
+        padding: 16px;
+      }
+
+      #presentation-header,
+      #presentation-controls {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .presentation-control-group {
+        width: 100%;
+      }
+
+      button,
+      a.presentation-link {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main id="presentation-shell">
+    <section id="presentation-header">
+      <div>
+        <div id="presentation-title">3I Atlas Presentation</div>
+        <div id="presentation-subtitle">JSON-driven slideshow shell with iframe-based slides</div>
+      </div>
+      <div id="presentation-slide-name">Ready to start</div>
+    </section>
+
+    <section id="presentation-stage" aria-live="polite">
+      <iframe
+        id="presentation-frame"
+        title="Presentation slide"
+        loading="eager"
+        referrerpolicy="no-referrer"
+      ></iframe>
+
+      <div id="presentation-intro">
+        <div class="presentation-card">
+          <h1>3I Atlas</h1>
+          <p>This presentation is driven by a JSON manifest. Each slide is a standalone HTML page loaded into the frame.</p>
+          <p>Use <strong>Start</strong> to begin, <strong>Next</strong> to advance, or tap the <strong>Space</strong> key while presenting.</p>
+        </div>
+      </div>
+
+      <div id="presentation-message" aria-hidden="true">
+        <div class="presentation-card">
+          <h1 id="presentation-message-title">Presentation unavailable</h1>
+          <p id="presentation-message-copy">The presentation manifest could not be loaded.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="presentation-controls">
+      <div class="presentation-control-group">
+        <button id="presentation-start-btn" type="button">Start</button>
+        <button id="presentation-back-btn" type="button" disabled>Back</button>
+        <button id="presentation-next-btn" type="button" disabled>Next</button>
+      </div>
+      <div class="presentation-control-group">
+        <a id="presentation-skip-link" class="presentation-link" href="trajectory_player?designation=3I&source=web">Skip to Player</a>
+        <a id="presentation-home-link" class="presentation-link" href="index.html">Back to Index</a>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="presentation.js"></script>
+</body>
+</html>

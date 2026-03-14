@@ -1,0 +1,347 @@
+.anp-root {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 18;
+  pointer-events: none;
+}
+
+.anp-panel {
+  position: relative;
+  height: 100vh;
+  width: min(34vw, 480px);
+  min-width: 320px;
+  max-width: calc(100vw - 56px);
+  transform: translateX(0);
+  transition: transform 240ms ease;
+  pointer-events: none;
+}
+
+.anp-panel.is-collapsed {
+  transform: translateX(calc(-100% + 42px));
+}
+
+.anp-tab {
+  position: absolute;
+  top: 22px;
+  right: -42px;
+  width: 42px;
+  min-height: 150px;
+  border-radius: 0 14px 14px 0;
+  padding: 14px 10px;
+  border-left: none;
+  background: rgba(0, 10, 32, 0.9);
+  box-shadow: 10px 0 28px rgba(0, 0, 0, 0.28);
+  pointer-events: auto;
+}
+
+.anp-tab-title {
+  display: inline-block;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: rgba(185, 220, 255, 0.9);
+}
+
+.anp-tab-alert {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 76, 76, 0.98);
+  box-shadow: 0 0 10px rgba(255, 76, 76, 0.7);
+  display: none;
+}
+
+.anp-tab.has-pending-play {
+  border-color: rgba(255, 110, 110, 0.5);
+}
+
+.anp-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 18px 18px;
+  background: rgba(1, 9, 28, 0.94);
+  border-right: 1px solid rgba(100, 160, 255, 0.2);
+  box-shadow: 12px 0 40px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+}
+
+.anp-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.anp-kicker {
+  color: rgba(140, 196, 255, 0.75);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.anp-title {
+  color: rgba(220, 236, 255, 0.96);
+  font: 600 26px Georgia, serif;
+  line-height: 1.15;
+}
+
+.anp-subtitle {
+  color: rgba(176, 205, 240, 0.8);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.anp-table-wrap {
+  flex: 1;
+  min-height: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(100, 160, 255, 0.18);
+  background: rgba(4, 14, 40, 0.84);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 170, 235, 0.45) transparent;
+}
+
+.anp-table-wrap::-webkit-scrollbar {
+  width: 6px;
+}
+
+.anp-table-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.anp-table-wrap::-webkit-scrollbar-thumb {
+  background: rgba(120, 170, 235, 0.45);
+  border-radius: 999px;
+}
+
+.anp-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 196, 255, 0.62);
+}
+
+.anp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.anp-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(8, 20, 48, 0.96);
+}
+
+.anp-table th,
+.anp-table td {
+  padding: 12px 14px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.anp-table th {
+  color: rgba(158, 205, 255, 0.84);
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(100, 160, 255, 0.14);
+}
+
+.anp-table tbody {
+  display: block;
+  overflow: visible;
+  min-height: 0;
+}
+
+.anp-table thead,
+.anp-table tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.anp-row {
+  opacity: 0.94;
+  transform: translateY(6px);
+}
+
+.anp-row.is-visible {
+  animation: anp-row-reveal 280ms ease forwards;
+}
+
+.anp-anomaly-cell {
+  color: rgba(222, 236, 255, 0.95);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.anp-probability-cell {
+  color: rgba(255, 214, 144, 0.92);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.anp-probability-cell.is-visible {
+  animation: anp-probability-fade 220ms ease;
+}
+
+.anp-combined-cell {
+  text-align: center;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  border-top: 1px solid rgba(255, 214, 144, 0.18);
+}
+
+.anp-empty {
+  margin-top: auto;
+  padding: 18px 14px;
+  color: rgba(166, 196, 232, 0.7);
+  font-size: 12px;
+  line-height: 1.5;
+  border-top: 1px solid rgba(100, 160, 255, 0.1);
+}
+
+.anp-footer {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.anp-play-btn:disabled {
+  opacity: 0.46;
+  cursor: default;
+}
+
+#anp-page {
+  min-height: 100vh;
+  padding: 24px 24px 24px 72px;
+  color: rgba(222, 236, 255, 0.96);
+  background:
+    radial-gradient(circle at top, rgba(26, 62, 120, 0.22), transparent 38%),
+    #000;
+}
+
+#anp-page-shell {
+  position: relative;
+  z-index: 1;
+  width: min(680px, calc(100vw - 120px));
+  margin-left: min(34vw, 480px);
+}
+
+#anp-page-title {
+  font-size: 16px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 0 22px rgba(100, 180, 255, 0.8);
+}
+
+#anp-page-subtitle {
+  margin-top: 10px;
+  color: rgba(170, 204, 238, 0.8);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+#anp-page-controls {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 14px;
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(100, 160, 255, 0.18);
+  background: rgba(1, 9, 28, 0.8);
+}
+
+.anp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.anp-field-label {
+  color: rgba(150, 198, 248, 0.82);
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+}
+
+.anp-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(100, 160, 255, 0.22);
+  background: rgba(7, 18, 44, 0.95);
+  color: rgba(230, 240, 255, 0.95);
+  font: 14px Georgia, serif;
+}
+
+.anp-field-actions {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+#anp-page-status {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(100, 160, 255, 0.14);
+  background: rgba(1, 9, 28, 0.72);
+  color: rgba(182, 214, 246, 0.84);
+  line-height: 1.45;
+}
+
+#anp-page-status.is-error {
+  border-color: rgba(255, 150, 150, 0.22);
+  color: rgba(255, 206, 206, 0.9);
+}
+
+@keyframes anp-row-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes anp-probability-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 960px) {
+  .anp-panel {
+    width: min(86vw, 420px);
+    min-width: 280px;
+  }
+
+  #anp-page {
+    padding-left: 24px;
+  }
+
+  #anp-page-shell {
+    width: calc(100vw - 48px);
+    margin-left: 0;
+    padding-top: 110px;
+  }
+
+  #anp-page-controls {
+    grid-template-columns: 1fr;
+  }
+}

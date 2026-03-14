@@ -8,6 +8,9 @@ const {
     TrajectoryLoadError,
     decodeDesignation,
     readDesignationFromUrl,
+    normalizeRequestedSource,
+    readSourceFromUrl,
+    resolveRequestedSource,
     sanitize,
     buildPath,
     buildObjectMotionHref,
@@ -27,6 +30,7 @@ const {
     getCameraTargetForSegment,
     lerpCameraState,
     shouldPauseAtPoint,
+    getCanvasClickAction,
     getPlayAction,
     areSecondaryControlsDisabled,
     getControlBarState,
@@ -35,6 +39,8 @@ const {
     getFixedReferencePoint,
     getFixedConnectorConfiguration,
     shouldShowReferenceConnector,
+    getAnomaliesDateForPoint,
+    shouldHandleAnomalyPlayShortcut,
     normalizeAnnotationDescription,
     isAbsoluteImageUrl,
     resolveAnnotationImageSrc,
@@ -72,6 +78,26 @@ describe('readDesignationFromUrl', () => {
     });
 });
 
+describe('source query helpers', () => {
+    test('normalizes supported source names', () => {
+        expect(normalizeRequestedSource(' Local ')).toBe('local');
+        expect(normalizeRequestedSource('WEB')).toBe('web');
+        expect(normalizeRequestedSource('draft')).toBe('');
+    });
+
+    test('reads source query parameter and alias', () => {
+        expect(readSourceFromUrl('?source=local')).toBe('local');
+        expect(readSourceFromUrl('?s=web')).toBe('web');
+        expect(readSourceFromUrl('?designation=3I')).toBe('');
+    });
+
+    test('falls back to web when local storage is globally disabled', () => {
+        expect(resolveRequestedSource('local', true)).toBe('local');
+        expect(resolveRequestedSource('local', false)).toBe('web');
+        expect(resolveRequestedSource('web', false)).toBe('web');
+    });
+});
+
 describe('sanitize and buildPath', () => {
     test('replaces spaces and slashes with underscores', () => {
         expect(sanitize('C/2025 N1')).toBe('C_2025_N1');
@@ -88,8 +114,16 @@ describe('sanitize and buildPath', () => {
         expect(buildObjectMotionHref('3I')).toBe('object_motion?designation=3I');
     });
 
+    test('builds object motion back link with source', () => {
+        expect(buildObjectMotionHref('3I', 'local')).toBe('object_motion?designation=3I&source=local');
+    });
+
     test('builds trajectory player link with designation', () => {
         expect(buildTrajectoryPlayerHref('3I')).toBe('trajectory_player?designation=3I');
+    });
+
+    test('builds trajectory player link with source', () => {
+        expect(buildTrajectoryPlayerHref('3I', 'web')).toBe('trajectory_player?designation=3I&source=web');
     });
 });
 
@@ -294,12 +328,20 @@ describe('animation helpers', () => {
         expect(shouldPauseAtPoint({ stoppable: false }, false, true)).toBe(true);
     });
 
+    test('canvas clicks can stop playback but never resume it', () => {
+        expect(getCanvasClickAction('playing')).toBe('stop');
+        expect(getCanvasClickAction('paused')).toBe('noop');
+        expect(getCanvasClickAction('stopped-at-point')).toBe('noop');
+        expect(getCanvasClickAction('stopped-manual')).toBe('noop');
+    });
+
     test('stopped playback only restarts from the play button', () => {
         expect(getPlayAction('stopped', 'toggle')).toBe('noop');
         expect(getPlayAction('stopped', 'button')).toBe('restart');
         expect(getPlayAction('playing', 'button')).toBe('pause');
         expect(getPlayAction('paused', 'toggle')).toBe('play');
         expect(getPlayAction('stopped-at-point', 'button')).toBe('noop');
+        expect(getPlayAction('stopped-manual', 'button')).toBe('noop');
     });
 
     test('secondary controls are disabled only while playing', () => {
@@ -307,6 +349,7 @@ describe('animation helpers', () => {
         expect(areSecondaryControlsDisabled('paused')).toBe(false);
         expect(areSecondaryControlsDisabled('stopped')).toBe(false);
         expect(areSecondaryControlsDisabled('stopped-at-point')).toBe(false);
+        expect(areSecondaryControlsDisabled('stopped-manual')).toBe(false);
     });
 
     test('control bar disables prev at start and next at end', () => {
@@ -331,6 +374,17 @@ describe('animation helpers', () => {
 
     test('control bar disables play toggle at stoppable pause', () => {
         expect(getControlBarState('stopped-at-point', 2, 4).playDisabled).toBe(true);
+    });
+
+    test('control bar disables play toggle after a manual screen stop', () => {
+        expect(getControlBarState('stopped-manual', 2, 4)).toEqual({
+            label: 'Paused',
+            playText: '▶',
+            playDisabled: true,
+            secondaryDisabled: false,
+            prevDisabled: false,
+            nextDisabled: false,
+        });
     });
 
     test('floating stats layout follows projected object and clamps inside viewport', () => {
@@ -414,6 +468,19 @@ describe('animation helpers', () => {
         expect(shouldShowReferenceConnector('2025-10-31')).toBe(true);
         expect(shouldShowReferenceConnector('2026-03-16')).toBe(true);
         expect(shouldShowReferenceConnector('not-a-date')).toBe(false);
+    });
+
+    test('hands off only explicit ISO dates to the anomalies panel', () => {
+        expect(getAnomaliesDateForPoint({ date: '2025-10-31' })).toBe('2025-10-31');
+        expect(getAnomaliesDateForPoint({ date: ' Oct 31, 2025 ' })).toBe('');
+        expect(getAnomaliesDateForPoint({ date: null })).toBe('');
+    });
+
+    test('routes spacebar to anomaly playback only when queue steps remain', () => {
+        expect(shouldHandleAnomalyPlayShortcut('paused', true)).toBe(true);
+        expect(shouldHandleAnomalyPlayShortcut('stopped-at-point', true)).toBe(true);
+        expect(shouldHandleAnomalyPlayShortcut('playing', true)).toBe(false);
+        expect(shouldHandleAnomalyPlayShortcut('paused', false)).toBe(false);
     });
 
     test('normalizes annotation description whitespace', () => {

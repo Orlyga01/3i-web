@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3i-web · Projects</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon-jupiter.svg">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      overflow: auto;
+      min-height: 100vh;
+      color: rgba(205, 225, 255, 0.94);
+      background:
+        radial-gradient(circle at top, rgba(18, 42, 88, 0.42), transparent 42%),
+        linear-gradient(180deg, #01040c 0%, #030916 100%);
+    }
+
+    #index-shell {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 40px 0 56px;
+    }
+
+    #index-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 26px;
+    }
+
+    #index-title {
+      color: rgba(210, 230, 255, 0.95);
+      font-size: 18px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      text-shadow: 0 0 22px rgba(100, 180, 255, 0.65);
+    }
+
+    #index-subtitle {
+      margin-top: 10px;
+      color: rgba(160, 200, 255, 0.68);
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    #index-summary {
+      margin-top: 14px;
+      color: rgba(172, 205, 255, 0.72);
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+
+    #index-create-btn {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 28px;
+      line-height: 1;
+      font-weight: normal;
+    }
+
+    #index-card {
+      background: rgba(0, 8, 28, 0.76);
+      border: 1px solid rgba(100, 160, 255, 0.22);
+      border-radius: 18px;
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+      overflow: hidden;
+    }
+
+    #index-table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: rgba(12, 26, 52, 0.7);
+    }
+
+    th,
+    td {
+      padding: 18px 20px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: rgba(155, 198, 255, 0.78);
+      font-size: 11px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      font-weight: normal;
+    }
+
+    tbody tr + tr td {
+      border-top: 1px solid rgba(100, 140, 255, 0.12);
+    }
+
+    .index-object-name {
+      font-size: 18px;
+      color: rgba(220, 235, 255, 0.96);
+    }
+
+    .index-object-detail {
+      margin-top: 6px;
+      color: rgba(160, 195, 245, 0.62);
+      font-size: 12px;
+      letter-spacing: 0.4px;
+    }
+
+    .index-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .index-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(120, 170, 255, 0.18);
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(186, 216, 255, 0.84);
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .index-badge.local {
+      border-color: rgba(255, 166, 79, 0.35);
+      background: rgba(255, 120, 38, 0.12);
+      color: rgba(255, 205, 150, 0.92);
+    }
+
+    .index-badge.web {
+      border-color: rgba(100, 180, 255, 0.22);
+    }
+
+    .index-badge.mixed {
+      border-color: rgba(185, 150, 255, 0.28);
+      background: rgba(115, 78, 210, 0.14);
+      color: rgba(210, 190, 255, 0.88);
+    }
+
+    .index-source-block {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 210px;
+    }
+
+    .index-source-select {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: rgba(200, 220, 255, 0.92);
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 13px;
+      font-family: Georgia, serif;
+      outline: none;
+    }
+
+    .index-source-select:focus {
+      border-color: rgba(100, 180, 255, 0.55);
+      box-shadow: 0 0 10px rgba(80, 160, 255, 0.2);
+    }
+
+    .index-source-static {
+      color: rgba(204, 225, 255, 0.9);
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      padding-top: 9px;
+    }
+
+    .index-action-block {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 220px;
+    }
+
+    .index-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .index-primary-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .index-primary-actions.hidden {
+      display: none;
+    }
+
+    .index-action-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 94px;
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: rgba(200, 220, 255, 0.92);
+      padding: 8px 22px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 13px;
+      letter-spacing: 1px;
+      transition: all .25s;
+    }
+
+    .index-action-link:hover {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.42);
+    }
+
+    .index-primary-actions.local .index-action-link {
+      background: rgba(255, 140, 52, 0.16);
+      border-color: rgba(255, 170, 90, 0.5);
+      color: rgba(255, 224, 188, 0.98);
+    }
+
+    .index-primary-actions.local .index-action-link:hover {
+      background: rgba(255, 150, 70, 0.26);
+      border-color: rgba(255, 185, 110, 0.72);
+    }
+
+    .index-helper {
+      color: rgba(150, 188, 240, 0.6);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .index-warning {
+      display: none;
+      color: rgba(255, 178, 110, 0.96);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .index-warning.visible {
+      display: block;
+    }
+
+    #index-empty {
+      display: none;
+      padding: 28px 20px 34px;
+      color: rgba(172, 205, 255, 0.72);
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    #index-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 1, 15, 0.72);
+    }
+
+    #index-modal.visible {
+      display: flex;
+    }
+
+    #index-modal-card {
+      width: min(420px, calc(100vw - 32px));
+      padding: 22px 22px 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(100, 160, 255, 0.24);
+      background: rgba(0, 8, 28, 0.92);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.36);
+    }
+
+    #index-modal-title {
+      color: rgba(210, 230, 255, 0.95);
+      font-size: 15px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    #index-modal-copy {
+      margin-top: 10px;
+      color: rgba(165, 200, 250, 0.72);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    #index-modal-input {
+      width: 100%;
+      margin-top: 16px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: rgba(200, 220, 255, 0.92);
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 13px;
+      font-family: Georgia, serif;
+      outline: none;
+    }
+
+    #index-modal-input:focus {
+      border-color: rgba(100, 180, 255, 0.55);
+      box-shadow: 0 0 10px rgba(80, 160, 255, 0.2);
+    }
+
+    #index-modal-error {
+      display: none;
+      margin-top: 12px;
+      color: rgba(255, 145, 145, 0.95);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    #index-modal-error.visible {
+      display: block;
+    }
+
+    #index-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 760px) {
+      #index-shell {
+        width: calc(100vw - 20px);
+        padding-top: 24px;
+      }
+
+      #index-header {
+        align-items: stretch;
+      }
+
+      th,
+      td {
+        padding: 16px 14px;
+      }
+
+      .index-action-link {
+        min-width: 82px;
+      }
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js",
+        "firebase/analytics": "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <main id="index-shell">
+    <section id="index-header">
+      <div>
+        <div id="index-title">3i-web Projects</div>
+        <div id="index-subtitle">Choose a bundled object or resume a local draft</div>
+        <div id="index-summary"></div>
+      </div>
+      <button id="index-create-btn" type="button" aria-label="Create new object">+</button>
+    </section>
+
+    <section id="index-card">
+      <div id="index-table-wrap">
+        <table aria-label="Project list">
+          <thead>
+            <tr>
+              <th scope="col">Object</th>
+              <th scope="col">Availability</th>
+              <th scope="col">Source</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="index-table-body"></tbody>
+        </table>
+      </div>
+      <div id="index-empty">No projects found yet. Create a new object to begin.</div>
+    </section>
+  </main>
+
+  <div id="index-modal" aria-hidden="true">
+    <div id="index-modal-card" role="dialog" aria-modal="true" aria-labelledby="index-modal-title">
+      <div id="index-modal-title">Create New Object</div>
+      <div id="index-modal-copy">Enter the object designation. The Object Motion Tracker will open and let you fetch or annotate its trajectory.</div>
+      <input id="index-modal-input" type="text" placeholder="Examples: 3I or C/2025 N1" autocomplete="off">
+      <div id="index-modal-error"></div>
+      <div id="index-modal-actions">
+        <button id="index-modal-cancel" type="button">Cancel</button>
+        <button id="index-modal-submit" type="button">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app_config.js"></script>
+  <script src="app_config_shared.js"></script>
+  <script type="module" src="index.js"></script>
+</body>
+</html>

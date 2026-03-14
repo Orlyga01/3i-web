@@ -1,0 +1,186 @@
+{
+  "title": "3I/ATLAS — Anomalies Organized by Likelihood",
+  "subtitle": "Source: Avi Loeb, Medium — Nov 23, 2025  ·  Updated with new findings through Mar 2026  ·  Sorted chronologically by date first noted  ·  Loeb Scale: 3/10",
+  "entries": [
+    {
+      "dateLabel": "Jul 01 2025",
+      "triggerDate": "2025-07-01",
+      "category": "I — Major (no simple explanation)",
+      "anomaly": "Retrograde orbit aligned within 5° of ecliptic plane",
+      "probability": "P = 0.002",
+      "explanation": "Travels opposite to all planets yet nearly perfectly level with the flat plane they orbit in. A random interstellar object would be extremely unlikely to share this alignment.",
+      "consensusNote": "No natural explanation currently. Listed in original Nov 2025 Loeb paper.",
+      "skip": false
+    },
+    {
+      "dateLabel": "Jul 01 2025",
+      "triggerDate": "2025-07-01",
+      "category": "I — Major (no simple explanation)",
+      "anomaly": "Arrival timing fine-tuned past Mars, Venus & Jupiter",
+      "probability": "P = 0.00005",
+      "explanation": "Path timed to pass within tens of millions of km from three planets while remaining hidden from Earth at perihelion. No natural explanation for this coincidence.",
+      "consensusNote": "No natural explanation currently. Listed in original Nov 2025 Loeb paper.",
+      "skip": false
+    },
+    {
+      "dateLabel": "Jul 01 2025",
+      "triggerDate": "2025-07-01",
+      "category": "I — Major (no simple explanation)",
+      "anomaly": "Estimated 2.6 Km diameter",
+      "probability": "P < 0.001",
+      "explanation": "Hubble confirmed nucleus ~2.6 km diameter (Feb 2026) — at least 20,000× more massive than ʻOumuamua. Not enough rocky material in interstellar space to deliver an object this large by chance once per decade.",
+      "consensusNote": "No natural explanation currently. Listed in original Nov 2025 Loeb paper.",
+      "skip": false
+    },
+    {
+      "dateLabel": "Jul 01 2025",
+      "triggerDate": "2025-07-01",
+      "category": "I — Major (no simple explanation)",
+      "anomaly": "Sunward jet (anti-tail) — physically real, not perspective",
+      "probability": "P < 0.001",
+      "explanation": "Persistent jet pointing toward the Sun — opposite of what solar radiation causes. Confirmed by NASA's HiRISE at Mars closest approach. Pre-perihelion Hubble image shows jet ~10× longer than wide. Could be a particle shield against micrometeorite impacts at 60 km/s.",
+      "consensusNote": "No natural explanation currently. Listed in original Nov 2025 Loeb paper.",
+      "skip": false
+    },
+    {
+      "dateLabel": "Sep 28, 2025",
+      "triggerDate": "2025-09-28",
+      "category": "II — Medium (possible fluke)",
+      "anomaly": "Arrival direction aligns with the \"Wow! Signal\" within 9°",
+      "probability": "P = 0.006",
+      "explanation": "3I/ATLAS arrived from near Sagittarius — coinciding with the direction of the famous 1977 unexplained radio signal. Could be coincidence. No confirmed link.",
+      "consensusNote": "Could be statistical coincidence. Listed in original Nov 2025 Loeb paper.",
+      "skip": true
+    },
+    {
+      "dateLabel": "2025-09-14",
+      "triggerDate": "2025-09-14",
+      "category": "II — Medium (possible fluke)",
+      "anomaly": "Extreme negative polarization (smooth metalic/ice surfaces) — unprecedented for any comet",
+      "probability": "P < 0.01",
+      "explanation": "Light reflected from 3I/ATLAS is polarized in a way never seen in any known comet. Often seen from smooth metalic/ice surfaces. No standard explanation.",
+      "consensusNote": "Could be statistical coincidence. Listed in original Nov 2025 Loeb paper.",
+      "skip": false
+    },
+    {
+      "dateLabel": "2025-09-14",
+      "triggerDate": "2025-09-14",
+      "category": "I — Major (no simple explanation)",
+      "anomaly": "Nickel/iron ratio matches industrial alloys; anomalous cyanide ratio",
+      "probability": "P < 0.001",
+      "explanation": "Gas plume has far more nickel than iron — matching industrially produced alloys — and a nickel-to-cyanide ratio orders of magnitude higher than any known comet including 2I/Borisov. May indicate artificial material composition.",
+      "consensusNote": "No natural explanation currently. Listed in original Nov 2025 Loeb paper.",
+      "skip": false
+    },
+    {
+      "dateLabel": "Aug–Sep 2025",
+      "triggerDate": "2025-08-01",
+      "category": "III — Minor (unique origin possible)",
+      "anomaly": "Only 4% water in gas plume",
+      "probability": "P < 0.1",
+      "explanation": "Typical solar system comets are mostly water ice. Could reflect ices accumulated during interstellar travel rather than a primordial composition.",
+      "consensusNote": "Potentially explainable by unusual interstellar origin. Listed in original Nov 2025 Loeb paper.",
+      "skip": true
+    },
+    {
+      "dateLabel": "Sep–Oct 2025",
+      "triggerDate": "2025-09-01",
+      "category": "III — Minor (unique origin possible)",
+      "anomaly": "Brightened faster than any known comet; bluer than the Sun",
+      "probability": "P < 0.1",
+      "explanation": "Rapid brightening near perihelion with anomalous blue color; faded faster after perihelion, showing unusual asymmetry. Possible signature of an engine activating. No confirmed natural explanation.",
+      "consensusNote": "Potentially explainable by unusual interstellar origin. Listed in original Nov 2025 Loeb paper.",
+      "skip": true
+    },
+    {
+      "dateLabel": "Oct 2025",
+      "triggerDate": "2025-10-01",
+      "category": "III — Minor (unique origin possible)",
+      "anomaly": "Non-gravitational acceleration without visible breakup",
+      "probability": "P < 0.1",
+      "explanation": "Accelerated beyond gravity near perihelion, yet subsequent images show the object intact — ruling out mass-loss as the cause. Could be propulsion.",
+      "consensusNote": "Potentially explainable by unusual interstellar origin. Listed in original Nov 2025 Loeb paper.",
+      "skip": false
+    },
+    {
+      "dateLabel": "2025-11-13",
+      "triggerDate": "2025-11-13",
+      "category": "III — Minor (unique origin possible)",
+      "anomaly": "Jets require unreasonably large surface area for a natural comet",
+      "probability": "P < 0.1",
+      "explanation": "The mass flux of the jets would need far more sunlight-absorbing area than a rock this size could provide. Jets could indicate technological thrusters.",
+      "consensusNote": "Potentially explainable by unusual interstellar origin. Listed in original Nov 2025 Loeb paper.",
+      "skip": false
+    },
+    {
+      "dateLabel": "2026-03-16",
+      "triggerDate": "2026-03-16",
+      "category": "I — Major (no simple explanation)",
+      "anomaly": "Perijove matches Jupiter's Hill radius exactly",
+      "probability": "P = 0.00004",
+      "explanation": "The flyby distance to Jupiter on Mar 16, 2026 matches Jupiter's gravitational boundary almost exactly — enabled by 3I/ATLAS's own non-gravitational thrust near the Sun. Could indicate intentional deployment near Jupiter's Lagrange points.",
+      "consensusNote": "No natural explanation currently. Listed in original Nov 2025 Loeb paper.",
+      "skip": false
+    },
+    {
+      "dateLabel": "Nov 15, 2025",
+      "triggerDate": "2025-11-15",
+      "category": "III — Minor (unique origin possible)",
+      "anomaly": "Jets maintain pointing direction despite object's rotation",
+      "probability": "P < 0.1",
+      "explanation": "Jets stay precisely aimed across a million kilometers even as the nucleus rotates — inconsistent with passive sublimation from a spinning surface. Could indicate controlled thrusters.",
+      "consensusNote": "Potentially explainable by unusual interstellar origin. Listed in original Nov 2025 Loeb paper.",
+      "skip": true
+    },
+    {
+      "dateLabel": "Nov 16, 2025 obs → reported Jan 26, 2026 (Keck)",
+      "triggerDate": "2025-11-16",
+      "category": "III — Minor (unique origin possible)",
+      "anomaly": "Tri-carbon jet misaligned from all other molecular jets",
+      "probability": "P — no P yet",
+      "explanation": "Keck telescope showed the tri-carbon (C3) emission jet points in a different direction than all other species (Ni, Fe, CN, C2) from the same nucleus. In a natural comet, different molecules should emit in the same direction. Currently unexplained.",
+      "consensusNote": "Potentially explainable by unusual interstellar origin. Listed in original Nov 2025 Loeb paper.",
+      "skip": true
+    },
+    {
+      "dateLabel": "Dec 15–16, 2025 (Webb MIRI)",
+      "triggerDate": "2025-12-15",
+      "category": "NEW — Post-publication (Dec 2025–Mar 2026)",
+      "anomaly": "Methane detected post-perihelion — a biosignature gas",
+      "probability": "No P yet",
+      "explanation": "Webb detected methane (CH4) after perihelion — too volatile to survive a pass near the Sun in a natural comet, and a known biosignature. Pre-perihelion plume was dominated by nickel; post-perihelion it switched to methane. The chemistry switch is unexplained.",
+      "consensusNote": "Discovered after Nov 23, 2025 publication. Science still evolving.",
+      "skip": true
+    },
+    {
+      "dateLabel": "Dec 18, 2025 (Green Bank / Breakthrough Listen)",
+      "triggerDate": "2025-12-18",
+      "category": "NEW — Post-publication (Dec 2025–Mar 2026)",
+      "anomaly": "No radio technosignature detected (counter-evidence)",
+      "probability": "Null result",
+      "explanation": "The world's most sensitive radio scan found no isotropic transmitters above 0.1 W. All candidate signals were Earth interference. Strongest counter-evidence to the alien technology hypothesis; most scientists cite this as supporting a natural comet interpretation.",
+      "consensusNote": "Counter-evidence. Breakthrough Listen radio silence is the strongest argument for a natural comet interpretation among post-publication findings.",
+      "skip": true
+    },
+    {
+      "dateLabel": "2026-01-22",
+      "triggerDate": "2026-01-22",
+      "category": "NEW — Post-publication (Dec 2025–Mar 2026)",
+      "anomaly": "Three symmetric jets exactly 120° apart",
+      "probability": "No P yet",
+      "explanation": "Hubble revealed three mini-jets around the nucleus, each separated by exactly 120°, alongside the main anti-tail. Seen in 40 post-perihelion images with periodic wobble. Random ice pockets would not naturally produce three-fold geometric symmetry. Could indicate symmetrically arranged thrusters.",
+      "consensusNote": "Discovered after Nov 23, 2025 publication. Science still evolving.",
+      "skip": false
+    },
+    {
+      "dateLabel": "Mar 6, 2026 (JWST + VLT)",
+      "triggerDate": "2026-03-06",
+      "category": "NEW — Post-publication (Dec 2025–Mar 2026)",
+      "anomaly": "Isotope ratios unlike any known Solar System body",
+      "probability": "No P yet",
+      "explanation": "JWST found deuterium-to-hydrogen ratio >10× higher than in known comets. Carbon and nitrogen isotope ratios also exceed Solar System and nearby interstellar cloud values. Consistent with formation at below −240°C in a very ancient, metal-poor stellar environment — possibly billions of years old.",
+      "consensusNote": "Discovered after Nov 23, 2025 publication. Science still evolving.",
+      "skip": false
+    }
+  ]
+}

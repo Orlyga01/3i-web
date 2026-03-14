@@ -176,14 +176,17 @@ function getRecoloredCometImage(image, tint) {
     const g = data[i + 1];
     const b = data[i + 2];
 
-    // Use the source sprite brightness as a mask so the recolored output
-    // becomes a true image variant instead of a colored overlay.
-    const brightness = Math.max(r, g, b) / 255;
-    const shaded = 0.22 + brightness * 0.9;
+    // Preserve the source sprite's luminance and brightest highlights so the
+    // recolored image keeps its edges and inner detail instead of going flat.
+    const sourceLuma = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    const sourcePeak = Math.max(r, g, b) / 255;
+    const alphaFactor = alpha / 255;
+    const shade = 0.12 + sourceLuma * 0.72 + sourcePeak * 0.34;
+    const highlight = Math.pow(sourcePeak, 1.35) * 34 * alphaFactor;
 
-    data[i] = clamp(Math.round(tint.r * shaded), 0, 255);
-    data[i + 1] = clamp(Math.round(tint.g * shaded), 0, 255);
-    data[i + 2] = clamp(Math.round(tint.b * shaded), 0, 255);
+    data[i] = clamp(Math.round(tint.r * shade + highlight), 0, 255);
+    data[i + 1] = clamp(Math.round(tint.g * shade + highlight), 0, 255);
+    data[i + 2] = clamp(Math.round(tint.b * shade + highlight), 0, 255);
   }
 
   scratchCtx.putImageData(imageData, 0, 0);
@@ -214,7 +217,25 @@ function drawCometBillboard(targetCtx, options = {}) {
     targetCtx.save();
     targetCtx.translate(x, y);
     targetCtx.rotate(rotationAngle);
+    const coreGlowRadius = Math.max(size * 0.18, 10);
+    const coreGlow = targetCtx.createRadialGradient(0, 0, 0, 0, 0, coreGlowRadius);
+    coreGlow.addColorStop(0, `rgba(${tint.r},${tint.g},${tint.b},${0.32 * alpha})`);
+    coreGlow.addColorStop(0.65, `rgba(${tint.r},${tint.g},${tint.b},${0.14 * alpha})`);
+    coreGlow.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
+    targetCtx.beginPath();
+    targetCtx.arc(0, 0, coreGlowRadius, 0, Math.PI * 2);
+    targetCtx.fillStyle = coreGlow;
+    targetCtx.fill();
     drawTintedSprite(targetCtx, image, -size / 2, -size / 2, size, size, alpha, tint);
+    const nucleusRadius = Math.max(size * 0.06, 3.5);
+    const nucleus = targetCtx.createRadialGradient(0, 0, 0, 0, 0, nucleusRadius);
+    nucleus.addColorStop(0, `rgba(255,255,255,${Math.min(1, alpha)})`);
+    nucleus.addColorStop(0.45, `rgba(${tint.r},${tint.g},${tint.b},${0.92 * alpha})`);
+    nucleus.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
+    targetCtx.beginPath();
+    targetCtx.arc(0, 0, nucleusRadius, 0, Math.PI * 2);
+    targetCtx.fillStyle = nucleus;
+    targetCtx.fill();
     targetCtx.restore();
     return;
   }
