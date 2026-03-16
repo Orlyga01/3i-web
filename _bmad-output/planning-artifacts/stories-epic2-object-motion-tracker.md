@@ -27,7 +27,7 @@
 | [2.13](#story-213--deep-link-via-url-parameter) | Deep-Link via URL Parameter | ✅ Done |
 | [2.14](#story-214--per-point-duration--stoppable-flag) | Per-Point Duration & Stoppable Flag | ✅ Done |
 | [2.15](#story-215--play-video-button--player-handoff) | "Play Video" Button & Player Handoff | ✅ Done |
-| [2.16](#story-216--offline-file-upload-fallback) | Offline File Upload Fallback | 🚧 In Progress |
+| [2.16](#story-216--offline-file-upload-fallback) | Offline File Upload Fallback | ✅ Done |
 
 ---
 

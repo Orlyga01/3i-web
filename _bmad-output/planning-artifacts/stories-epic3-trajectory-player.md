@@ -17,12 +17,13 @@
 | [3.3](#story-33--motion-trail) | Motion Trail | ✅ Done |
 | [3.4](#story-34--playback-controls--keyboard-shortcuts) | Playback Controls & Keyboard Shortcuts | ✅ Done |
 | [3.5](#story-35--speed-ruler) | Speed Ruler | 🚧 In Progress |
-| [3.6](#story-36--stop-at-points-mode) | Stop-at-Points Mode | 🔲 Pending |
+| [3.6](#story-36--stop-at-points-mode) | Stop-at-Points Mode | 🚧 In Progress |
 | [3.7](#story-37--timeline-scrubber) | Timeline Scrubber | 🔲 Pending |
-| [3.8](#story-38--annotation-overlay) | Annotation Overlay | 🔲 Pending |
-| [3.9](#story-39--live-stats-display) | Live Stats Display | 🔲 Pending |
+| [3.8](#story-38--annotation-overlay) | Annotation Overlay | ✅ Done |
+| [3.9](#story-39--live-stats-display) | Live Stats Display | 🚧 In Progress |
 | [3.10](#story-310--fullscreen-mode) | Fullscreen Mode | 🔲 Pending |
-| [3.12](#story-312--large-annotated-image-window) | Large Annotated Image Window | 🔲 Pending |
+| [3.11](#story-311--fixed-reference-point--connector-line) | Fixed Reference Point & Connector Line | ✅ Done |
+| [3.12](#story-312--large-annotated-image-window) | Large Annotated Image Window | ✅ Done |
 
 ---
 

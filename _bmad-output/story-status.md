@@ -204,7 +204,8 @@
 
 | Date | Change | By |
 |---|---|---|
-| 2026-03-16 | Refined Object Motion Tracker file export into a modal review/copy/save flow, and updated `Oumuamua` in the trajectory player to hide its color ring, spin 5x slower, and start at the same 3x default playback speed as `2I/Borisov` | dev agent |
+| 2026-03-16 | Inserted the requested 2017-09-01 through 2017-09-29 Horizons point set into the bundled `Oumuamua` trajectory, preserving its existing schema and default playback speed metadata | dev agent |
+| 2026-03-16 | Refined Object Motion Tracker file export into a modal review/copy/save flow, preserved trajectory-level default speed metadata during draft/export round-trips, and updated `Oumuamua` in the trajectory player to hide its color ring, keep its native sprite color, spin 5x slower, and start at the same 3x default playback speed as `2I/Borisov` | dev agent |
 | 2026-03-16 | Added optional trajectory-level default playback speed support, kept null speed at the current 1x behavior, and set `2I/Borisov` to start at 3x with a white carried-forward trajectory color | dev agent |
 | 2026-03-16 | Trimmed the bundled `2I/Borisov` trajectory again by removing the 2020-04-20 through 2020-08-18 points and the 2021-04-15 through 2021-10-12 points, keeping other objects unchanged | dev agent |
 | 2026-03-16 | Updated the trajectory player so null cameras fall back only to the last saved earlier camera, hid the top-right trajectory image card, and removed the startup flyby animation without changing other trajectory data | dev agent |

@@ -2,7 +2,7 @@
   "object": "2I/Borisov",
   "designation": "2I/Borisov",
   "createdAt": "2026-03-16T00:00:00Z",
-  "updatedAt": "2026-03-16T00:00:00Z",
+  "updatedAt": "2026-03-16T12:37:56.260Z",
   "source": "JPL Horizons VECTORS",
   "dateRange": "2018-01-01 → 2021-12-11",
   "defaultSpeedMultiplier": 3,
@@ -11,6 +11,7 @@
   },
   "points": [
     {
+      "color": "white",
       "jd": 2458119.5,
       "date": "2018-01-01",
       "au": {
@@ -25,7 +26,6 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "color": "white",
       "camera": {
         "el": 7,
         "az": 0.01,
@@ -49,120 +49,6 @@
         "wx": 651.43,
         "wy": 1687.81,
         "wz": 1504.046
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2458239.5,
-      "date": "2018-05-01",
-      "au": {
-        "x": 3.219463,
-        "y": 8.93063,
-        "z": 7.785429
-      },
-      "px": {
-        "wx": 563.406,
-        "wy": 1562.86,
-        "wz": 1362.45
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2458299.5,
-      "date": "2018-06-30",
-      "au": {
-        "x": 2.714639,
-        "y": 8.211488,
-        "z": 6.971807
-      },
-      "px": {
-        "wx": 475.062,
-        "wy": 1437.01,
-        "wz": 1220.066
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2458359.5,
-      "date": "2018-08-29",
-      "au": {
-        "x": 2.207725,
-        "y": 7.485956,
-        "z": 6.152738
-      },
-      "px": {
-        "wx": 386.352,
-        "wy": 1310.042,
-        "wz": 1076.729
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2458419.5,
-      "date": "2018-10-28",
-      "au": {
-        "x": 1.698427,
-        "y": 6.752267,
-        "z": 5.32695
-      },
-      "px": {
-        "wx": 297.225,
-        "wy": 1181.647,
-        "wz": 932.216
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2458479.5,
-      "date": "2018-12-27",
-      "au": {
-        "x": 1.186459,
-        "y": 6.007816,
-        "z": 4.492675
-      },
-      "px": {
-        "wx": 207.63,
-        "wy": 1051.368,
-        "wz": 786.218
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2458539.5,
-      "date": "2019-02-25",
-      "au": {
-        "x": 0.67165,
-        "y": 5.248579,
-        "z": 3.647376
-      },
-      "px": {
-        "wx": 117.539,
-        "wy": 918.501,
-        "wz": 638.291
       },
       "durationPct": 100,
       "stoppable": false,

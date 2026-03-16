@@ -169,19 +169,25 @@ const TrajectoryStore = (() => {
     let _points = [];
     let _isUpdateMode = false;
     let _createdAt = null;
+    let _source = 'JPL Horizons VECTORS';
+    let _defaultSpeedMultiplier;
 
     function init(designation, points) {
         _designation = designation;
         _points = points;
         _isUpdateMode = false;
         _createdAt = null;
+        _source = 'JPL Horizons VECTORS';
+        _defaultSpeedMultiplier = undefined;
     }
 
-    function initFromSaved(designation, points, createdAt) {
+    function initFromSaved(designation, points, createdAt, options = {}) {
         _designation = designation;
         _points = points;
         _isUpdateMode = true;
         _createdAt = createdAt || null;
+        _source = options.source || 'JPL Horizons VECTORS';
+        _defaultSpeedMultiplier = options.defaultSpeedMultiplier;
     }
 
     function getPoints() { return _points; }
@@ -239,12 +245,12 @@ const TrajectoryStore = (() => {
     function toPlainObject() {
         const now = new Date().toISOString();
         const pts = _points;
-        return {
+        const plain = {
             object: _designation,
             designation: _designation,
             createdAt: _createdAt || now,
             updatedAt: now,
-            source: 'JPL Horizons VECTORS',
+            source: _source || 'JPL Horizons VECTORS',
             dateRange: pts.length ? `${pts[0].date} \u2192 ${pts[pts.length - 1].date}` : '',
             scale: { auToPx: AU_TO_PX },
             // Preserve arbitrary per-point metadata such as color, video, and
@@ -283,6 +289,10 @@ const TrajectoryStore = (() => {
                 };
             }),
         };
+        if (_defaultSpeedMultiplier != null) {
+            plain.defaultSpeedMultiplier = _defaultSpeedMultiplier;
+        }
+        return plain;
     }
 
     return {
@@ -308,6 +318,7 @@ const WorkflowController = (() => {
     function start(points) {
         _currentIndex = 0;
         _hasUnsavedChanges = false;
+        _hasSavedFile = false;
     }
 
     function getCurrent() { return _currentIndex; }
@@ -1080,7 +1091,7 @@ function formatTrajDate(str) {
 
     function finalizeFileSave(json, points, onSaved = null) {
         const imgCount = FileIO.download(json, points);
-        _clearDraft();
+        const shouldDelayDraftClear = typeof onSaved === 'function';
         WorkflowController.setHasSavedFile(true);
         WorkflowController.setUnsavedChanges(false);
         setViewerStatus(
@@ -1089,6 +1100,11 @@ function formatTrajDate(str) {
         );
         closeSaveFileModal();
         if (typeof onSaved === 'function') onSaved();
+        if (shouldDelayDraftClear) {
+            window.setTimeout(() => _clearDraft(), 4000);
+        } else {
+            _clearDraft();
+        }
     }
 
     function pointHasMoreInfo(point) {
@@ -1510,9 +1526,11 @@ function formatTrajDate(str) {
 
     // ── Play Video button & confirm modal (Story 2.15) ────────
 
-    function _openPlayer() {
+    function _openPlayer(sourceOverride = '') {
         const designation = (TrajectoryStore.getDesignation() || '').trim() || '3I';
-        const source = normalizeRequestedSource(objectMotionSource) || 'local';
+        const source = normalizeRequestedSource(sourceOverride)
+            || normalizeRequestedSource(objectMotionSource)
+            || 'local';
         const params = new URLSearchParams({ designation, source, lang: objectMotionLocale });
         window.open(`trajectory_player?${params.toString()}`, '_blank');
     }
@@ -1544,7 +1562,16 @@ function formatTrajDate(str) {
             openSaveFileModal({
                 json: FileIO.serialize(TrajectoryStore),
                 points: TrajectoryStore.getPoints(),
-                onSaved: _openPlayer,
+                onSaved: () => {
+                    if (!isLocalStorageEnabled()) {
+                        setViewerStatus(
+                            'success',
+                            'Saved to file. To play this updated version, use Save to Project Folder while local drafts are disabled.'
+                        );
+                        return;
+                    }
+                    _openPlayer('local');
+                },
             });
         });
     }
@@ -1752,6 +1779,7 @@ function formatTrajDate(str) {
     function loadTrajectoryFromData(json, source = objectMotionSource) {
         const designation = json.designation || json.object || designationEl.value.trim();
         const createdAt = json.createdAt || null;
+        const defaultSpeedMultiplier = json.defaultSpeedMultiplier;
         const raw = json.points || [];
 
         const points = raw.map(p => {
@@ -1796,7 +1824,10 @@ function formatTrajDate(str) {
             return;
         }
 
-        TrajectoryStore.initFromSaved(designation, points, createdAt);
+        TrajectoryStore.initFromSaved(designation, points, createdAt, {
+            source: json.source,
+            defaultSpeedMultiplier,
+        });
         WorkflowController.start(points);
 
         designationEl.value = designation;

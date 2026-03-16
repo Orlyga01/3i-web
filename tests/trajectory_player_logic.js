@@ -532,7 +532,13 @@ function resolveAnnotationImageSrc(image, sanitizedName) {
     const trimmed = image.trim();
     if (!trimmed) return null;
     if (isAbsoluteImageUrl(trimmed)) return trimmed;
-    if (trimmed.startsWith('/')) return trimmed;
+    if (trimmed.startsWith('/')) {
+        try {
+            return new URL(trimmed.slice(1), 'http://localhost/').href;
+        } catch (_) {
+            return trimmed;
+        }
+    }
     const normalized = trimmed.replace(/^\.?[\\/]+/, '').replace(/\\/g, '/');
     return `data/${sanitize(sanitizedName)}/${normalized}`;
 }
@@ -584,7 +590,10 @@ function buildTrajectoryOverlayModel(context = {}, imageState = 'ready') {
     };
     const sanitizedName = context.sanitizedName || '';
     const stopImageSrc = resolveAnnotationImageSrc(point?.image, sanitizedName);
-    const showStoppedImage = context.state === 'stopped-at-point' && Boolean(stopImageSrc);
+    const atStoppableWithImage = Boolean(stopImageSrc) && Boolean(point?.stoppable);
+    const showStoppedImage = atStoppableWithImage && (
+        context.state === 'stopped-at-point' || context.state === 'paused'
+    );
     const description = normalizeAnnotationDescription(point?.description);
     const colorName = appearance.name || DEFAULT_VISUAL_COLOR;
 
@@ -603,6 +612,7 @@ function buildTrajectoryOverlayModel(context = {}, imageState = 'ready') {
         showNoImageState: showStoppedImage && imageState === 'error',
         showPreview: !showStoppedImage || imageState === 'error',
         showDescription: Boolean(description),
+        showMoreInfo: false,
         previewAppearance: appearance,
     };
 }

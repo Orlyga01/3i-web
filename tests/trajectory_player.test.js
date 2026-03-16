@@ -559,7 +559,7 @@ describe('animation helpers', () => {
 
     test('resolves local and remote annotation image sources', () => {
         expect(resolveAnnotationImageSrc('https://example.com/atlas.png', '3I')).toBe('https://example.com/atlas.png');
-        expect(resolveAnnotationImageSrc('/assets/3igreen.jpg', '3I')).toBe('/assets/3igreen.jpg');
+        expect(resolveAnnotationImageSrc('/assets/3igreen.jpg', '3I')).toBe('http://localhost/assets/3igreen.jpg');
         expect(resolveAnnotationImageSrc('story/atlas.png', 'C/2025 N1')).toBe('data/C_2025_N1/story/atlas.png');
         expect(resolveAnnotationImageSrc('.\\story\\atlas.png', '3I')).toBe('data/3I/story/atlas.png');
         expect(resolveAnnotationImageSrc(null, '3I')).toBeNull();
@@ -644,6 +644,7 @@ describe('animation helpers', () => {
             showNoImageState: false,
             showPreview: true,
             showDescription: false,
+            showMoreInfo: false,
             previewAppearance: { name: 'blue', rgb: { r: 96, g: 176, b: 255 } },
         });
     });
@@ -651,7 +652,7 @@ describe('animation helpers', () => {
     test('switches the same overlay to point-image mode at stoppable stops', () => {
         expect(buildTrajectoryOverlayModel({
             state: 'stopped-at-point',
-            point: { date: '2026-01-21', description: 'Jets visible', image: '/assets/jets.jpg' },
+            point: { date: '2026-01-21', description: 'Jets visible', image: '/assets/jets.jpg', stoppable: true },
             sanitizedName: '3I',
             appearance: { name: 'red', rgb: { r: 255, g: 104, b: 104 } },
         })).toEqual({
@@ -659,11 +660,12 @@ describe('animation helpers', () => {
             kicker: 'Point Image',
             dateText: 'Jan 21, 2026',
             description: 'Jets visible',
-            imageSrc: '/assets/jets.jpg',
+            imageSrc: 'http://localhost/assets/jets.jpg',
             showImage: true,
             showNoImageState: false,
             showPreview: false,
             showDescription: true,
+            showMoreInfo: false,
             previewAppearance: { name: 'red', rgb: { r: 255, g: 104, b: 104 } },
         });
     });
