@@ -164,12 +164,18 @@
 .mi-image {
   width: 100%;
   max-width: 100%;
+  max-height: min(72vh, 900px);
   height: auto;
   display: block;
   border-radius: 10px;
   border: 1px solid rgba(130, 180, 255, 0.2);
   background: rgba(6, 18, 40, 0.92);
   cursor: zoom-in;
+  object-fit: contain;
+}
+
+.mi-root.is-expanded .mi-image {
+  max-height: calc(100vh - 240px);
 }
 
 .mi-image-actions {

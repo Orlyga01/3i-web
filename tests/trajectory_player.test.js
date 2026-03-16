@@ -17,6 +17,8 @@ const {
     buildTrajectoryPlayerHref,
     normalizePoint,
     normalizeVisualColor,
+    getObjectVisualConfig,
+    getObjectSpinRotation,
     getNamedVisualColorRgb,
     getColorNameForPoint,
     getAppearanceAtPoint,
@@ -224,6 +226,25 @@ describe('animation helpers', () => {
         expect(normalizeVisualColor('purple')).toBeNull();
         expect(getNamedVisualColorRgb('red')).toEqual({ r: 255, g: 104, b: 104 });
         expect(getNamedVisualColorRgb('yellow')).toEqual({ r: 255, g: 214, b: 92 });
+    });
+
+    test('uses the special sprite and axial spin only for Oumuamua', () => {
+        expect(getObjectVisualConfig('3I')).toEqual({
+            spriteSrc: 'assets/3igreen_1.png',
+            imageBaseTailAngleRad: 150 * (Math.PI / 180),
+            anchorY: 0.5,
+            alignToSun: true,
+            axialSpinMultiplier: 0,
+        });
+        expect(getObjectVisualConfig('Oumuamua')).toEqual({
+            spriteSrc: 'assets/Oumuamua.png',
+            imageBaseTailAngleRad: 0,
+            anchorY: 0.5,
+            alignToSun: false,
+            axialSpinMultiplier: 1,
+        });
+        expect(getObjectSpinRotation('3I', 2.5)).toBe(0);
+        expect(getObjectSpinRotation('Oumuamua', 2.5)).toBe(2.5);
     });
 
     test('segment duration uses destination point durationPct', () => {

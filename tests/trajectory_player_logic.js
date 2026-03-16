@@ -148,6 +148,20 @@ const FIXED_REFERENCE_POINT_KM = Object.freeze({
     y: 7.099317219152682e8,
     z: 4.476039412376106e6,
 });
+const DEFAULT_OBJECT_VISUAL = Object.freeze({
+    spriteSrc: 'assets/3igreen_1.png',
+    imageBaseTailAngleRad: 150 * (Math.PI / 180),
+    anchorY: 0.5,
+    alignToSun: true,
+    axialSpinMultiplier: 0,
+});
+const OUMUAMUA_OBJECT_VISUAL = Object.freeze({
+    spriteSrc: 'assets/Oumuamua.png',
+    imageBaseTailAngleRad: 0,
+    anchorY: 0.5,
+    alignToSun: false,
+    axialSpinMultiplier: 1,
+});
 
 function lerp(a, b, t) {
     return a + (b - a) * t;
@@ -165,6 +179,17 @@ function catmullRom(p0, p1, p2, p3, t) {
 function normalizeVisualColor(value) {
     const key = String(value || '').trim().toLowerCase();
     return VISUAL_COLOR_MAP[key] ? key : null;
+}
+
+function getObjectVisualConfig(designation) {
+    const key = String(designation || '').trim().toLowerCase();
+    if (key === 'oumuamua') return OUMUAMUA_OBJECT_VISUAL;
+    return DEFAULT_OBJECT_VISUAL;
+}
+
+function getObjectSpinRotation(designation, phase = 0) {
+    const config = getObjectVisualConfig(designation);
+    return (config.axialSpinMultiplier || 0) * Number(phase || 0);
 }
 
 function getNamedVisualColorRgb(name) {
@@ -560,6 +585,8 @@ module.exports = {
     buildTrajectoryPlayerHref,
     normalizePoint,
     normalizeVisualColor,
+    getObjectVisualConfig,
+    getObjectSpinRotation,
     getNamedVisualColorRgb,
     getColorNameForPoint,
     getAppearanceAtPoint,

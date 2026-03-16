@@ -23,7 +23,7 @@ try {
 void analytics;
 
 const OBJECT_MANIFEST_PATH = "data/objects.json";
-const DEFAULT_WEB_OBJECTS = Object.freeze(["3I"]);
+const DEFAULT_WEB_OBJECTS = Object.freeze(["3I", "solar_comet"]);
 const LOCAL_DRAFT_PREFIX = "objectMotion:";
 const PRESENTATION_OBJECTS = Object.freeze(["3I"]);
 const APP_CONFIG = globalThis.AppConfigShared?.readAppConfig?.(globalThis.AppConfig) || { useLocalStorage: false };

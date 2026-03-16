@@ -1,0 +1,198 @@
+{
+  "object": "solar_comet",
+  "designation": "solar_comet",
+  "createdAt": "2026-03-15T00:00:00Z",
+  "updatedAt": "2026-03-15T00:00:00Z",
+  "source": "Bundled custom trajectory",
+  "dateRange": "2025-06-01 → 2025-12-01",
+  "scale": {
+    "auToPx": 175
+  },
+  "points": [
+    {
+      "color": "green",
+      "jd": 2460827.5,
+      "date": "2025-06-01",
+      "au": {
+        "x": 1.3,
+        "y": -4.6,
+        "z": -1.1
+      },
+      "px": {
+        "wx": 227.5,
+        "wy": -805,
+        "wz": -192.5
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": {
+        "el": 22,
+        "az": 0.42,
+        "zoom": -30,
+        "tx": 80,
+        "ty": -1150,
+        "tz": -60
+      },
+      "description": "Inbound below the ecliptic, still far from the inner solar system.",
+      "image": null
+    },
+    {
+      "jd": 2460857.5,
+      "date": "2025-07-01",
+      "au": {
+        "x": 0.98,
+        "y": -3.55,
+        "z": -0.55
+      },
+      "px": {
+        "wx": 171.5,
+        "wy": -621.25,
+        "wz": -96.25
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": {
+        "el": 18,
+        "az": 0.28,
+        "zoom": 0,
+        "tx": 70,
+        "ty": -180,
+        "tz": -40
+      },
+      "description": "Climbing toward the ecliptic plane on an inbound arc.",
+      "image": null
+    },
+    {
+      "jd": 2460888.5,
+      "date": "2025-08-01",
+      "au": {
+        "x": 0.62,
+        "y": -2.35,
+        "z": -0.05
+      },
+      "px": {
+        "wx": 108.5,
+        "wy": -411.25,
+        "wz": -8.75
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": {
+        "el": 12,
+        "az": 0.12,
+        "zoom": 25,
+        "tx": 40,
+        "ty": -120,
+        "tz": -10
+      },
+      "description": "Closing in on the inner system with a flatter approach angle.",
+      "image": null
+    },
+    {
+      "jd": 2460919.5,
+      "date": "2025-09-01",
+      "au": {
+        "x": 0.24,
+        "y": -1.1,
+        "z": 0.22
+      },
+      "px": {
+        "wx": 42,
+        "wy": -192.5,
+        "wz": 38.5
+      },
+      "durationPct": 100,
+      "stoppable": true,
+      "camera": {
+        "el": 8,
+        "az": 0.05,
+        "zoom": 48,
+        "tx": 20,
+        "ty": -70,
+        "tz": 12
+      },
+      "description": "Crossing up through the ecliptic as the Sun starts to dominate the frame.",
+      "image": null
+    },
+    {
+      "color": "yellow",
+      "jd": 2460949.5,
+      "date": "2025-10-01",
+      "au": {
+        "x": 0.04,
+        "y": -0.18,
+        "z": 0.1
+      },
+      "px": {
+        "wx": 7,
+        "wy": -31.5,
+        "wz": 17.5
+      },
+      "durationPct": 140,
+      "stoppable": true,
+      "camera": {
+        "el": 10,
+        "az": 0.78,
+        "zoom": 72,
+        "tx": -10,
+        "ty": -10,
+        "tz": 18
+      },
+      "description": "Near perihelion, framed for the tightest solar flyby.",
+      "image": null
+    },
+    {
+      "jd": 2460980.5,
+      "date": "2025-11-01",
+      "au": {
+        "x": -0.3,
+        "y": 0.42,
+        "z": -0.02
+      },
+      "px": {
+        "wx": -52.5,
+        "wy": 73.5,
+        "wz": -3.5
+      },
+      "durationPct": 120,
+      "stoppable": false,
+      "camera": {
+        "el": 14,
+        "az": 1.68,
+        "zoom": 52,
+        "tx": -40,
+        "ty": 40,
+        "tz": 2
+      },
+      "description": "Past the Sun, the trajectory bends outward and away from the plane.",
+      "image": null
+    },
+    {
+      "color": "blue",
+      "jd": 2461010.5,
+      "date": "2025-12-01",
+      "au": {
+        "x": -0.92,
+        "y": 1.58,
+        "z": -0.42
+      },
+      "px": {
+        "wx": -161,
+        "wy": 276.5,
+        "wz": -73.5
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": {
+        "el": 20,
+        "az": 2.18,
+        "zoom": 20,
+        "tx": -80,
+        "ty": 90,
+        "tz": -20
+      },
+      "description": "Outbound above the plane with the encounter complete.",
+      "image": null
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 # 3i-web — Story Status Tracker
 
 **Project:** 3i-web
-**Last updated:** 2026-03-15
+**Last updated:** 2026-03-16
 **Maintained by:** All agents — update this file whenever a story's implementation status changes.
 
 > **Rule:** Any agent (dev, PM, QA, architect) that completes, partially completes, or discovers a status change for any story **must** update the relevant row in this file before ending their session. The status values are defined below.
@@ -59,7 +59,7 @@
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
-| 3.1 | Player Page Shell & URL Loading | ✅ Done | Added player shell, URL loader, friendly error states, manual-start playback wiring, and explicit player-owned object sprite selection so solar-comet asset changes no longer leak into `trajectory_player` |
+| 3.1 | Player Page Shell & URL Loading | ✅ Done | Added player shell, URL loader, friendly error states, manual-start playback wiring, explicit player-owned object sprite selection so solar-comet asset changes no longer leak into `trajectory_player`, and a `3igreen_1` tail-angle correction so the player sprite still points away from the Sun |
 | 3.2 | Animation Engine (Spline + Camera Lerp) | ✅ Done | Catmull-Rom playback, per-frame date/AU interpolation, and pan-aware camera lerp implemented |
 | 3.3 | Motion Trail | ✅ Done | Glowing projected trail now accumulates during playback and resets cleanly on restart / point jumps |
 | 3.4 | Playback Controls & Keyboard Shortcuts | ✅ Done | Wired ⏮⏪⏸▶⏩ controls, disabled edge states, screen-click stop with Continue-only resume, and Space/←/→/F shortcuts |
@@ -127,7 +127,7 @@
 | Story | Title | Status | Notes |
 |---|---|---|---|
 | 6.1 | Shared `more_info` Model & Editor Modal Entry Point | ✅ Done | Refactored modal behavior into shared assets with taller layout, header description, expand/collapse, and image zoom |
-| 6.2 | Player Overlay Entry Point & Custom Page iframe | ✅ Done | Player now uses the shared modal too, with fullscreen-style expansion, vertical images, iframe `page_name`, and hosting/test coverage |
+| 6.2 | Player Overlay Entry Point & Custom Page iframe | ✅ Done | Player now uses the shared modal too, with fullscreen-style expansion, larger modal-scaled images, iframe `page_name`, and hosting/test coverage |
 | 6.3 | Curated Science Page for a Selected Point | ✅ Done | Added a custom embedded science page for `2025-12-13` with external media and play-triggered Miller comparison highlights |
 
 **Progress: 3 / 3 stories complete**
@@ -170,6 +170,20 @@
 
 ---
 
+## Epic 9 — Solar Comet Object Refactor
+
+**Source stories:** `_bmad-output/planning-artifacts/stories-epic9-solar-comet-object.md`
+**Source PRD:** `_bmad-output/planning-artifacts/prd-epic9-solar-comet-object.md`
+**Files:** `data/solar_comet/trajectory.json`, `data/objects.json`, `index.js`, `object_motion.html`, `object_motion.js`, `solar_comet.html`
+
+| Story | Title | Status | Notes |
+|---|---|---|---|
+| 9.1 | Solar Comet as a Standard Bundled Object | ✅ Done | Added bundled `solar_comet` data, homepage entry, top-level page handoff to the standard player, and per-point flying-object position controls in the tracker |
+
+**Progress: 1 / 1 stories complete**
+
+---
+
 ## Overall Project Progress
 
 | Epic | Title | Done | Total | % |
@@ -181,7 +195,8 @@
 | Epic 6 | Point More Info Modal | 3 | 3 | 100% |
 | Epic 7 | Date-Driven Anomalies Panel | 6 | 6 | 100% |
 | Epic 8 | Translation & Localization | 4 | 4 | 100% |
-| **Total** | | **44** | **57** | **77%** |
+| Epic 9 | Solar Comet Object Refactor | 1 | 1 | 100% |
+| **Total** | | **45** | **58** | **78%** |
 
 ---
 
@@ -189,6 +204,11 @@
 
 | Date | Change | By |
 |---|---|---|
+| 2026-03-16 | Reduced the bundled `2I/Borisov` trajectory density by removing every second point so playback now advances in roughly 60-day steps | dev agent |
+| 2026-03-16 | Added a new bundled `Oumuamua` trajectory generated from the supplied Horizons vectors and refreshed `data/objects.json` so it appears in the homepage index | dev agent |
+| 2026-03-16 | Added a new bundled `2I/Borisov` trajectory generated from the supplied Horizons vectors and refreshed `data/objects.json` so it appears in the homepage index | dev agent |
+| 2026-03-16 | Swapped the trajectory-player 3I artwork to `3igreen_1.png`, compensated its built-in 150-degree tail angle so the rendered tail still points anti-sunward, and let player/modal image views scale up to the dialog size | dev agent |
+| 2026-03-15 | Added Epic 9 docs and implemented `solar_comet` as a standard bundled object with homepage entry, shipped camera-authored points, top-level page redirect to the shared player, and per-point object-position controls in the tracker | dev agent |
 | 2026-03-15 | Added a new comparison video slide right after Small Bodies Overview, embedding the YouTube Shorts video with autoplay, mute, and full-viewport layout | dev agent |
 | 2026-03-15 | Added 30px more height to the three Small Bodies Overview cards while keeping their width unchanged | dev agent |
 | 2026-03-15 | Corrected the Small Bodies Overview square-card layout so card width stays intact and only the height is reduced to match | dev agent |

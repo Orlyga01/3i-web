@@ -523,6 +523,9 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
     tailReveal = 1,
     image = cometImage,
     anchorY,
+    imageBaseTailAngle = -Math.PI / 2,
+    alignToSun = true,
+    rotationOffset = 0,
   } = options;
   const { sx, sy, depth } = project3(wx, wy, wz);
   if (depth < 5) return;
@@ -530,24 +533,24 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
   
   // If comet image is loaded, use it
   if (image.complete && image.naturalWidth > 0) {
-    // Calculate direction AWAY from the Sun so the tail always points anti-sunward.
-    const d3 = Math.sqrt(wx * wx + wy * wy + wz * wz) || 1;
-    const awaySunX = wx / d3;
-    const awaySunY = wy / d3;
-    const awaySunZ = wz / d3;
-    
-    // Project that anti-sun direction into screen space to rotate the sprite.
-    const pointLen = 100;
-    const { sx: tailSx, sy: tailSy } = project3(
-      wx + awaySunX * pointLen,
-      wy + awaySunY * pointLen,
-      wz + awaySunZ * pointLen,
-    );
-    const screenAngle = Math.atan2(tailSy - sy, tailSx - sx);
-    
-    // `assets/comet.png` has its tail pointing straight up in image space.
-    const imageBaseTailAngle = -Math.PI / 2;
-    const rotationAngle = screenAngle - imageBaseTailAngle;
+    let rotationAngle = rotationOffset;
+    if (alignToSun) {
+      // Calculate direction AWAY from the Sun so the tail always points anti-sunward.
+      const d3 = Math.sqrt(wx * wx + wy * wy + wz * wz) || 1;
+      const awaySunX = wx / d3;
+      const awaySunY = wy / d3;
+      const awaySunZ = wz / d3;
+      
+      // Project that anti-sun direction into screen space to rotate the sprite.
+      const pointLen = 100;
+      const { sx: tailSx, sy: tailSy } = project3(
+        wx + awaySunX * pointLen,
+        wy + awaySunY * pointLen,
+        wz + awaySunZ * pointLen,
+      );
+      const screenAngle = Math.atan2(tailSy - sy, tailSx - sx);
+      rotationAngle += screenAngle - imageBaseTailAngle;
+    }
     
     // The sprite is tall, so treat `size` as the on-screen height.
     const cometSize = 125 * sc * sizeMultiplier;
@@ -568,6 +571,7 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
       x: sx,
       y: sy,
       size: 125 * sc * sizeMultiplier,
+      rotationAngle: rotationOffset,
       alpha,
       tint,
       image,

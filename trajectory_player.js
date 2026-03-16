@@ -255,9 +255,38 @@ const TP_FIXED_REFERENCE_POINT_KM = Object.freeze({
   y: 7.099317219152682e8,
   z: 4.476039412376106e6,
 });
-const TP_OBJECT_SPRITE = typeof window.getSharedSpriteImage === 'function'
-  ? window.getSharedSpriteImage('assets/green_aura_transparent.png')
-  : null;
+const TP_DEFAULT_OBJECT_VISUAL = Object.freeze({
+  spriteSrc: 'assets/3igreen_1.png',
+  imageBaseTailAngleRad: 150 * (Math.PI / 180),
+  anchorY: 0.5,
+  alignToSun: true,
+  axialSpinMultiplier: 0,
+});
+const TP_OUMUAMUA_OBJECT_VISUAL = Object.freeze({
+  spriteSrc: 'assets/Oumuamua.png',
+  imageBaseTailAngleRad: 0,
+  anchorY: 0.5,
+  alignToSun: false,
+  axialSpinMultiplier: 1,
+});
+
+function getObjectVisualConfig(designation) {
+  const key = String(designation || '').trim().toLowerCase();
+  if (key === 'oumuamua') return TP_OUMUAMUA_OBJECT_VISUAL;
+  return TP_DEFAULT_OBJECT_VISUAL;
+}
+
+function getObjectSpinRotation(designation, phase = 0) {
+  const config = getObjectVisualConfig(designation);
+  return (config.axialSpinMultiplier || 0) * Number(phase || 0);
+}
+
+function resolveObjectSprite(designation) {
+  const spriteSrc = getObjectVisualConfig(designation).spriteSrc;
+  return typeof window.getSharedSpriteImage === 'function'
+    ? window.getSharedSpriteImage(spriteSrc)
+    : null;
+}
 
 class PlaybackEngine {
   constructor(controller) {
@@ -317,6 +346,8 @@ class PlaybackController {
     this.currentSunDistance = this.currentPoint ? computeSunDistance(this.currentPoint.au) : 0;
     this.currentCameraState = this.findNearestCamera(0);
     this.currentAppearance = this.currentPoint ? getAppearanceAtPoint(this.points, 0) : getDefaultAppearance();
+    this.objectVisual = getObjectVisualConfig(this.designation);
+    this.objectSprite = resolveObjectSprite(this.designation);
     this.pauseAtStoppablePoints = true;
     this.pauseAtEveryPoint = false;
     this.solarSystemPaused = null;
@@ -373,8 +404,11 @@ class PlaybackController {
         `${tint.r},${tint.g},${tint.b}`,
         {
           sizeMultiplier: 0.95,
-          image: TP_OBJECT_SPRITE || undefined,
-          anchorY: 0.5,
+          image: this.objectSprite || undefined,
+          imageBaseTailAngle: this.objectVisual.imageBaseTailAngleRad,
+          anchorY: this.objectVisual.anchorY,
+          alignToSun: this.objectVisual.alignToSun,
+          rotationOffset: getObjectSpinRotation(this.designation, this.engine.pulsePhase),
         }
       );
       drawTrajectoryObjectColorRing(this.currentWorldPosition, tint, ringAlpha);
@@ -1069,7 +1103,7 @@ class AnnotationOverlay {
     if (this.previewEl) {
       this.previewEl.style.display = model.showPreview ? 'block' : 'none';
       if (model.showPreview) {
-        renderLivePreview(this.previewEl, model.previewAppearance);
+        renderLivePreview(this.previewEl, model.previewAppearance, this.currentContext?.designation || '');
       }
     }
     if (!this.imageEl) return;
@@ -1566,7 +1600,7 @@ function getTrajectoryOverlayKey(context = {}) {
   });
 }
 
-function renderLivePreview(canvasEl, appearance) {
+function renderLivePreview(canvasEl, appearance, designation = '') {
   if (!canvasEl?.getContext) return;
   const previewCtx = canvasEl.getContext('2d');
   if (!previewCtx) return;
@@ -1589,15 +1623,18 @@ function renderLivePreview(canvasEl, appearance) {
   previewCtx.fillRect(0, 0, width, height);
 
   if (typeof window.drawCometBillboard === 'function') {
+    const previewTailDirection = -3 * Math.PI / 4;
+    const objectVisual = getObjectVisualConfig(designation);
+    const objectSprite = resolveObjectSprite(designation);
     window.drawCometBillboard(previewCtx, {
       x: width / 2,
       y: height / 2,
       size: Math.min(width, height) * 0.68,
-      rotationAngle: -Math.PI / 4,
+      rotationAngle: objectVisual.alignToSun ? (previewTailDirection - objectVisual.imageBaseTailAngleRad) : 0,
       alpha: 0.98,
       tint,
-      image: TP_OBJECT_SPRITE || undefined,
-      anchorY: 0.5,
+      image: objectSprite || undefined,
+      anchorY: objectVisual.anchorY,
     });
   }
 

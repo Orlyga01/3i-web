@@ -21,6 +21,7 @@
 
 /** Canonical AU-to-pixel scale used throughout all epics. */
 const AU_TO_PX = 175;
+const MAX_OBJECT_POSITION_AU = 100;
 
 const HORIZONS_BASE_URL = 'https://ssd.jpl.nasa.gov/api/horizons.api';
 
@@ -220,6 +221,16 @@ const TrajectoryStore = (() => {
         if (_points[index]) _points[index].stoppable = Boolean(val);
     }
 
+    function saveObjectPosition(index, nextAu) {
+        const point = _points[index];
+        if (!point) return;
+        const au = normalizeAuPosition(nextAu);
+        point.au = au;
+        point.wx = au.x * AU_TO_PX;
+        point.wy = au.y * AU_TO_PX;
+        point.wz = au.z * AU_TO_PX;
+    }
+
     function deletePoint(index) {
         if (index < 0 || index >= _points.length) return null;
         return _points.splice(index, 1)[0] || null;
@@ -279,7 +290,7 @@ const TrajectoryStore = (() => {
         getPoints, getDesignation, getPoint,
         isUpdateMode, getCreatedAt,
         savedCount, allSaved,
-        saveCamera, saveDescription, saveImage, saveDurationPct, saveStoppable, deletePoint,
+        saveCamera, saveDescription, saveImage, saveDurationPct, saveStoppable, saveObjectPosition, deletePoint,
         toPlainObject,
     };
 })();
@@ -808,11 +819,14 @@ function normalizeRequestedSource(value) {
     return (normalized === 'local' || normalized === 'web') ? normalized : '';
 }
 
-function syncObjectMotionUrl(designation, source = '') {
+let objectMotionSource = '';
+
+function syncObjectMotionUrl(designation, source = objectMotionSource) {
     const value = (designation || '').trim();
     if (!value || !window.history?.replaceState) return;
     const params = new URLSearchParams({ designation: value });
     const normalizedSource = normalizeRequestedSource(source);
+    objectMotionSource = normalizedSource;
     if (normalizedSource) params.set('source', normalizedSource);
     params.set('lang', objectMotionLocale);
     window.history.replaceState(null, '', `object_motion?${params.toString()}`);
@@ -828,16 +842,35 @@ function normalizeCameraState(camera) {
     };
 }
 
+function normalizeAuPosition(position) {
+    return {
+        x: Number(position?.x ?? 0) || 0,
+        y: Number(position?.y ?? 0) || 0,
+        z: Number(position?.z ?? 0) || 0,
+    };
+}
+
+function worldToAuPosition(position) {
+    return normalizeAuPosition({
+        x: Number(position?.wx ?? 0) / AU_TO_PX,
+        y: Number(position?.wy ?? 0) / AU_TO_PX,
+        z: Number(position?.wz ?? 0) / AU_TO_PX,
+    });
+}
+
 const MoreInfoHelpers = window.MoreInfoShared || {};
 const APP_CONFIG = window.AppConfigShared?.readAppConfig?.(window.AppConfig) || { useLocalStorage: false };
-const AppTranslations = window.AppTranslations || {};
-const objectMotionLocale = AppTranslations.getLocaleFromSearch?.(window.location.search) || 'en';
+const objectMotionTranslations = window.AppTranslations || {};
+const objectMotionLocale = objectMotionTranslations.getLocaleFromSearch?.(window.location.search) || 'en';
+const objectMotionUrlParams = new URLSearchParams(window.location.search);
 
-AppTranslations.setDocumentLocale?.(objectMotionLocale);
+objectMotionSource = normalizeRequestedSource(objectMotionUrlParams.get('source') || objectMotionUrlParams.get('s'));
+
+objectMotionTranslations.setDocumentLocale?.(objectMotionLocale);
 
 function ot(name, fallback = '', params = null) {
     const sourceText = fallback || (typeof name === 'string' ? name : '');
-    return AppTranslations.translate?.(sourceText, {
+    return objectMotionTranslations.translate?.(sourceText, {
         locale: objectMotionLocale,
         params,
         fallback: sourceText,
@@ -927,6 +960,11 @@ function formatTrajDate(str) {
     const stoppableEl = document.getElementById('om-stoppable');
     const settingsBtn = document.getElementById('om-settings-btn');
     const settingsModal = document.getElementById('om-settings-modal');
+    const settingsAuXEl = document.getElementById('om-settings-au-x');
+    const settingsAuYEl = document.getElementById('om-settings-au-y');
+    const settingsAuZEl = document.getElementById('om-settings-au-z');
+    const settingsErrorEl = document.getElementById('om-settings-error');
+    const settingsApplyBtn = document.getElementById('om-settings-apply');
     const settingsCloseBtn = document.getElementById('om-settings-modal-close');
 
     // Story 2.15
@@ -938,9 +976,18 @@ function formatTrajDate(str) {
 
     const moreInfoBtn = document.getElementById('om-more-info-btn');
     const moreInfoModal = document.getElementById('om-more-info-modal');
-    const moreInfoModalController = (window.MoreInfoModalShared?.createModalController && moreInfoModal)
-        ? window.MoreInfoModalShared.createModalController(moreInfoModal, { title: ot('ui.objectMotion.moreInfoTitle', 'Point More Info') })
-        : null;
+    let moreInfoModalController = null;
+    try {
+        if (window.MoreInfoModalShared?.createModalController && moreInfoModal) {
+            moreInfoModalController = window.MoreInfoModalShared.createModalController(
+                moreInfoModal,
+                { title: ot('ui.objectMotion.moreInfoTitle', 'Point More Info') }
+            );
+        }
+    } catch (error) {
+        console.error('[object_motion] More Info modal bootstrap failed:', error);
+        moreInfoModalController = null;
+    }
 
     function applyObjectMotionPageText() {
         document.title = `${ot('ui.objectMotion.pageTitle', 'Object Motion Tracker')} · 3I/ATLAS`;
@@ -950,7 +997,7 @@ function formatTrajDate(str) {
 
         if (backLink) {
             backLink.textContent = ot('ui.objectMotion.backToProjects', '← Projects');
-            backLink.href = AppTranslations.withLangParam?.('index.html', objectMotionLocale) || 'index.html';
+            backLink.href = objectMotionTranslations.withLangParam?.('index.html', objectMotionLocale) || 'index.html';
         }
         if (titleEl) titleEl.textContent = ot('ui.objectMotion.pageTitle', 'Object Motion Tracker');
         if (subtitleEl) subtitleEl.textContent = ot('ui.objectMotion.subtitle', 'Fetch & annotate a heliocentric trajectory');
@@ -1001,6 +1048,69 @@ function formatTrajDate(str) {
 
     function closeMoreInfoModal() {
         moreInfoModalController?.hide();
+    }
+
+    function clearSettingsError() {
+        if (!settingsErrorEl) return;
+        settingsErrorEl.textContent = '';
+        settingsErrorEl.classList.remove('visible');
+    }
+
+    function setSettingsError(message) {
+        if (!settingsErrorEl) return;
+        settingsErrorEl.textContent = message;
+        settingsErrorEl.classList.add('visible');
+    }
+
+    function populateSettingsForm(index) {
+        const point = TrajectoryStore.getPoint(index);
+        const au = point?.au ? normalizeAuPosition(point.au) : worldToAuPosition(point);
+        if (settingsAuXEl) settingsAuXEl.value = String(au.x);
+        if (settingsAuYEl) settingsAuYEl.value = String(au.y);
+        if (settingsAuZEl) settingsAuZEl.value = String(au.z);
+        clearSettingsError();
+    }
+
+    function applySettingsForm(closeOnSuccess = true) {
+        const index = WorkflowController.getCurrent();
+        const point = TrajectoryStore.getPoint(index);
+        if (!point) return false;
+
+        const rawValues = [
+            String(settingsAuXEl?.value ?? '').trim(),
+            String(settingsAuYEl?.value ?? '').trim(),
+            String(settingsAuZEl?.value ?? '').trim(),
+        ];
+
+        if (rawValues.some(value => value === '')) {
+            setSettingsError('Enter numeric X, Y, and Z values before applying the point position.');
+            return false;
+        }
+
+        const nextAu = {
+            x: Number(rawValues[0]),
+            y: Number(rawValues[1]),
+            z: Number(rawValues[2]),
+        };
+
+        if (![nextAu.x, nextAu.y, nextAu.z].every(Number.isFinite)) {
+            setSettingsError('Enter numeric X, Y, and Z values before applying the point position.');
+            return false;
+        }
+
+        if ([nextAu.x, nextAu.y, nextAu.z].some(value => Math.abs(value) > MAX_OBJECT_POSITION_AU)) {
+            setSettingsError(`Object position values must stay within ±${MAX_OBJECT_POSITION_AU} AU.`);
+            return false;
+        }
+
+        TrajectoryStore.saveObjectPosition(index, nextAu);
+        ObjectMarker.setPoint(TrajectoryStore.getPoint(index), TrajectoryStore.getDesignation());
+        WorkflowController.setUnsavedChanges(true);
+        _saveDraft();
+        clearSettingsError();
+        setViewerStatus('success', `Updated object position for point ${index + 1}.`);
+        if (closeOnSuccess) settingsModal.classList.remove('visible');
+        return true;
     }
 
     function openMoreInfoModal() {
@@ -1071,6 +1181,7 @@ function formatTrajDate(str) {
         sidebar.classList.add('visible');
         MediaAnnotator.loadAnnotationPanel(idx);
         syncMoreInfoButton(points[idx]);
+        populateSettingsForm(idx);
         updateCounter();
         updateSaveButtons();
 
@@ -1135,6 +1246,7 @@ function formatTrajDate(str) {
         ProgressPanel.setActive(index);
         MediaAnnotator.loadAnnotationPanel(index);
         syncMoreInfoButton(p);
+        populateSettingsForm(index);
 
         // Story 2.14: reflect saved (or default) duration & stoppable
         if (durationPctEl) durationPctEl.value = p.durationPct ?? 100;
@@ -1318,14 +1430,28 @@ function formatTrajDate(str) {
     // ── Settings modal (Story 2.14) ───────────────────────────
 
     if (settingsBtn) {
-        settingsBtn.addEventListener('click', () => settingsModal.classList.add('visible'));
+        settingsBtn.addEventListener('click', () => {
+            populateSettingsForm(WorkflowController.getCurrent());
+            settingsModal.classList.add('visible');
+        });
+    }
+    if (settingsApplyBtn) {
+        settingsApplyBtn.addEventListener('click', () => {
+            applySettingsForm(true);
+        });
     }
     if (settingsCloseBtn) {
-        settingsCloseBtn.addEventListener('click', () => settingsModal.classList.remove('visible'));
+        settingsCloseBtn.addEventListener('click', () => {
+            settingsModal.classList.remove('visible');
+            clearSettingsError();
+        });
     }
     if (settingsModal) {
         settingsModal.addEventListener('click', e => {
-            if (e.target === settingsModal) settingsModal.classList.remove('visible');
+            if (e.target === settingsModal) {
+                settingsModal.classList.remove('visible');
+                clearSettingsError();
+            }
         });
     }
 
@@ -1333,7 +1459,8 @@ function formatTrajDate(str) {
 
     function _openPlayer() {
         const designation = (TrajectoryStore.getDesignation() || '').trim() || '3I';
-        const params = new URLSearchParams({ designation, source: 'local', lang: objectMotionLocale });
+        const source = normalizeRequestedSource(objectMotionSource) || 'local';
+        const params = new URLSearchParams({ designation, source, lang: objectMotionLocale });
         window.open(`trajectory_player?${params.toString()}`, '_blank');
     }
 
@@ -1456,7 +1583,7 @@ function formatTrajDate(str) {
             if (res.ok) {
                 const json = await res.json();
                 clearStatus();
-                loadTrajectoryFromData(json);
+                loadTrajectoryFromData(json, 'web');
                 _saveDraft();
             } else {
                 clearStatus();
@@ -1514,7 +1641,7 @@ function formatTrajDate(str) {
             const raw = localStorage.getItem(_draftKey(name));
             if (!raw) { setStatus('error', 'Draft not found.'); return; }
             clearStatus();
-            loadTrajectoryFromData(JSON.parse(raw));
+            loadTrajectoryFromData(JSON.parse(raw), 'local');
         } catch (_) {
             setStatus('error', 'Could not load the draft.');
         }
@@ -1532,7 +1659,7 @@ function formatTrajDate(str) {
 
     // ── Load trajectory from JSON object ─────────────────────
 
-    function loadTrajectoryFromData(json) {
+    function loadTrajectoryFromData(json, source = objectMotionSource) {
         const designation = json.designation || json.object || designationEl.value.trim();
         const createdAt = json.createdAt || null;
         const raw = json.points || [];
@@ -1551,14 +1678,21 @@ function formatTrajDate(str) {
                 ...extraFields
             } = p;
 
+            const resolvedWx = wx ?? px?.wx ?? (p.au?.x * AU_TO_PX) ?? 0;
+            const resolvedWy = wy ?? px?.wy ?? (p.au?.y * AU_TO_PX) ?? 0;
+            const resolvedWz = wz ?? px?.wz ?? (p.au?.z * AU_TO_PX) ?? 0;
+            const resolvedAu = p.au && typeof p.au === 'object'
+                ? normalizeAuPosition(p.au)
+                : worldToAuPosition({ wx: resolvedWx, wy: resolvedWy, wz: resolvedWz });
+
             return {
                 ...extraFields,
                 jd: p.jd,
                 date: p.date,
-                au: p.au,
-                wx: wx ?? px?.wx ?? (p.au?.x * AU_TO_PX) ?? 0,
-                wy: wy ?? px?.wy ?? (p.au?.y * AU_TO_PX) ?? 0,
-                wz: wz ?? px?.wz ?? (p.au?.z * AU_TO_PX) ?? 0,
+                au: resolvedAu,
+                wx: resolvedWx,
+                wy: resolvedWy,
+                wz: resolvedWz,
                 camera: normalizeCameraState(camera),
                 description: description ?? null,
                 image: image ?? null,
@@ -1576,7 +1710,7 @@ function formatTrajDate(str) {
         WorkflowController.start(points);
 
         designationEl.value = designation;
-        syncObjectMotionUrl(designation);
+        syncObjectMotionUrl(designation, source);
         updateSearchButton();
 
         const saved = TrajectoryStore.savedCount();
@@ -1608,7 +1742,7 @@ function formatTrajDate(str) {
         reader.onload = e => {
             try {
                 const json = JSON.parse(e.target.result);
-                loadTrajectoryFromData(json);
+                loadTrajectoryFromData(json, '');
                 _saveDraft();
             } catch (_) {
                 setStatus('error', 'Could not parse the uploaded file. Make sure it is a valid trajectory.json.');
@@ -1677,6 +1811,7 @@ function formatTrajDate(str) {
 
             TrajectoryStore.init(designation, points);
             WorkflowController.start(points);
+            syncObjectMotionUrl(designation, '');
 
             setStatus('success', `${points.length} points loaded`);
             activateViewer(TrajectoryStore.getPoints());
@@ -1728,7 +1863,7 @@ function formatTrajDate(str) {
                         if (document.readyState === 'loading') {
                             await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once: true }));
                         }
-                        loadTrajectoryFromData(parsed);
+                        loadTrajectoryFromData(parsed, requestedSource || 'local');
                         return;
                     }
                 }
@@ -1748,7 +1883,7 @@ function formatTrajDate(str) {
             const res = await window.fetch(`data/${name}/trajectory.json`);
             console.log('[PAN] _applyUrlParam: loading disk file —', res.status, res.ok);
             if (res.ok) {
-                loadTrajectoryFromData(await res.json());
+                loadTrajectoryFromData(await res.json(), requestedSource || 'web');
                 _saveDraft();
                 return;
             }

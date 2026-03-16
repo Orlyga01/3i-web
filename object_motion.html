@@ -875,6 +875,43 @@
       color: rgba(180, 210, 255, 0.8);
       line-height: 1.6;
     }
+    #om-settings-position-fields {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    #om-settings-hint {
+      margin: 0;
+      font-size: 11px;
+      color: rgba(160, 195, 245, 0.72);
+      line-height: 1.6;
+    }
+    #om-settings-error {
+      display: none;
+      font-size: 11px;
+      color: rgba(255, 150, 150, 0.94);
+      background: rgba(180, 50, 40, 0.12);
+      border: 1px solid rgba(220, 80, 70, 0.25);
+      border-radius: 8px;
+      padding: 9px 10px;
+    }
+    #om-settings-error.visible { display: block; }
+    #om-settings-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #om-settings-apply {
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 7px 22px;
+      border-radius: 16px;
+      background: rgba(40, 100, 200, 0.22);
+      border: 1px solid rgba(80, 160, 255, 0.4);
+      color: rgba(160, 210, 255, 0.95);
+    }
+    #om-settings-apply:hover { background: rgba(40, 100, 200, 0.42); }
     #om-settings-modal-close {
       font-size: 12px;
       letter-spacing: 1px;
@@ -1370,8 +1407,27 @@
   <!-- Settings modal (Story 2.14) -->
   <div id="om-settings-modal" role="dialog" aria-modal="true" aria-label="Point settings">
     <div id="om-settings-modal-content">
-      <p>Additional per-point parameters will appear here in future updates.</p>
-      <button id="om-settings-modal-close" type="button">Close</button>
+      <p>Adjust the flying object's heliocentric position for the active point.</p>
+      <div id="om-settings-position-fields">
+        <label class="om-field" for="om-settings-au-x">
+          <span class="om-label">Object X (AU)</span>
+          <input id="om-settings-au-x" class="om-input" type="number" step="0.001" min="-100" max="100">
+        </label>
+        <label class="om-field" for="om-settings-au-y">
+          <span class="om-label">Object Y (AU)</span>
+          <input id="om-settings-au-y" class="om-input" type="number" step="0.001" min="-100" max="100">
+        </label>
+        <label class="om-field" for="om-settings-au-z">
+          <span class="om-label">Object Z (AU)</span>
+          <input id="om-settings-au-z" class="om-input" type="number" step="0.001" min="-100" max="100">
+        </label>
+      </div>
+      <p id="om-settings-hint">These values update the saved point position used by the editor and player.</p>
+      <div id="om-settings-error" role="alert"></div>
+      <div id="om-settings-actions">
+        <button id="om-settings-apply" type="button">Apply Position</button>
+        <button id="om-settings-modal-close" type="button">Close</button>
+      </div>
     </div>
   </div>
 

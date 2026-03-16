@@ -1,0 +1,298 @@
+{
+  "object": "Oumuamua",
+  "designation": "Oumuamua",
+  "createdAt": "2026-03-16T00:00:00Z",
+  "updatedAt": "2026-03-16T00:00:00Z",
+  "source": "JPL Horizons VECTORS",
+  "dateRange": "2017-01-01 -> 2019-04-21",
+  "scale": {
+    "auToPx": 175
+  },
+  "points": [
+    {
+      "jd": 2457754.5,
+      "date": "2017-01-01",
+      "au": {
+        "x": 0.035159,
+        "y": -3.162046,
+        "z": 4.493983
+      },
+      "px": {
+        "wx": 6.153,
+        "wy": -553.358,
+        "wz": 786.447
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2457814.5,
+      "date": "2017-03-02",
+      "au": {
+        "x": -0.10382,
+        "y": -2.559626,
+        "z": 3.552194
+      },
+      "px": {
+        "wx": -18.169,
+        "wy": -447.934,
+        "wz": 621.634
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2457874.5,
+      "date": "2017-05-01",
+      "au": {
+        "x": -0.241116,
+        "y": -1.923445,
+        "z": 2.563741
+      },
+      "px": {
+        "wx": -42.195,
+        "wy": -336.603,
+        "wz": 448.655
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2457934.5,
+      "date": "2017-06-30",
+      "au": {
+        "x": -0.368341,
+        "y": -1.220009,
+        "z": 1.4867
+      },
+      "px": {
+        "wx": -64.46,
+        "wy": -213.502,
+        "wz": 260.173
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2457994.5,
+      "date": "2017-08-29",
+      "au": {
+        "x": -0.373344,
+        "y": -0.265969,
+        "z": 0.134386
+      },
+      "px": {
+        "wx": -65.335,
+        "wy": -46.545,
+        "wz": 23.518
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2458054.5,
+      "date": "2017-10-28",
+      "au": {
+        "x": 1.313241,
+        "y": 0.569271,
+        "z": 0.045095
+      },
+      "px": {
+        "wx": 229.817,
+        "wy": 99.622,
+        "wz": 7.892
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2458114.5,
+      "date": "2017-12-27",
+      "au": {
+        "x": 2.573832,
+        "y": 0.803478,
+        "z": 0.529908
+      },
+      "px": {
+        "wx": 450.421,
+        "wy": 140.609,
+        "wz": 92.734
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2458174.5,
+      "date": "2018-02-25",
+      "au": {
+        "x": 3.68536,
+        "y": 0.988485,
+        "z": 0.987804
+      },
+      "px": {
+        "wx": 644.938,
+        "wy": 172.985,
+        "wz": 172.866
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2458234.5,
+      "date": "2018-04-26",
+      "au": {
+        "x": 4.729647,
+        "y": 1.155134,
+        "z": 1.42814
+      },
+      "px": {
+        "wx": 827.688,
+        "wy": 202.149,
+        "wz": 249.924
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2458294.5,
+      "date": "2018-06-25",
+      "au": {
+        "x": 5.734364,
+        "y": 1.312049,
+        "z": 1.85664
+      },
+      "px": {
+        "wx": 1003.514,
+        "wy": 229.609,
+        "wz": 324.912
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2458354.5,
+      "date": "2018-08-24",
+      "au": {
+        "x": 6.712641,
+        "y": 1.462909,
+        "z": 2.276615
+      },
+      "px": {
+        "wx": 1174.712,
+        "wy": 256.009,
+        "wz": 398.408
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2458414.5,
+      "date": "2018-10-23",
+      "au": {
+        "x": 7.671849,
+        "y": 1.609629,
+        "z": 2.690136
+      },
+      "px": {
+        "wx": 1342.574,
+        "wy": 281.685,
+        "wz": 470.774
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2458474.5,
+      "date": "2018-12-22",
+      "au": {
+        "x": 8.616584,
+        "y": 1.753331,
+        "z": 3.098588
+      },
+      "px": {
+        "wx": 1507.902,
+        "wy": 306.833,
+        "wz": 542.253
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2458534.5,
+      "date": "2019-02-20",
+      "au": {
+        "x": 9.549929,
+        "y": 1.894734,
+        "z": 3.502943
+      },
+      "px": {
+        "wx": 1671.238,
+        "wy": 331.579,
+        "wz": 613.015
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    },
+    {
+      "jd": 2458594.5,
+      "date": "2019-04-21",
+      "au": {
+        "x": 10.474056,
+        "y": 2.034338,
+        "z": 3.903912
+      },
+      "px": {
+        "wx": 1832.96,
+        "wy": 356.009,
+        "wz": 683.185
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": null,
+      "description": null,
+      "image": null
+    }
+  ]
+}
