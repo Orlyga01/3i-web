@@ -39,7 +39,7 @@
 | 2.9 | Per-Point Image Upload | ✅ Done | MediaAnnotator: upload, drag-drop, preview, remove |
 | 2.10 | Per-Point Text Description | ✅ Done | Textarea captured on Save Point, loaded on navigate |
 | 2.11 | LocalStorage Draft & Auto-save | ✅ Done | _saveDraft / _clearDraft, resume/startFresh flow, and immediate draft rewrite after point delete |
-| 2.12 | JSON Serialisation & File Save | ✅ Done | FileIO.serialize / download / saveToDirectory (FSAPI) |
+| 2.12 | JSON Serialisation & File Save | ✅ Done | File export now opens a JSON review/copy modal before downloading `trajectory.json` plus any uploaded point images; directory save remains available via FSAPI |
 | 2.13 | Deep-Link via URL Parameter | ✅ Done | Updated: auto-load from bundled file + _saveDraft() on URL param load |
 | 2.16 | Offline File Upload Fallback | ✅ Done | Browse file… button + FileReader parse + _saveDraft() in fallback section |
 | 2.14 | Per-Point Duration & Stoppable Flag | ✅ Done | `durationPct` + `stoppable` controls, ⚙ modal, captured on Save Point, serialised to JSON |
@@ -60,10 +60,10 @@
 | Story | Title | Status | Notes |
 |---|---|---|---|
 | 3.1 | Player Page Shell & URL Loading | ✅ Done | Added player shell, URL loader, friendly error states, manual-start playback wiring, explicit player-owned object sprite selection so solar-comet asset changes no longer leak into `trajectory_player`, and a `3igreen_1` tail-angle correction so the player sprite still points away from the Sun |
-| 3.2 | Animation Engine (Spline + Camera Lerp) | ✅ Done | Catmull-Rom playback, per-frame date/AU interpolation, and pan-aware camera lerp implemented |
+| 3.2 | Animation Engine (Spline + Camera Lerp) | ✅ Done | Catmull-Rom playback, per-frame date/AU interpolation, pan-aware camera lerp, and object-specific player visuals including slower ringless `Oumuamua` rendering implemented |
 | 3.3 | Motion Trail | ✅ Done | Glowing projected trail now accumulates during playback and resets cleanly on restart / point jumps |
 | 3.4 | Playback Controls & Keyboard Shortcuts | ✅ Done | Wired ⏮⏪⏸▶⏩ controls, disabled edge states, screen-click stop with Continue-only resume, and Space/←/→/F shortcuts |
-| 3.5 | Speed Ruler | 🚧 In Progress | Playback pacing rebased so centered `1×` now matches the former `0.25×` default; total-duration readout still pending |
+| 3.5 | Speed Ruler | 🚧 In Progress | Playback pacing rebased, supported trajectory-level default speed overrides now start `2I/Borisov` and `Oumuamua` at `3×`, and the total-duration readout is still pending |
 | 3.6 | Stop-at-Points Mode | 🚧 In Progress | Stoppable pauses plus temporary any-point option implemented; single overlay now stays live and swaps to point images on stop |
 | 3.7 | Timeline Scrubber | 🔲 Pending | Drag-to-seek + notch markers; depends on 3.2, 3.4 |
 | 3.8 | Annotation Overlay | ✅ Done | Auto-shows only on automatic annotated pauses, resolves local/remote images, and dismisses on Continue/manual navigation |
@@ -204,6 +204,12 @@
 
 | Date | Change | By |
 |---|---|---|
+| 2026-03-16 | Refined Object Motion Tracker file export into a modal review/copy/save flow, and updated `Oumuamua` in the trajectory player to hide its color ring, spin 5x slower, and start at the same 3x default playback speed as `2I/Borisov` | dev agent |
+| 2026-03-16 | Added optional trajectory-level default playback speed support, kept null speed at the current 1x behavior, and set `2I/Borisov` to start at 3x with a white carried-forward trajectory color | dev agent |
+| 2026-03-16 | Trimmed the bundled `2I/Borisov` trajectory again by removing the 2020-04-20 through 2020-08-18 points and the 2021-04-15 through 2021-10-12 points, keeping other objects unchanged | dev agent |
+| 2026-03-16 | Updated the trajectory player so null cameras fall back only to the last saved earlier camera, hid the top-right trajectory image card, and removed the startup flyby animation without changing other trajectory data | dev agent |
+| 2026-03-16 | Updated the Borisov trajectory player to use the legacy comet sprite and a sun-distance tail reveal so the tail grows as it approaches the Sun, without changing the other object trajectories | dev agent |
+| 2026-03-16 | Restored the recovered `2I/Borisov` runtime export from a stalled download temp file back into `data/2I_Borisov/trajectory.json`, preserving the saved camera-authored points | dev agent |
 | 2026-03-16 | Reduced the bundled `2I/Borisov` trajectory density by removing every second point so playback now advances in roughly 60-day steps | dev agent |
 | 2026-03-16 | Added a new bundled `Oumuamua` trajectory generated from the supplied Horizons vectors and refreshed `data/objects.json` so it appears in the homepage index | dev agent |
 | 2026-03-16 | Added a new bundled `2I/Borisov` trajectory generated from the supplied Horizons vectors and refreshed `data/objects.json` so it appears in the homepage index | dev agent |

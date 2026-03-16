@@ -4,7 +4,8 @@
   "createdAt": "2026-03-16T00:00:00Z",
   "updatedAt": "2026-03-16T00:00:00Z",
   "source": "JPL Horizons VECTORS",
-  "dateRange": "2018-01-01 -> 2021-12-11",
+  "dateRange": "2018-01-01 → 2021-12-11",
+  "defaultSpeedMultiplier": 3,
   "scale": {
     "auToPx": 175
   },
@@ -24,7 +25,15 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "color": "white",
+      "camera": {
+        "el": 7,
+        "az": 0.01,
+        "zoom": 0,
+        "tx": 0,
+        "ty": -1040,
+        "tz": 0
+      },
       "description": null,
       "image": null
     },
@@ -214,7 +223,14 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 64.2,
+        "az": 0.2,
+        "zoom": 0,
+        "tx": 0,
+        "ty": 40,
+        "tz": 0
+      },
       "description": null,
       "image": null
     },
@@ -233,7 +249,14 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": -20.4,
+        "az": 0.2,
+        "zoom": 0,
+        "tx": 0,
+        "ty": -690,
+        "tz": 0
+      },
       "description": null,
       "image": null
     },
@@ -252,7 +275,14 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": -20.4,
+        "az": 0.2,
+        "zoom": 0,
+        "tx": 0,
+        "ty": -1310,
+        "tz": 0
+      },
       "description": null,
       "image": null
     },
@@ -271,64 +301,14 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2458959.5,
-      "date": "2020-04-20",
-      "au": {
-        "x": -1.877115,
-        "y": -1.723006,
-        "z": -2.457836
+      "camera": {
+        "el": -20.4,
+        "az": 0.2,
+        "zoom": 0,
+        "tx": 0,
+        "ty": -1580,
+        "tz": 0
       },
-      "px": {
-        "wx": -328.495,
-        "wy": -301.526,
-        "wz": -430.121
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2459019.5,
-      "date": "2020-06-19",
-      "au": {
-        "x": -1.859918,
-        "y": -2.872483,
-        "z": -3.13168
-      },
-      "px": {
-        "wx": -325.486,
-        "wy": -502.685,
-        "wz": -548.044
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2459079.5,
-      "date": "2020-08-18",
-      "au": {
-        "x": -1.821653,
-        "y": -3.991061,
-        "z": -3.771034
-      },
-      "px": {
-        "wx": -318.789,
-        "wy": -698.436,
-        "wz": -659.931
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
       "description": null,
       "image": null
     },
@@ -347,7 +327,14 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": -20.4,
+        "az": 0.2,
+        "zoom": 0,
+        "tx": 0,
+        "ty": -1820,
+        "tz": 0
+      },
       "description": null,
       "image": null
     },
@@ -382,82 +369,6 @@
         "wx": -290.569,
         "wy": -1266.127,
         "wz": -977.712
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2459319.5,
-      "date": "2021-04-15",
-      "au": {
-        "x": -1.600146,
-        "y": -8.292894,
-        "z": -6.173278
-      },
-      "px": {
-        "wx": -280.026,
-        "wy": -1451.256,
-        "wz": -1080.324
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2459379.5,
-      "date": "2021-06-14",
-      "au": {
-        "x": -1.538407,
-        "y": -9.342985,
-        "z": -6.753834
-      },
-      "px": {
-        "wx": -269.221,
-        "wy": -1635.022,
-        "wz": -1181.921
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2459439.5,
-      "date": "2021-08-13",
-      "au": {
-        "x": -1.475637,
-        "y": -10.386691,
-        "z": -7.329782
-      },
-      "px": {
-        "wx": -258.236,
-        "wy": -1817.671,
-        "wz": -1282.712
-      },
-      "durationPct": 100,
-      "stoppable": false,
-      "camera": null,
-      "description": null,
-      "image": null
-    },
-    {
-      "jd": 2459499.5,
-      "date": "2021-10-12",
-      "au": {
-        "x": -1.412139,
-        "y": -11.425064,
-        "z": -7.901981
-      },
-      "px": {
-        "wx": -247.124,
-        "wy": -1999.386,
-        "wz": -1382.847
       },
       "durationPct": 100,
       "stoppable": false,

@@ -192,59 +192,13 @@
       right: 20px;
       top: 20px;
       bottom: auto;
-      display: none;
+      display: none !important;
       pointer-events: none;
       z-index: 12;
     }
 
     #tp-overlay.visible {
-      display: block;
-    }
-
-    #tp-play-flyover {
-      position: fixed;
-      inset: 0;
-      z-index: 14;
-      pointer-events: none;
-      overflow: hidden;
-      display: none;
-    }
-
-    #tp-play-flyover.is-active {
-      display: block;
-    }
-
-    #tp-play-flyover-image {
-      position: absolute;
-      top: 30%;
-      left: 30%;
-      width: min(200px, 18vw);
-      max-width: 240px;
-      height: auto;
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(1);
-      transform-origin: center center;
-      filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.42));
-    }
-
-    #tp-play-flyover.is-active #tp-play-flyover-image {
-      animation: tp-play-flyover 1800ms ease-out forwards;
-    }
-
-    @keyframes tp-play-flyover {
-      0% {
-        top: 30%;
-        left: 30%;
-        opacity: 0.98;
-        transform: translate(-50%, -50%) scale(1);
-      }
-
-      100% {
-        top: 70%;
-        left: 70%;
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(3);
-      }
+      display: none !important;
     }
 
     #tp-overlay .tp-overlay-card {
@@ -747,9 +701,6 @@
     </div>
 
     <div id="tp-overlay" aria-live="polite"></div>
-    <div id="tp-play-flyover" aria-hidden="true">
-      <img id="tp-play-flyover-image" src="assets/3igreen_1.png" alt="">
-    </div>
 
     <div id="tp-more-info-modal" role="dialog" aria-modal="true" aria-label="Point more info"></div>
 

@@ -16,7 +16,7 @@
 | [3.2](#story-32--animation-engine) | Animation Engine (Spline + Camera Lerp) | ✅ Done |
 | [3.3](#story-33--motion-trail) | Motion Trail | ✅ Done |
 | [3.4](#story-34--playback-controls--keyboard-shortcuts) | Playback Controls & Keyboard Shortcuts | ✅ Done |
-| [3.5](#story-35--speed-ruler) | Speed Ruler | 🔲 Pending |
+| [3.5](#story-35--speed-ruler) | Speed Ruler | 🚧 In Progress |
 | [3.6](#story-36--stop-at-points-mode) | Stop-at-Points Mode | 🔲 Pending |
 | [3.7](#story-37--timeline-scrubber) | Timeline Scrubber | 🔲 Pending |
 | [3.8](#story-38--annotation-overlay) | Annotation Overlay | 🔲 Pending |
@@ -253,6 +253,20 @@
 ### Dependencies
 - Story 3.2 (segment duration formula uses `speedMultiplier`)
 - Story 3.4 (control bar DOM exists)
+
+### Implementation Notes
+
+- Added validation for trajectory-level `defaultSpeedMultiplier` values so bundled files can opt into a supported starting speed while invalid or missing values still fall back to `1×`.
+- Set bundled interstellar objects such as `2I/Borisov` and `Oumuamua` to open at `3×` by default, without changing the manual speed controls or supported multiplier list.
+- The total-duration readout from the original story is still pending, so this story remains in progress.
+
+### File List
+
+- `trajectory_player.js`
+- `tests/trajectory_player_logic.js`
+- `tests/trajectory_player.test.js`
+- `data/2I_Borisov/trajectory.json`
+- `data/Oumuamua/trajectory.json`
 
 ---
 

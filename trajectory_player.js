@@ -7,6 +7,8 @@ class TrajectoryLoadError extends Error {
   }
 }
 
+const TP_SUPPORTED_SPEED_MULTIPLIERS = Object.freeze([0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4]);
+
 const MoreInfoHelpers = window.MoreInfoShared || {};
 const AnomaliesPanelApi = window.AnomaliesPanel || {};
 const APP_CONFIG = window.AppConfigShared?.readAppConfig?.(window.AppConfig) || { useLocalStorage: false };
@@ -143,6 +145,7 @@ class TrajectoryLoader {
       path: details.path ?? '',
       data: parsed,
       points,
+      defaultSpeedMultiplier: resolveDefaultSpeedMultiplier(parsed.defaultSpeedMultiplier),
       source: details.source || 'web',
     };
   }
@@ -249,6 +252,7 @@ const TP_VISUAL_COLOR_MAP = Object.freeze({
   blue: Object.freeze({ r: 96, g: 176, b: 255 }),
   red: Object.freeze({ r: 255, g: 104, b: 104 }),
   yellow: Object.freeze({ r: 255, g: 214, b: 92 }),
+  white: Object.freeze({ r: 242, g: 246, b: 252 }),
 });
 const TP_FIXED_REFERENCE_POINT_KM = Object.freeze({
   x: -3.318697414262085e8,
@@ -261,17 +265,36 @@ const TP_DEFAULT_OBJECT_VISUAL = Object.freeze({
   anchorY: 0.5,
   alignToSun: true,
   axialSpinMultiplier: 0,
+  preserveSpriteColor: false,
+  showColorRing: true,
+  tailRevealMode: 'full',
+});
+const TP_BORISOV_OBJECT_VISUAL = Object.freeze({
+  spriteSrc: 'assets/comet.png',
+  imageBaseTailAngleRad: -Math.PI / 2,
+  anchorY: 0.9,
+  alignToSun: true,
+  axialSpinMultiplier: 0,
+  preserveSpriteColor: false,
+  showColorRing: true,
+  tailRevealMode: 'sunDistance',
+  tailRevealNearAu: 180 / 175,
+  tailRevealFarAu: 820 / 175,
 });
 const TP_OUMUAMUA_OBJECT_VISUAL = Object.freeze({
   spriteSrc: 'assets/Oumuamua.png',
   imageBaseTailAngleRad: 0,
   anchorY: 0.5,
   alignToSun: false,
-  axialSpinMultiplier: 1,
+  axialSpinMultiplier: 0.2,
+  preserveSpriteColor: true,
+  showColorRing: false,
+  tailRevealMode: 'full',
 });
 
 function getObjectVisualConfig(designation) {
   const key = String(designation || '').trim().toLowerCase();
+  if (key === '2i/borisov') return TP_BORISOV_OBJECT_VISUAL;
   if (key === 'oumuamua') return TP_OUMUAMUA_OBJECT_VISUAL;
   return TP_DEFAULT_OBJECT_VISUAL;
 }
@@ -279,6 +302,17 @@ function getObjectVisualConfig(designation) {
 function getObjectSpinRotation(designation, phase = 0) {
   const config = getObjectVisualConfig(designation);
   return (config.axialSpinMultiplier || 0) * Number(phase || 0);
+}
+
+function getObjectTailReveal(designation, sunDistanceAu = 0) {
+  const config = getObjectVisualConfig(designation);
+  if (config.tailRevealMode !== 'sunDistance') return 1;
+  const near = Number(config.tailRevealNearAu);
+  const far = Number(config.tailRevealFarAu);
+  const distance = Number(sunDistanceAu);
+  if (![near, far, distance].every(Number.isFinite) || far <= near) return 1;
+  const reveal = (far - distance) / (far - near);
+  return Math.max(0, Math.min(1, reveal));
 }
 
 function resolveObjectSprite(designation) {
@@ -332,11 +366,10 @@ class PlaybackController {
     this.trailRenderer = options.trailRenderer;
     this.timelineScrubber = options.timelineScrubber;
     this.annotationOverlay = options.annotationOverlay;
-    this.playFlyover = options.playFlyover || null;
     this.referenceConnectorRenderer = options.referenceConnectorRenderer;
     this.anomaliesPanelController = options.anomaliesPanelController || null;
     this.state = 'idle';
-    this.speedMultiplier = 1;
+    this.speedMultiplier = resolveDefaultSpeedMultiplier(options.defaultSpeedMultiplier);
     this.currentPointIndex = 0;
     this.segmentIndex = 0;
     this.currentPoint = this.points[0] ?? null;
@@ -407,11 +440,15 @@ class PlaybackController {
           image: this.objectSprite || undefined,
           imageBaseTailAngle: this.objectVisual.imageBaseTailAngleRad,
           anchorY: this.objectVisual.anchorY,
+          tailReveal: getObjectTailReveal(this.designation, this.currentSunDistance),
           alignToSun: this.objectVisual.alignToSun,
           rotationOffset: getObjectSpinRotation(this.designation, this.engine.pulsePhase),
+          preserveSpriteColor: this.objectVisual.preserveSpriteColor,
         }
       );
-      drawTrajectoryObjectColorRing(this.currentWorldPosition, tint, ringAlpha);
+      if (this.objectVisual.showColorRing !== false) {
+        drawTrajectoryObjectColorRing(this.currentWorldPosition, tint, ringAlpha);
+      }
     });
   }
 
@@ -573,12 +610,7 @@ class PlaybackController {
 
   findNearestCamera(index) {
     const leftIndex = findNearestCameraIndex(this.points, index, -1);
-    if (leftIndex !== -1) return { ...this.points[leftIndex].camera };
-
-    const rightIndex = findNearestCameraIndex(this.points, index, 1);
-    if (rightIndex !== -1) return { ...this.points[rightIndex].camera };
-
-    return null;
+    return leftIndex !== -1 ? { ...this.points[leftIndex].camera } : null;
   }
 
   getCurrentCameraTarget() {
@@ -607,7 +639,6 @@ class PlaybackController {
     if (action === 'noop') return;
     this.controlBar.setContinueVisible(false);
     this.annotationOverlay.hide();
-    if (action === 'play') this.playFlyover?.play();
     this.state = action === 'pause' ? 'paused' : 'playing';
     this.syncUi();
   }
@@ -966,26 +997,7 @@ class ControlBar {
   }
 }
 
-ControlBar.SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4];
-
-class PlayFlyoverOverlay {
-  constructor(root) {
-    this.root = root;
-    this.resetTimer = 0;
-  }
-
-  play() {
-    if (!this.root) return;
-    if (this.resetTimer) window.clearTimeout(this.resetTimer);
-    this.root.classList.remove('is-active');
-    void this.root.offsetWidth;
-    this.root.classList.add('is-active');
-    this.resetTimer = window.setTimeout(() => {
-      this.root.classList.remove('is-active');
-      this.resetTimer = 0;
-    }, 1850);
-  }
-}
+ControlBar.SPEED_STEPS = TP_SUPPORTED_SPEED_MULTIPLIERS;
 
 class TimelineScrubber {
   constructor(root) {
@@ -1210,6 +1222,11 @@ function normalizeVisualColor(value) {
   return TP_VISUAL_COLOR_MAP[key] ? key : null;
 }
 
+function resolveDefaultSpeedMultiplier(value) {
+  const numeric = Number(value);
+  return TP_SUPPORTED_SPEED_MULTIPLIERS.includes(numeric) ? numeric : 1;
+}
+
 function getNamedVisualColorRgb(name) {
   return TP_VISUAL_COLOR_MAP[normalizeVisualColor(name) || TP_DEFAULT_VISUAL_COLOR];
 }
@@ -1389,10 +1406,7 @@ function findNearestCameraIndex(points, startIndex, direction) {
 
 function getCameraTargetForSegment(points, segmentIndex) {
   const destinationIndex = Math.min(points.length - 1, segmentIndex + 1);
-  const rightIndex = findNearestCameraIndex(points, destinationIndex, 1);
-  if (rightIndex !== -1) return { ...points[rightIndex].camera };
-
-  const leftIndex = findNearestCameraIndex(points, segmentIndex, -1);
+  const leftIndex = findNearestCameraIndex(points, destinationIndex, -1);
   return leftIndex !== -1 ? { ...points[leftIndex].camera } : null;
 }
 
@@ -1634,7 +1648,9 @@ function renderLivePreview(canvasEl, appearance, designation = '') {
       alpha: 0.98,
       tint,
       image: objectSprite || undefined,
+      tailReveal: 1,
       anchorY: objectVisual.anchorY,
+      preserveSpriteColor: objectVisual.preserveSpriteColor,
     });
   }
 
@@ -1846,7 +1862,6 @@ async function bootstrapTrajectoryPlayer() {
       })
       : null;
     const annotationOverlay = new AnnotationOverlay(document.getElementById('tp-overlay'), moreInfoModal);
-    const playFlyover = new PlayFlyoverOverlay(document.getElementById('tp-play-flyover'));
     const referenceConnectorRenderer = new ReferenceConnectorRenderer(getFixedConnectorConfiguration(result.points));
     const anomaliesPanelController = (typeof AnomaliesPanelApi.createPanelController === 'function')
       ? AnomaliesPanelApi.createPanelController(document.getElementById('tp-anomalies-panel'), {
@@ -1876,12 +1891,12 @@ async function bootstrapTrajectoryPlayer() {
       designation: result.designation,
       sanitizedName: result.sanitizedName,
       points: result.points,
+      defaultSpeedMultiplier: result.defaultSpeedMultiplier,
       controlBar,
       statsDisplay,
       trailRenderer,
       timelineScrubber,
       annotationOverlay,
-      playFlyover,
       referenceConnectorRenderer,
       anomaliesPanelController,
     });

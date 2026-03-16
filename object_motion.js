@@ -752,8 +752,9 @@ const FileIO = (() => {
 
     /** Download trajectory.json + all image files via programmatic <a> click. */
     function download(json, points) {
+        const jsonText = JSON.stringify(json, null, 2);
         _triggerDownload(
-            new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' }),
+            new Blob([jsonText], { type: 'application/json' }),
             'trajectory.json'
         );
 
@@ -950,6 +951,12 @@ function formatTrajDate(str) {
     const saveFileBtn = document.getElementById('om-save-file-btn');
     const saveDirBtn = document.getElementById('om-save-dir-btn');
     const viewerStatus = document.getElementById('om-viewer-status');
+    const saveFileModal = document.getElementById('om-save-file-modal');
+    const saveFileJsonEl = document.getElementById('om-save-file-json');
+    const saveFileStatusEl = document.getElementById('om-save-file-status');
+    const saveFileCopyBtn = document.getElementById('om-save-file-copy');
+    const saveFileDownloadBtn = document.getElementById('om-save-file-download');
+    const saveFileCloseBtn = document.getElementById('om-save-file-close');
     const imgInput = document.getElementById('om-img-input');
     const imgBtn = document.getElementById('om-img-btn');
     const imgRemoveBtn = document.getElementById('om-img-remove');
@@ -1032,6 +1039,56 @@ function formatTrajDate(str) {
         viewerStatus.className = '';
         viewerStatus.textContent = '';
         viewerStatus.style.display = 'none';
+    }
+
+    function setSaveFileStatus(mode, text) {
+        if (!saveFileStatusEl) return;
+        saveFileStatusEl.className = mode;
+        saveFileStatusEl.textContent = text;
+    }
+
+    function clearSaveFileStatus() {
+        if (!saveFileStatusEl) return;
+        saveFileStatusEl.className = '';
+        saveFileStatusEl.textContent = '';
+    }
+
+    let pendingSavePayload = null;
+
+    function closeSaveFileModal() {
+        if (!saveFileModal) return;
+        saveFileModal.classList.remove('visible');
+        clearSaveFileStatus();
+        pendingSavePayload = null;
+    }
+
+    function openSaveFileModal(options = {}) {
+        if (!saveFileModal || !saveFileJsonEl) return;
+        const {
+            json = null,
+            points = [],
+            onSaved = null,
+        } = options;
+        if (!json) return;
+        saveFileJsonEl.value = JSON.stringify(json, null, 2);
+        saveFileJsonEl.scrollTop = 0;
+        saveFileJsonEl.setSelectionRange?.(0, 0);
+        pendingSavePayload = { json, points, onSaved };
+        clearSaveFileStatus();
+        saveFileModal.classList.add('visible');
+    }
+
+    function finalizeFileSave(json, points, onSaved = null) {
+        const imgCount = FileIO.download(json, points);
+        _clearDraft();
+        WorkflowController.setHasSavedFile(true);
+        WorkflowController.setUnsavedChanges(false);
+        setViewerStatus(
+            'success',
+            `Saved \u2014 ${points.length} points \u00B7 ${imgCount} image${imgCount !== 1 ? 's' : ''} \u00B7 trajectory.json`
+        );
+        closeSaveFileModal();
+        if (typeof onSaved === 'function') onSaved();
     }
 
     function pointHasMoreInfo(point) {
@@ -1393,14 +1450,10 @@ function formatTrajDate(str) {
     saveFileBtn.addEventListener('click', () => {
         if (!saveFileBtn.classList.contains('enabled')) return;
         const json = FileIO.serialize(TrajectoryStore);
-        const imgCount = FileIO.download(json, TrajectoryStore.getPoints());
-        _clearDraft();
-        WorkflowController.setHasSavedFile(true);
-        WorkflowController.setUnsavedChanges(false);
-        setViewerStatus(
-            'success',
-            `Saved \u2014 ${TrajectoryStore.getPoints().length} points \u00B7 ${imgCount} image${imgCount !== 1 ? 's' : ''} \u00B7 trajectory.json`
-        );
+        openSaveFileModal({
+            json,
+            points: TrajectoryStore.getPoints(),
+        });
     });
 
     if (saveDirBtn) {
@@ -1488,16 +1541,11 @@ function formatTrajDate(str) {
         playSaveFirstBtn.addEventListener('click', () => {
             playConfirmModal.classList.remove('visible');
             if (!saveFileBtn.classList.contains('enabled')) return;
-            const json = FileIO.serialize(TrajectoryStore);
-            const imgCount = FileIO.download(json, TrajectoryStore.getPoints());
-            _clearDraft();
-            WorkflowController.setHasSavedFile(true);
-            WorkflowController.setUnsavedChanges(false);
-            setViewerStatus(
-                'success',
-                `Saved \u2014 ${TrajectoryStore.getPoints().length} points \u00B7 ${imgCount} image${imgCount !== 1 ? 's' : ''} \u00B7 trajectory.json`
-            );
-            _openPlayer();
+            openSaveFileModal({
+                json: FileIO.serialize(TrajectoryStore),
+                points: TrajectoryStore.getPoints(),
+                onSaved: _openPlayer,
+            });
         });
     }
 
@@ -1511,6 +1559,48 @@ function formatTrajDate(str) {
     if (playConfirmModal) {
         playConfirmModal.addEventListener('click', e => {
             if (e.target === playConfirmModal) playConfirmModal.classList.remove('visible');
+        });
+    }
+
+    if (saveFileCopyBtn) {
+        saveFileCopyBtn.addEventListener('click', async () => {
+            if (!saveFileJsonEl) return;
+            const text = saveFileJsonEl.value || '';
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    saveFileJsonEl.focus();
+                    saveFileJsonEl.select();
+                    const copied = document.execCommand('copy');
+                    saveFileJsonEl.setSelectionRange?.(0, 0);
+                    if (!copied) throw new Error('Clipboard copy failed.');
+                }
+                setSaveFileStatus('success', 'Copied trajectory.json content to the clipboard.');
+            } catch (err) {
+                setSaveFileStatus('error', `Copy failed: ${err.message}`);
+            }
+        });
+    }
+
+    if (saveFileDownloadBtn) {
+        saveFileDownloadBtn.addEventListener('click', () => {
+            if (!pendingSavePayload) return;
+            finalizeFileSave(
+                pendingSavePayload.json,
+                pendingSavePayload.points,
+                pendingSavePayload.onSaved
+            );
+        });
+    }
+
+    if (saveFileCloseBtn) {
+        saveFileCloseBtn.addEventListener('click', closeSaveFileModal);
+    }
+
+    if (saveFileModal) {
+        saveFileModal.addEventListener('click', e => {
+            if (e.target === saveFileModal) closeSaveFileModal();
         });
     }
 

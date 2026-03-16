@@ -415,6 +415,17 @@
 ### Dependencies
 - Story 2.8, Story 2.9, Story 2.10, Story 2.11
 
+### Implementation Notes
+
+- Refined the `Save to File` flow so it now opens an in-page export modal showing the generated `trajectory.json` content before any download starts.
+- Added inline copy support for the JSON text, while keeping the existing browser-download fallback that writes `trajectory.json` plus any uploaded point images when the user confirms save.
+- Routed the `Play Video` "Save to File First" path through the same export modal so both save entry points use one consistent confirmation flow.
+
+### File List
+
+- `object_motion.html`
+- `object_motion.js`
+
 ---
 
 ---

@@ -14,6 +14,8 @@ class TrajectoryLoadError extends Error {
     }
 }
 
+const SUPPORTED_SPEED_MULTIPLIERS = Object.freeze([0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4]);
+
 function decodeDesignation(value) {
     if (typeof value !== 'string') return '';
     const trimmed = value.trim();
@@ -142,6 +144,7 @@ const VISUAL_COLOR_MAP = Object.freeze({
     blue: Object.freeze({ r: 96, g: 176, b: 255 }),
     red: Object.freeze({ r: 255, g: 104, b: 104 }),
     yellow: Object.freeze({ r: 255, g: 214, b: 92 }),
+    white: Object.freeze({ r: 242, g: 246, b: 252 }),
 });
 const FIXED_REFERENCE_POINT_KM = Object.freeze({
     x: -3.318697414262085e8,
@@ -154,13 +157,31 @@ const DEFAULT_OBJECT_VISUAL = Object.freeze({
     anchorY: 0.5,
     alignToSun: true,
     axialSpinMultiplier: 0,
+    preserveSpriteColor: false,
+    showColorRing: true,
+    tailRevealMode: 'full',
+});
+const BORISOV_OBJECT_VISUAL = Object.freeze({
+    spriteSrc: 'assets/comet.png',
+    imageBaseTailAngleRad: -Math.PI / 2,
+    anchorY: 0.9,
+    alignToSun: true,
+    axialSpinMultiplier: 0,
+    preserveSpriteColor: false,
+    showColorRing: true,
+    tailRevealMode: 'sunDistance',
+    tailRevealNearAu: 180 / 175,
+    tailRevealFarAu: 820 / 175,
 });
 const OUMUAMUA_OBJECT_VISUAL = Object.freeze({
     spriteSrc: 'assets/Oumuamua.png',
     imageBaseTailAngleRad: 0,
     anchorY: 0.5,
     alignToSun: false,
-    axialSpinMultiplier: 1,
+    axialSpinMultiplier: 0.2,
+    preserveSpriteColor: true,
+    showColorRing: false,
+    tailRevealMode: 'full',
 });
 
 function lerp(a, b, t) {
@@ -181,8 +202,14 @@ function normalizeVisualColor(value) {
     return VISUAL_COLOR_MAP[key] ? key : null;
 }
 
+function resolveDefaultSpeedMultiplier(value) {
+    const numeric = Number(value);
+    return SUPPORTED_SPEED_MULTIPLIERS.includes(numeric) ? numeric : 1;
+}
+
 function getObjectVisualConfig(designation) {
     const key = String(designation || '').trim().toLowerCase();
+    if (key === '2i/borisov') return BORISOV_OBJECT_VISUAL;
     if (key === 'oumuamua') return OUMUAMUA_OBJECT_VISUAL;
     return DEFAULT_OBJECT_VISUAL;
 }
@@ -190,6 +217,17 @@ function getObjectVisualConfig(designation) {
 function getObjectSpinRotation(designation, phase = 0) {
     const config = getObjectVisualConfig(designation);
     return (config.axialSpinMultiplier || 0) * Number(phase || 0);
+}
+
+function getObjectTailReveal(designation, sunDistanceAu = 0) {
+    const config = getObjectVisualConfig(designation);
+    if (config.tailRevealMode !== 'sunDistance') return 1;
+    const near = Number(config.tailRevealNearAu);
+    const far = Number(config.tailRevealFarAu);
+    const distance = Number(sunDistanceAu);
+    if (![near, far, distance].every(Number.isFinite) || far <= near) return 1;
+    const reveal = (far - distance) / (far - near);
+    return Math.max(0, Math.min(1, reveal));
 }
 
 function getNamedVisualColorRgb(name) {
@@ -363,11 +401,8 @@ function findNearestCameraIndex(points, startIndex, direction) {
 
 function getCameraTargetForSegment(points, segmentIndex) {
     const destinationIndex = Math.min(points.length - 1, segmentIndex + 1);
-    const targetIndex = findNearestCameraIndex(points, destinationIndex, 1);
-    if (targetIndex !== -1) return points[targetIndex].camera;
-
-    const fallbackIndex = findNearestCameraIndex(points, segmentIndex, -1);
-    return fallbackIndex !== -1 ? points[fallbackIndex].camera : null;
+    const targetIndex = findNearestCameraIndex(points, destinationIndex, -1);
+    return targetIndex !== -1 ? points[targetIndex].camera : null;
 }
 
 function lerpCameraState(current, target, sp = 0.022) {
@@ -585,8 +620,10 @@ module.exports = {
     buildTrajectoryPlayerHref,
     normalizePoint,
     normalizeVisualColor,
+    resolveDefaultSpeedMultiplier,
     getObjectVisualConfig,
     getObjectSpinRotation,
+    getObjectTailReveal,
     getNamedVisualColorRgb,
     getColorNameForPoint,
     getAppearanceAtPoint,

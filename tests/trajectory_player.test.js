@@ -17,8 +17,10 @@ const {
     buildTrajectoryPlayerHref,
     normalizePoint,
     normalizeVisualColor,
+    resolveDefaultSpeedMultiplier,
     getObjectVisualConfig,
     getObjectSpinRotation,
+    getObjectTailReveal,
     getNamedVisualColorRgb,
     getColorNameForPoint,
     getAppearanceAtPoint,
@@ -97,6 +99,14 @@ describe('source query helpers', () => {
         expect(resolveRequestedSource('local', true)).toBe('local');
         expect(resolveRequestedSource('local', false)).toBe('web');
         expect(resolveRequestedSource('web', false)).toBe('web');
+    });
+
+    test('keeps legacy playback speed when default speed is null and accepts supported values', () => {
+        expect(resolveDefaultSpeedMultiplier(null)).toBe(1);
+        expect(resolveDefaultSpeedMultiplier(undefined)).toBe(1);
+        expect(resolveDefaultSpeedMultiplier(3)).toBe(3);
+        expect(resolveDefaultSpeedMultiplier('3')).toBe(3);
+        expect(resolveDefaultSpeedMultiplier(2.25)).toBe(1);
     });
 });
 
@@ -223,28 +233,54 @@ describe('animation helpers', () => {
     test('normalizes named visual colors and resolves RGB values', () => {
         expect(normalizeVisualColor(' Blue ')).toBe('blue');
         expect(normalizeVisualColor('yellow')).toBe('yellow');
+        expect(normalizeVisualColor('white')).toBe('white');
         expect(normalizeVisualColor('purple')).toBeNull();
         expect(getNamedVisualColorRgb('red')).toEqual({ r: 255, g: 104, b: 104 });
         expect(getNamedVisualColorRgb('yellow')).toEqual({ r: 255, g: 214, b: 92 });
+        expect(getNamedVisualColorRgb('white')).toEqual({ r: 242, g: 246, b: 252 });
     });
 
-    test('uses the special sprite and axial spin only for Oumuamua', () => {
+    test('uses Borisov comet visuals without changing other objects', () => {
         expect(getObjectVisualConfig('3I')).toEqual({
             spriteSrc: 'assets/3igreen_1.png',
             imageBaseTailAngleRad: 150 * (Math.PI / 180),
             anchorY: 0.5,
             alignToSun: true,
             axialSpinMultiplier: 0,
+            preserveSpriteColor: false,
+            showColorRing: true,
+            tailRevealMode: 'full',
+        });
+        expect(getObjectVisualConfig('2I/Borisov')).toEqual({
+            spriteSrc: 'assets/comet.png',
+            imageBaseTailAngleRad: -Math.PI / 2,
+            anchorY: 0.9,
+            alignToSun: true,
+            axialSpinMultiplier: 0,
+            preserveSpriteColor: false,
+            showColorRing: true,
+            tailRevealMode: 'sunDistance',
+            tailRevealNearAu: 180 / 175,
+            tailRevealFarAu: 820 / 175,
         });
         expect(getObjectVisualConfig('Oumuamua')).toEqual({
             spriteSrc: 'assets/Oumuamua.png',
             imageBaseTailAngleRad: 0,
             anchorY: 0.5,
             alignToSun: false,
-            axialSpinMultiplier: 1,
+            axialSpinMultiplier: 0.2,
+            preserveSpriteColor: true,
+            showColorRing: false,
+            tailRevealMode: 'full',
         });
         expect(getObjectSpinRotation('3I', 2.5)).toBe(0);
-        expect(getObjectSpinRotation('Oumuamua', 2.5)).toBe(2.5);
+        expect(getObjectSpinRotation('2I/Borisov', 2.5)).toBe(0);
+        expect(getObjectSpinRotation('Oumuamua', 2.5)).toBe(0.5);
+        expect(getObjectTailReveal('3I', 2.5)).toBe(1);
+        expect(getObjectTailReveal('2I/Borisov', 6)).toBe(0);
+        expect(getObjectTailReveal('2I/Borisov', 0.5)).toBe(1);
+        expect(getObjectTailReveal('2I/Borisov', 2.85)).toBeGreaterThan(0);
+        expect(getObjectTailReveal('2I/Borisov', 2.85)).toBeLessThan(1);
     });
 
     test('segment duration uses destination point durationPct', () => {
@@ -330,8 +366,9 @@ describe('animation helpers', () => {
         expect(distance).toBeCloseTo(Math.sqrt(1.25), 5);
     });
 
-    test('camera target skips null destination and uses nearest non-null to the right', () => {
-        expect(getCameraTargetForSegment(points, 0)).toEqual(points[2].camera);
+    test('camera target falls back to the last saved camera at or before the destination point', () => {
+        expect(getCameraTargetForSegment(points, 0)).toEqual(points[0].camera);
+        expect(getCameraTargetForSegment(points, 1)).toEqual(points[2].camera);
     });
 
     test('camera lerp includes pan tx/ty/tz values', () => {

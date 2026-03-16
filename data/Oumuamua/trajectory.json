@@ -3,6 +3,7 @@
   "designation": "Oumuamua",
   "createdAt": "2026-03-16T00:00:00Z",
   "updatedAt": "2026-03-16T00:00:00Z",
+  "defaultSpeedMultiplier": 3,
   "source": "JPL Horizons VECTORS",
   "dateRange": "2017-01-01 -> 2019-04-21",
   "scale": {

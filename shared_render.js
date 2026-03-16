@@ -249,6 +249,7 @@ function drawCometBillboard(targetCtx, options = {}) {
     image = cometImage,
     tailReveal = 1,
     anchorY = 0.9,
+    preserveSpriteColor = false,
   } = options;
 
   if (image?.complete && image.naturalWidth > 0) {
@@ -263,6 +264,20 @@ function drawCometBillboard(targetCtx, options = {}) {
     const srcH = imgH - srcY;
     const destY = -anchorYpx + (srcY / imgH) * drawH;
     const destH = drawH * visibleFrac;
+
+    if (preserveSpriteColor) {
+      targetCtx.save();
+      targetCtx.translate(x, y);
+      targetCtx.rotate(rotationAngle);
+      targetCtx.globalAlpha = alpha;
+      targetCtx.drawImage(
+        image,
+        0, srcY, imgW, srcH,
+        -drawW / 2, destY, drawW, destH,
+      );
+      targetCtx.restore();
+      return;
+    }
 
     targetCtx.save();
     targetCtx.translate(x, y);
@@ -526,6 +541,7 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
     imageBaseTailAngle = -Math.PI / 2,
     alignToSun = true,
     rotationOffset = 0,
+    preserveSpriteColor = false,
   } = options;
   const { sx, sy, depth } = project3(wx, wy, wz);
   if (depth < 5) return;
@@ -564,6 +580,7 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
       tint,
       image,
       tailReveal,
+      preserveSpriteColor,
       ...(anchorY !== undefined && { anchorY }),
     });
   } else {
@@ -576,6 +593,7 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
       tint,
       image,
       tailReveal,
+      preserveSpriteColor,
       ...(anchorY !== undefined && { anchorY }),
     });
   }
