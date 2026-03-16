@@ -10,6 +10,19 @@ class TrajectoryLoadError extends Error {
 const MoreInfoHelpers = window.MoreInfoShared || {};
 const AnomaliesPanelApi = window.AnomaliesPanel || {};
 const APP_CONFIG = window.AppConfigShared?.readAppConfig?.(window.AppConfig) || { useLocalStorage: false };
+// AppTranslations is already declared by shared_render.js (loaded before this script)
+const trajectoryPlayerLocale = AppTranslations.getLocaleFromSearch?.(window.location.search) || 'en';
+
+AppTranslations.setDocumentLocale?.(trajectoryPlayerLocale);
+
+function tt(name, fallback = '', params = null) {
+  const sourceText = fallback || (typeof name === 'string' ? name : '');
+  return AppTranslations.translate?.(sourceText, {
+    locale: trajectoryPlayerLocale,
+    params,
+    fallback: sourceText,
+  }) || sourceText;
+}
 
 class TrajectoryLoader {
   static readDesignationFromUrl(search = location.search) {
@@ -242,6 +255,9 @@ const TP_FIXED_REFERENCE_POINT_KM = Object.freeze({
   y: 7.099317219152682e8,
   z: 4.476039412376106e6,
 });
+const TP_OBJECT_SPRITE = typeof window.getSharedSpriteImage === 'function'
+  ? window.getSharedSpriteImage('assets/green_aura_transparent.png')
+  : null;
 
 class PlaybackEngine {
   constructor(controller) {
@@ -287,6 +303,7 @@ class PlaybackController {
     this.trailRenderer = options.trailRenderer;
     this.timelineScrubber = options.timelineScrubber;
     this.annotationOverlay = options.annotationOverlay;
+    this.playFlyover = options.playFlyover || null;
     this.referenceConnectorRenderer = options.referenceConnectorRenderer;
     this.anomaliesPanelController = options.anomaliesPanelController || null;
     this.state = 'idle';
@@ -354,7 +371,11 @@ class PlaybackController {
         this.currentWorldPosition.wz,
         objectAlpha,
         `${tint.r},${tint.g},${tint.b}`,
-        0.95
+        {
+          sizeMultiplier: 0.95,
+          image: TP_OBJECT_SPRITE || undefined,
+          anchorY: 0.5,
+        }
       );
       drawTrajectoryObjectColorRing(this.currentWorldPosition, tint, ringAlpha);
     });
@@ -552,6 +573,7 @@ class PlaybackController {
     if (action === 'noop') return;
     this.controlBar.setContinueVisible(false);
     this.annotationOverlay.hide();
+    if (action === 'play') this.playFlyover?.play();
     this.state = action === 'pause' ? 'paused' : 'playing';
     this.syncUi();
   }
@@ -682,9 +704,14 @@ class PlaybackController {
   }
 
   syncAnnotationOverlay() {
+    const translatedPoint = AppTranslations.translatePoint?.(
+      this.designation,
+      this.currentPoint,
+      trajectoryPlayerLocale
+    ) || this.currentPoint;
     this.annotationOverlay.show({
       state: this.state,
-      point: this.currentPoint,
+      point: translatedPoint,
       appearance: this.currentAppearance,
       sanitizedName: this.sanitizedName,
       designation: this.designation,
@@ -907,6 +934,25 @@ class ControlBar {
 
 ControlBar.SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4];
 
+class PlayFlyoverOverlay {
+  constructor(root) {
+    this.root = root;
+    this.resetTimer = 0;
+  }
+
+  play() {
+    if (!this.root) return;
+    if (this.resetTimer) window.clearTimeout(this.resetTimer);
+    this.root.classList.remove('is-active');
+    void this.root.offsetWidth;
+    this.root.classList.add('is-active');
+    this.resetTimer = window.setTimeout(() => {
+      this.root.classList.remove('is-active');
+      this.resetTimer = 0;
+    }, 1850);
+  }
+}
+
 class TimelineScrubber {
   constructor(root) {
     this.root = root;
@@ -941,7 +987,7 @@ class AnnotationOverlay {
         <div class="tp-overlay-media-shell">
           <canvas class="tp-overlay-preview" width="220" height="220" aria-hidden="true"></canvas>
           <img class="tp-overlay-image" alt="">
-          <div class="tp-overlay-no-image">Image unavailable.</div>
+          <div class="tp-overlay-no-image">${tt('ui.trajectoryPlayer.noImage', 'Image unavailable.')}</div>
         </div>
         <div class="tp-overlay-description"></div>
         <div class="tp-overlay-actions">
@@ -970,6 +1016,15 @@ class AnnotationOverlay {
         dateText: formatDisplayDate(this.currentContext.point?.date),
         description: this.currentContext.point?.description || '',
       });
+    });
+
+    this.imageEl?.addEventListener('click', event => {
+      const src = this.imageEl?.getAttribute('src');
+      if (src) {
+        event.preventDefault();
+        event.stopPropagation();
+        showImageLightbox(src);
+      }
     });
   }
 
@@ -1072,7 +1127,9 @@ class StatsDisplay {
   update(dateValue, sunDistance, worldPosition) {
     if (!dateValue) return;
     this.dateEl.textContent = formatCompactStatsDate(dateValue);
-    this.distanceEl.textContent = `Sun: ${Number(sunDistance || 0).toFixed(2)} AU`;
+    this.distanceEl.textContent = tt('ui.trajectoryPlayer.distance', `Sun: ${Number(sunDistance || 0).toFixed(2)} AU`, {
+      distance: Number(sunDistance || 0).toFixed(2),
+    });
     this.updatePosition(worldPosition);
   }
 
@@ -1342,16 +1399,16 @@ function getControlBarState(state, currentPointIndex, totalPoints) {
   const secondaryDisabled = areSecondaryControlsDisabled(state);
   return {
     label: state === 'playing'
-      ? 'Playing'
+      ? tt('ui.trajectoryPlayer.statusPlaying', 'Playing')
       : state === 'paused'
-        ? 'Paused'
+        ? tt('ui.trajectoryPlayer.statusPaused', 'Paused')
         : state === 'stopped-manual'
-          ? 'Paused'
+          ? tt('ui.trajectoryPlayer.statusPaused', 'Paused')
           : state === 'stopped'
-          ? 'Stopped'
+          ? tt('ui.trajectoryPlayer.statusStopped', 'Stopped')
           : state === 'stopped-at-point'
-            ? 'Paused at point'
-            : 'Idle',
+            ? tt('ui.trajectoryPlayer.statusPausedAtPoint', 'Paused at point')
+            : tt('ui.trajectoryPlayer.statusIdle', 'Idle'),
     playText: state === 'playing' ? '⏸' : '▶',
     playDisabled: state === 'stopped-at-point' || state === 'stopped-manual',
     prevDisabled: secondaryDisabled || atStart,
@@ -1422,7 +1479,14 @@ function resolveAnnotationImageSrc(image, sanitizedName) {
   const trimmed = image.trim();
   if (!trimmed) return null;
   if (isAbsoluteImageUrl(trimmed)) return trimmed;
-  if (trimmed.startsWith('/')) return trimmed;
+  if (trimmed.startsWith('/')) {
+    try {
+      const base = typeof location !== 'undefined' ? location.href.replace(/\/[^/]*$/, '/') : '';
+      return new URL(trimmed.slice(1), base || 'http://localhost/').href;
+    } catch {
+      return trimmed;
+    }
+  }
   const normalized = trimmed.replace(/^\.?[\\/]+/, '').replace(/\\/g, '/');
   return `data/${TrajectoryLoader.sanitize(sanitizedName)}/${normalized}`;
 }
@@ -1461,7 +1525,10 @@ function buildTrajectoryOverlayModel(context = {}, imageState = 'ready') {
   const appearance = context.appearance || getDefaultAppearance();
   const sanitizedName = context.sanitizedName || '';
   const stopImageSrc = resolveAnnotationImageSrc(point?.image, sanitizedName);
-  const showStoppedImage = context.state === 'stopped-at-point' && Boolean(stopImageSrc);
+  const atStoppableWithImage = Boolean(stopImageSrc) && Boolean(point?.stoppable);
+  const showStoppedImage = atStoppableWithImage && (
+    context.state === 'stopped-at-point' || context.state === 'paused'
+  );
   const description = normalizeAnnotationDescription(point?.description);
   const colorName = appearance.name || TP_DEFAULT_VISUAL_COLOR;
   const showMoreInfo = typeof MoreInfoHelpers.hasMoreInfoContent === 'function'
@@ -1470,7 +1537,9 @@ function buildTrajectoryOverlayModel(context = {}, imageState = 'ready') {
 
   return {
     mode: showStoppedImage ? 'image' : 'preview',
-    kicker: showStoppedImage ? 'Point Image' : `${capitalizeVisualColor(colorName)} Preview`,
+    kicker: showStoppedImage
+      ? tt('ui.trajectoryPlayer.pointImage', 'Point Image')
+      : `${capitalizeVisualColor(colorName)} ${tt('ui.trajectoryPlayer.previewSuffix', 'Preview')}`,
     dateText: formatDisplayDate(point?.date),
     description,
     imageSrc: showStoppedImage ? stopImageSrc : null,
@@ -1484,8 +1553,9 @@ function buildTrajectoryOverlayModel(context = {}, imageState = 'ready') {
 }
 
 function capitalizeVisualColor(name) {
-  const value = String(name || TP_DEFAULT_VISUAL_COLOR);
-  return value.charAt(0).toUpperCase() + value.slice(1);
+  const value = String(name || TP_DEFAULT_VISUAL_COLOR).trim().toLowerCase();
+  const capitalized = value.charAt(0).toUpperCase() + value.slice(1);
+  return tt(capitalized, capitalized);
 }
 
 function getTrajectoryOverlayKey(context = {}) {
@@ -1526,6 +1596,8 @@ function renderLivePreview(canvasEl, appearance) {
       rotationAngle: -Math.PI / 4,
       alpha: 0.98,
       tint,
+      image: TP_OBJECT_SPRITE || undefined,
+      anchorY: 0.5,
     });
   }
 
@@ -1572,7 +1644,7 @@ function getAnnotationOverlayKey(point, sanitizedName) {
 function formatDisplayDate(value) {
   const date = parseTrajectoryDate(value);
   if (Number.isNaN(date.getTime())) return '--';
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(trajectoryPlayerLocale === 'he' ? 'he-IL' : 'en-US', {
     month: 'short',
     day: '2-digit',
     year: 'numeric',
@@ -1583,7 +1655,7 @@ function formatDisplayDate(value) {
 function formatCompactStatsDate(value) {
   const date = parseTrajectoryDate(value);
   if (Number.isNaN(date.getTime())) return '--';
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(trajectoryPlayerLocale === 'he' ? 'he-IL' : 'en-US', {
     month: '2-digit',
     day: '2-digit',
     year: '2-digit',
@@ -1605,27 +1677,29 @@ function setSubtitle(text) {
   if (el) el.textContent = text;
 }
 
-function buildObjectMotionHref(designation, source = '') {
+function buildObjectMotionHref(designation, source = '', locale = trajectoryPlayerLocale) {
   const params = new URLSearchParams({ designation: designation || '3I' });
   const normalizedSource = TrajectoryLoader.normalizeRequestedSource(source);
   if (normalizedSource) params.set('source', normalizedSource);
+  params.set('lang', locale || trajectoryPlayerLocale || 'en');
   return `object_motion?${params.toString()}`;
 }
 
-function buildTrajectoryPlayerHref(designation, source = '') {
+function buildTrajectoryPlayerHref(designation, source = '', locale = trajectoryPlayerLocale) {
   const params = new URLSearchParams({ designation: designation || '3I' });
   const normalizedSource = TrajectoryLoader.normalizeRequestedSource(source);
   if (normalizedSource) params.set('source', normalizedSource);
+  params.set('lang', locale || trajectoryPlayerLocale || 'en');
   return `trajectory_player?${params.toString()}`;
 }
 
-function syncPlayerUrl(designation, source = '') {
+function syncPlayerUrl(designation, source = '', locale = trajectoryPlayerLocale) {
   if (!window.history?.replaceState) return;
-  window.history.replaceState(null, '', buildTrajectoryPlayerHref(designation, source));
+  window.history.replaceState(null, '', buildTrajectoryPlayerHref(designation, source, locale));
 }
 
-function updateObjectMotionLinks(designation, source = '') {
-  const href = buildObjectMotionHref(designation, source);
+function updateObjectMotionLinks(designation, source = '', locale = trajectoryPlayerLocale) {
+  const href = buildObjectMotionHref(designation, source, locale);
   const backLink = document.getElementById('tp-back-link');
   const errorLink = document.getElementById('tp-error-link');
   if (backLink) backLink.href = href;
@@ -1651,27 +1725,79 @@ function showError(error) {
   if (!card || !message) return;
   message.textContent = error.message;
   card.classList.add('visible');
-  setSubtitle('Unable to load trajectory');
+  setSubtitle(tt('ui.trajectoryPlayer.unableToLoad', 'Unable to load trajectory'));
+}
+
+function showImageLightbox(src) {
+  const lightbox = document.getElementById('tp-image-lightbox');
+  const img = document.getElementById('tp-image-lightbox-img');
+  const closeBtn = document.getElementById('tp-image-lightbox-close');
+  if (!lightbox || !img) return;
+  img.src = src;
+  img.alt = tt('ui.trajectoryPlayer.pointImage', 'Point Image');
+  lightbox.classList.add('visible');
+  const close = () => {
+    lightbox.classList.remove('visible');
+    lightbox.removeEventListener('click', onBackdropClick);
+    closeBtn?.removeEventListener('click', onCloseClick);
+    document.removeEventListener('keydown', onEscape);
+  };
+  const onBackdropClick = (e) => {
+    if (e.target === lightbox) close();
+  };
+  const onCloseClick = () => close();
+  const onEscape = (e) => {
+    if (e.key === 'Escape') close();
+  };
+  lightbox.addEventListener('click', onBackdropClick);
+  closeBtn?.addEventListener('click', onCloseClick);
+  document.addEventListener('keydown', onEscape);
 }
 
 async function bootstrapTrajectoryPlayer() {
-  showLoadingCard('Loading trajectory…');
+  await AppTranslations.loadTranslations?.();
+  document.title = `${tt('ui.trajectoryPlayer.pageTitle', 'Trajectory Player')} · 3I-web`;
+  const backLink = document.getElementById('tp-back-link');
+  const errorLink = document.getElementById('tp-error-link');
+  const titleEl = document.getElementById('tp-title');
+  const statsDistanceEl = document.getElementById('tp-stats-distance');
+  if (backLink) backLink.textContent = tt('ui.trajectoryPlayer.backToTracker', '← Back to Object Motion Tracker');
+  if (errorLink) errorLink.textContent = tt('ui.trajectoryPlayer.openTracker', 'Open Object Motion Tracker');
+  if (titleEl) titleEl.textContent = tt('ui.trajectoryPlayer.pageTitle', 'Trajectory Player');
+  if (statsDistanceEl) statsDistanceEl.textContent = tt('ui.trajectoryPlayer.distance', 'Sun: -- AU', { distance: '--' });
+
+  showLoadingCard(tt('ui.trajectoryPlayer.loading', 'Loading trajectory…'));
 
   try {
     const designation = TrajectoryLoader.readDesignationFromUrl();
     const requestedSource = TrajectoryLoader.resolveRequestedSource(TrajectoryLoader.readSourceFromUrl());
     if (designation) {
-      syncPlayerUrl(designation, requestedSource);
-      setSubtitle(`Loading ${designation}${requestedSource ? ` (${requestedSource})` : ''}`);
+      syncPlayerUrl(designation, requestedSource, trajectoryPlayerLocale);
+      setSubtitle(tt('ui.trajectoryPlayer.loadingDesignation', `Loading ${designation}${requestedSource ? ` (${requestedSource})` : ''}`, {
+        designation,
+        sourceSuffix: requestedSource
+          ? tt(
+            requestedSource === 'local'
+              ? 'ui.trajectoryPlayer.sourceSuffixLocal'
+              : 'ui.trajectoryPlayer.sourceSuffixWeb',
+            ` (${requestedSource})`
+          )
+          : '',
+      }));
     } else {
-      setSubtitle('Waiting for trajectory');
+      setSubtitle(tt('ui.trajectoryPlayer.waiting', 'Waiting for trajectory'));
     }
-    updateObjectMotionLinks(designation || '3I', requestedSource);
+    updateObjectMotionLinks(designation || '3I', requestedSource, trajectoryPlayerLocale);
 
     const result = await TrajectoryLoader.load(designation, { source: requestedSource });
 
     hideLoadingCard();
-    setSubtitle(`Playing ${result.designation}${result.source === 'local' ? ' · Local draft' : ''}`);
+    setSubtitle(tt('ui.trajectoryPlayer.playingDesignation', `Playing ${result.designation}${result.source === 'local' ? ' · Local draft' : ''}`, {
+      designation: result.designation,
+      localSuffix: result.source === 'local'
+        ? tt('ui.trajectoryPlayer.localDraftSuffix', ' · Local draft')
+        : '',
+    }));
 
     const controlBar = new ControlBar(document.getElementById('tp-controls'));
     const statsDisplay = new StatsDisplay(document.getElementById('tp-stats'));
@@ -1679,10 +1805,11 @@ async function bootstrapTrajectoryPlayer() {
     const timelineScrubber = new TimelineScrubber(document.getElementById('tp-timeline-shell'));
     const moreInfoModal = (window.MoreInfoModalShared?.createModalController)
       ? window.MoreInfoModalShared.createModalController(document.getElementById('tp-more-info-modal'), {
-        title: 'Point More Info',
+        title: tt('ui.trajectoryPlayer.pointMoreInfoTitle', 'Point More Info'),
       })
       : null;
     const annotationOverlay = new AnnotationOverlay(document.getElementById('tp-overlay'), moreInfoModal);
+    const playFlyover = new PlayFlyoverOverlay(document.getElementById('tp-play-flyover'));
     const referenceConnectorRenderer = new ReferenceConnectorRenderer(getFixedConnectorConfiguration(result.points));
     const anomaliesPanelController = (typeof AnomaliesPanelApi.createPanelController === 'function')
       ? AnomaliesPanelApi.createPanelController(document.getElementById('tp-anomalies-panel'), {
@@ -1717,6 +1844,7 @@ async function bootstrapTrajectoryPlayer() {
       trailRenderer,
       timelineScrubber,
       annotationOverlay,
+      playFlyover,
       referenceConnectorRenderer,
       anomaliesPanelController,
     });
@@ -1727,13 +1855,13 @@ async function bootstrapTrajectoryPlayer() {
     requestAnimationFrame(() => controller.bootstrap());
   } catch (error) {
     if (error instanceof TrajectoryLoadError) {
-      updateObjectMotionLinks(error.details?.designation || '3I', error.details?.source || '');
+      updateObjectMotionLinks(error.details?.designation || '3I', error.details?.source || '', trajectoryPlayerLocale);
       showError(error);
       return;
     }
 
     console.error(error);
-    updateObjectMotionLinks('3I');
+    updateObjectMotionLinks('3I', '', trajectoryPlayerLocale);
     showError(
       new TrajectoryLoadError(
         'network',

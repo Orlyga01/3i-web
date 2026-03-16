@@ -10,6 +10,30 @@ let s2LockedCamera = null;
 let s2IntroT = 0;
 let s2IntroCamera = null;
 const S2_INTRO_ZOOM_MULT = 2.45;
+const SOLAR_COMET_SCENE_IMAGE = typeof window.getSharedSpriteImage === 'function'
+  ? window.getSharedSpriteImage('assets/comet.png')
+  : null;
+const solarCometTranslations = window.AppTranslations || {};
+const solarCometLocale = solarCometTranslations.getLocaleFromSearch?.(window.location.search) || 'en';
+
+solarCometTranslations.setDocumentLocale?.(solarCometLocale);
+document.documentElement.dataset.i18nReady = 'false';
+
+function st(name, fallback = '') {
+  const sourceText = fallback || (typeof name === 'string' ? name : '');
+  return solarCometTranslations.translate?.(sourceText, {
+    locale: solarCometLocale,
+    fallback: sourceText,
+  }) || sourceText;
+}
+
+document.title = st('objects.3I.slidePages.solarComet.title', document.title);
+solarCometTranslations.loadTranslations?.().then(() => {
+  document.title = st('objects.3I.slidePages.solarComet.title', document.title);
+  setLabels?.(currentScene);
+}).catch(() => {}).finally(() => {
+  document.documentElement.dataset.i18nReady = 'true';
+});
 
 const S2_DEF = [
   {
@@ -277,11 +301,16 @@ function getSceneLocalProgress(sceneIndex, progress) {
 
 function syncSubLabel() {
   document.getElementById('subLabel').textContent =
-    currentScene === 1 && s2IntroT >= S2_INTRO_DUR ? S2_DEF[s2Phase].label : SCENES[currentScene].sub;
+    currentScene === 1 && s2IntroT >= S2_INTRO_DUR
+      ? st(
+        s2Phase === 0 ? 'solarSystem.scenes.cometA.label' : 'solarSystem.scenes.cometB.label',
+        S2_DEF[s2Phase].label
+      )
+      : st(`solarSystem.scenes.scene${currentScene}.sub`, SCENES[currentScene].sub);
 }
 
 function setLabels(n) {
-  document.getElementById('sceneLabel').textContent = SCENES[n].label;
+  document.getElementById('sceneLabel').textContent = st(`solarSystem.scenes.scene${n}.label`, SCENES[n].label);
   syncSubLabel();
 }
 
@@ -541,11 +570,15 @@ function frame() {
       drawComet(cwx, cwy, cwz, alpha, def.col, {
         sizeMultiplier: def.sizeMultiplier,
         tailReveal,
+        image: SOLAR_COMET_SCENE_IMAGE || undefined,
       });
     }
 
     // Phase indicator dots
-    const lbls = S2_DEF.map(definition => definition.shortLabel);
+    const lbls = [
+      st('solarSystem.scenes.cometA.short', S2_DEF[0].shortLabel),
+      st('solarSystem.scenes.cometB.short', S2_DEF[1].shortLabel),
+    ];
     for (let i = 0; i < S2_DEF.length; i++) {
       const active = i === s2Phase, done = i < s2Phase;
       ctx.beginPath();

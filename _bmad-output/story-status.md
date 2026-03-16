@@ -1,7 +1,7 @@
 # 3i-web — Story Status Tracker
 
 **Project:** 3i-web
-**Last updated:** 2026-03-14
+**Last updated:** 2026-03-15
 **Maintained by:** All agents — update this file whenever a story's implementation status changes.
 
 > **Rule:** Any agent (dev, PM, QA, architect) that completes, partially completes, or discovers a status change for any story **must** update the relevant row in this file before ending their session. The status values are defined below.
@@ -53,13 +53,13 @@
 
 **Source stories:** `_bmad-output/planning-artifacts/stories-epic3-trajectory-player.md`
 **Source PRD:** `_bmad-output/planning-artifacts/prd-epic3-trajectory-player.md`
-**Files:** `trajectory_player.html`, `trajectory_player.js`
+**Files:** `trajectory_player.html`, `trajectory_player.js`, `shared_render.js`, `solar_system.js`
 
 > **Prerequisite:** Stories 2.14 and 2.15 must be complete before Epic 3 development begins.
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
-| 3.1 | Player Page Shell & URL Loading | ✅ Done | Added player shell, URL loader, friendly error states, and manual-start playback wiring per latest user request |
+| 3.1 | Player Page Shell & URL Loading | ✅ Done | Added player shell, URL loader, friendly error states, manual-start playback wiring, and explicit player-owned object sprite selection so solar-comet asset changes no longer leak into `trajectory_player` |
 | 3.2 | Animation Engine (Spline + Camera Lerp) | ✅ Done | Catmull-Rom playback, per-frame date/AU interpolation, and pan-aware camera lerp implemented |
 | 3.3 | Motion Trail | ✅ Done | Glowing projected trail now accumulates during playback and resets cleanly on restart / point jumps |
 | 3.4 | Playback Controls & Keyboard Shortcuts | ✅ Done | Wired ⏮⏪⏸▶⏩ controls, disabled edge states, screen-click stop with Continue-only resume, and Space/←/→/F shortcuts |
@@ -105,11 +105,11 @@
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
-| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added `presentation.html` + `presentation.js` shell, JSON manifest loading, iframe slide hosting, Back/Next/Skip controls, Space-bar advance, shell-level comet pause support, and inserted `solar_comet.html`, `hill_radius.html`, and `spherex.html` before the final Wow! slide |
+| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added `presentation.html` + `presentation.js` shell, iframe autoplay/fullscreen permissions, JSON manifest loading, iframe slide hosting, Back/Next/Skip controls, iframe-safe `1`-key advance, shell-level comet pause support, and a much slower first-click `3igreen_1.png` flyover before the intro video that now clears once the next slide actually opens; also fixed the `solar_comet` slide bootstrap conflict, increased non-title presentation text sizing across the shell and current slides, inserted a new image slide before `SPHEREx`, enlarged the comet-tail burst images with a 3-second post-burst hold, and made the Small Bodies Overview cards square by reducing height instead of forcing a generic aspect-ratio rule, then added 30px more card height, and inserted a comparison video slide (YouTube Shorts) right after Small Bodies Overview with autoplay, mute, and full-viewport layout |
 | 5.2 | Wow! Signal Opening Slide | 🚧 In Progress | Added a dedicated final `Wow! Signal` slide with the historical printout image and `12 Aug 1977` date; manifest now keeps it as the last slide |
 | 5.3 | Comets 101 Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
-| 5.4 | Gravity & Orbit Basics Slide | 🚧 In Progress | Added starter standalone slide HTML with simple gravity/orbit explanation |
-| 5.5 | Lagrange Points Slide | 🚧 In Progress | Added starter standalone slide HTML with first-pass Lagrange summary |
+| 5.4 | Gravity & Orbit Basics Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
+| 5.5 | Lagrange Points Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
 | 5.6 | Perseids on 12 August & Debris Formation | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
 | 5.7 | Solar Wind vs Solar Flare Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
 | 5.8 | Mars Transfer vs Lagrange Mission Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
@@ -153,6 +153,23 @@
 
 ---
 
+## Epic 8 — Translation & Localization
+
+**Source stories:** `_bmad-output/planning-artifacts/stories-epic8-translations.md`
+**Source PRD:** `_bmad-output/planning-artifacts/prd-epic8-translations.md`
+**Files:** `data/translations.json`, `translations.js`, `index.html`, `index.js`, `presentation.html`, `presentation.js`, `trajectory_player.html`, `trajectory_player.js`, `shared_render.js`, `solar_comet.html`, `main.js`, `more_info_modal.js`, `more_info_2025_12_13.html`, `slides/3I/*.html`
+
+| Story | Title | Status | Notes |
+|---|---|---|---|
+| 8.1 | Shared Translation JSON & Runtime Loader | ✅ Done | Replaced the nested translation store with flat `name` + `translations` entries and a startup-built locale map in `translations.js` |
+| 8.2 | Index Language Selector & Link Propagation | ✅ Done | Added a language selector to `index.html`, localized index copy, and propagated `lang` through generated page links |
+| 8.3 | Runtime Translation for Presentation, Player, and Solar System | ✅ Done | Switched to source-text lookups, fixed presentation slide routing so clean slide URLs keep `lang`, and applied the Hebrew-only Fredoka font through the shared translation runtime |
+| 8.4 | Hebrew Seed Content for 3I Descriptions and More Info | ✅ Done | Preserved the Hebrew seed set for 3I slides, trajectory descriptions, and the `2025-12-13` more-info page in the new flat translation catalog |
+
+**Progress: 4 / 4 stories complete**
+
+---
+
 ## Overall Project Progress
 
 | Epic | Title | Done | Total | % |
@@ -163,7 +180,8 @@
 | Epic 5 | Intro Slideshow | 0 | 8 | 0% |
 | Epic 6 | Point More Info Modal | 3 | 3 | 100% |
 | Epic 7 | Date-Driven Anomalies Panel | 6 | 6 | 100% |
-| **Total** | | **40** | **53** | **75%** |
+| Epic 8 | Translation & Localization | 4 | 4 | 100% |
+| **Total** | | **44** | **57** | **77%** |
 
 ---
 
@@ -171,6 +189,34 @@
 
 | Date | Change | By |
 |---|---|---|
+| 2026-03-15 | Added a new comparison video slide right after Small Bodies Overview, embedding the YouTube Shorts video with autoplay, mute, and full-viewport layout | dev agent |
+| 2026-03-15 | Added 30px more height to the three Small Bodies Overview cards while keeping their width unchanged | dev agent |
+| 2026-03-15 | Corrected the Small Bodies Overview square-card layout so card width stays intact and only the height is reduced to match | dev agent |
+| 2026-03-15 | Enlarged the comet-tail `waterSplash` and `greenDust` burst images by 1.5x and added a 3-second hold after those reveals before the tail build continues | dev agent |
+| 2026-03-15 | Added a new presentation image slide before `SPHEREx` using the requested Dark Side of the Moon laser-show image | dev agent |
+| 2026-03-15 | Fixed the `solar_comet` slide bootstrap conflict so the slide can render again, and increased non-title presentation text sizes across the shell and active slideshow pages | dev agent |
+| 2026-03-15 | Fixed the presentation intro flyover overlay so the second `Next` click clears the flying `3igreen_1.png` before opening the next slide | dev agent |
+| 2026-03-15 | Added Google Fonts `Fredoka` as a Hebrew-only shared font through `translations.js`, so translated pages switch typography automatically when `lang=he` | dev agent |
+| 2026-03-15 | Fixed presentation slideshow translation handoff by normalizing iframe slide URLs to clean routes before appending `lang`, so the server redirect no longer drops the locale query string | dev agent |
+| 2026-03-15 | Replaced the translation system with a flat `name` + `translations` catalog, global `translate(name)` runtime map, and source-text lookups across the index, presentation, player, slides, and more-info pages | dev agent |
+| 2026-03-15 | Added Epic 8 translation planning plus a shared `en`/`he` translation layer, homepage language selector, `lang` URL propagation, and Hebrew runtime content for presentation, player, solar-system labels, descriptions, and more-info pages | dev agent |
+| 2026-03-14 | Doubled the first-slide presentation flyover duration again so the `3igreen_1.png` pass now plays at half the prior speed | dev agent |
+| 2026-03-15 | Attached the presentation `1`-key shortcut to both the shell and loaded slide iframe so keyboard advance still works after clicking inside a slide | dev agent |
+| 2026-03-15 | Switched the presentation next-slide keyboard shortcut to `1` and slowed the first-click `3igreen_1.png` flyover to about 8x longer so the handoff reads much more clearly | dev agent |
+| 2026-03-15 | Changed the presentation keyboard next-slide shortcut from Space/F1 fallback attempts to the backtick key so keyboard advance works reliably with the `Next` button flow | dev agent |
+| 2026-03-14 | Swapped the presentation first-slide flyover image from `assets/3igreen.jpg` to `assets/3igreen_1.png` | dev agent |
+| 2026-03-14 | Restored the Space-bar slideshow shortcut so keyboard advance works again in the presentation, matching the `Next` button flow | dev agent |
+| 2026-03-14 | Removed the on-screen autoplay/fullscreen hint line from the intro video slide so the opening video displays cleanly | dev agent |
+| 2026-03-14 | Kept the presentation `Next` button enabled throughout the slideshow and removed the Space-bar slide-advance shortcut | dev agent |
+| 2026-03-14 | Updated the presentation `3igreen.jpg` flyover so it no longer fades near the right edge and stays fully visible while scaling up across the screen | dev agent |
+| 2026-03-14 | Retuned the presentation `3igreen.jpg` flyover to travel from the left edge to the right edge of the screen and slowed the handoff again for a longer visible pass | dev agent |
+| 2026-03-14 | Retuned the presentation `3igreen.jpg` flyover to end on the right side again and slowed the motion further for a longer first-slide handoff | dev agent |
+| 2026-03-14 | Removed the `Gravity and Orbit` and `Lagrange Points` slides from the `3I` presentation manifest and deleted their standalone slide files by user request | dev agent |
+| 2026-03-14 | Slowed the presentation `3igreen.jpg` flyover substantially and changed its endpoint to finish 30% from the bottom on the left side of the screen | dev agent |
+| 2026-03-14 | Changed the first-slide presentation handoff so the first `Next` click only plays the `3igreen.jpg` flyover and the second `Next` click advances to slide 2 | dev agent |
+| 2026-03-14 | Moved the `3igreen.jpg` flyover into the presentation shell so the image now appears above the slideshow when advancing from the first slide | dev agent |
+| 2026-03-14 | Added a trajectory-player play-click flyover overlay that animates `assets/3igreen.jpg` diagonally across the screen while scaling it up from 100% to 300% | dev agent |
+| 2026-03-14 | Added a new first `3I` presentation slide that embeds the requested YouTube intro video, and enabled autoplay/fullscreen permissions on the presentation iframe shell | dev agent |
 | 2026-03-14 | Added new `3I` presentation slides for `hill_radius.jpg` and `spherex.webp`, placing both after `solar_comet.html` and before the final `Wow! Signal` slide | dev agent |
 | 2026-03-14 | Added `solar_comet.html` to the `3I` presentation manifest as the slide immediately before the final `Wow! Signal` page | dev agent |
 | 2026-03-14 | Widened the opening `solar_comet` scene-2 establishing phase further so the whole first segment stays much more zoomed out before the comet handoff | dev agent |
@@ -269,5 +315,6 @@
 | 2026-03-14 | Matched the tail head more closely to the sphere’s height and opacity, shortened the initial autoplay delay to 1 second, and inserted a 3-second hold before the final reveal continues | dev agent |
 | 2026-03-14 | Slowed the sphere sweep slightly, reduced the tail head so it stays below the sphere height, and added animated yellow solar-wind streaks entering from the right during the tail phase | dev agent |
 | 2026-03-14 | Made the tail head match the sphere radius, started the tail at the same moment as the sphere with a shared 2-second build, and delayed the yellow right-side glow until after the sphere-start moment | dev agent |
+| 2026-03-14 | Separated player and solar-comet sprite ownership by fixing the trajectory-player shared-render call path to use its own explicit object image, while the solar-comet scene now also passes its sprite explicitly instead of relying on the shared default | dev agent |
 | 2026-03-14 | Removed Epic 5 slides `Comets 101`, `Perseids and Debris`, `Solar Wind and Solar Flare`, and `Mars vs Lagrange Missions` from the presentation manifest, cancelled Stories 5.3/5.6/5.7/5.8, and deleted their standalone slide files | dev agent |
 | 2026-03-14 | Added a new dedicated `Wow! Signal` slideshow ending slide using the historical printout image and `12 Aug 1977`, and pinned it as the final manifest entry | dev agent |

@@ -27,6 +27,15 @@ const DEFAULT_WEB_OBJECTS = Object.freeze(["3I"]);
 const LOCAL_DRAFT_PREFIX = "objectMotion:";
 const PRESENTATION_OBJECTS = Object.freeze(["3I"]);
 const APP_CONFIG = globalThis.AppConfigShared?.readAppConfig?.(globalThis.AppConfig) || { useLocalStorage: false };
+const AppTranslations = globalThis.AppTranslations || {};
+
+let activeLocale = AppTranslations.getLocaleFromSearch?.(window.location.search) || "en";
+AppTranslations.setDocumentLocale?.(activeLocale);
+
+function t(name, fallback = "", params = null) {
+  const sourceText = fallback || (typeof name === "string" ? name : "");
+  return AppTranslations.translate?.(sourceText, { locale: activeLocale, params, fallback: sourceText }) || sourceText;
+}
 
 function sanitizeDesignation(name) {
   return String(name || "").trim().replace(/[\s/]/g, "_");
@@ -65,10 +74,11 @@ function normalizeManifestObjects(payload, fallbackObjects = DEFAULT_WEB_OBJECTS
   return normalized.length ? normalized : [...fallbackObjects];
 }
 
-function buildPageHref(pageName, designation, source = "") {
+function buildPageHref(pageName, designation, source = "", locale = activeLocale) {
   const params = new URLSearchParams({ designation: designation || "3I" });
   const normalizedSource = normalizeRequestedSource(source);
   if (normalizedSource) params.set("source", normalizedSource);
+  params.set("lang", locale || activeLocale || "en");
   return `${pageName}?${params.toString()}`;
 }
 
@@ -189,23 +199,28 @@ function hasPresentationForProject(project, supportedObjects = PRESENTATION_OBJE
 }
 
 function formatProjectSummary(project) {
-  if (!project.localMeta || !project.localMeta.totalPoints) return "Local draft available";
-  return `${project.localMeta.annotatedPoints} of ${project.localMeta.totalPoints} annotated locally`;
+  if (!project.localMeta || !project.localMeta.totalPoints) {
+    return t("ui.index.localDraftAvailable", "Local draft available");
+  }
+  return t("ui.index.annotatedProgress", `${project.localMeta.annotatedPoints} of ${project.localMeta.totalPoints} annotated locally`, {
+    annotated: project.localMeta.annotatedPoints,
+    total: project.localMeta.totalPoints,
+  });
 }
 
 function createAvailabilityBadges(project) {
   const badges = [];
 
   if (project.hasLocal && project.hasWeb) {
-    badges.push('<span class="index-badge mixed">Local + Web</span>');
+    badges.push(`<span class="index-badge mixed">${t("ui.index.availabilityLocalWeb", "Local + Web")}</span>`);
   } else if (project.hasLocal) {
-    badges.push('<span class="index-badge local">Local</span>');
+    badges.push(`<span class="index-badge local">${t("ui.index.availabilityLocal", "Local")}</span>`);
   } else if (project.hasWeb) {
-    badges.push('<span class="index-badge web">Web</span>');
+    badges.push(`<span class="index-badge web">${t("ui.index.availabilityWeb", "Web")}</span>`);
   }
 
   if (project.localMeta?.updatedAt) {
-    badges.push('<span class="index-badge local">Draft saved</span>');
+    badges.push(`<span class="index-badge local">${t("ui.index.availabilityDraftSaved", "Draft saved")}</span>`);
   }
 
   return badges.join("");
@@ -216,23 +231,23 @@ function renderProjectRow(project) {
   const hasPresentation = hasPresentationForProject(project);
   const sourceOptions = project.hasLocal && project.hasWeb
     ? `
-      <option value="">Choose source</option>
-      <option value="local">From local</option>
-      <option value="web">From web</option>
+      <option value="">${t("ui.index.sourceChoose", "Choose source")}</option>
+      <option value="local">${t("ui.index.sourceFromLocal", "From local")}</option>
+      <option value="web">${t("ui.index.sourceFromWeb", "From web")}</option>
     `
     : "";
 
   row.innerHTML = `
     <td>
       <div class="index-object-name">${project.designation}</div>
-      <div class="index-object-detail">${project.hasLocal ? formatProjectSummary(project) : "Bundled trajectory available"}</div>
+      <div class="index-object-detail">${project.hasLocal ? formatProjectSummary(project) : t("ui.index.bundledTrajectoryAvailable", "Bundled trajectory available")}</div>
     </td>
     <td><div class="index-badges">${createAvailabilityBadges(project)}</div></td>
     <td>
       <div class="index-source-block">
         ${project.hasLocal && project.hasWeb
           ? `<select class="index-source-select" aria-label="Choose source for ${project.designation}">${sourceOptions}</select>`
-          : `<div class="index-source-static">${project.hasLocal ? "From local" : "From web"}</div>`
+          : `<div class="index-source-static">${project.hasLocal ? t("ui.index.sourceFromLocal", "From local") : t("ui.index.sourceFromWeb", "From web")}</div>`
         }
       </div>
     </td>
@@ -243,10 +258,10 @@ function renderProjectRow(project) {
             <a class="index-action-link" data-role="play" href="#">Play</a>
             <a class="index-action-link" data-role="edit" href="#">Edit</a>
           </div>
-          ${hasPresentation ? `<a class="index-action-link" data-role="presentation" href="${buildPageHref("presentation", project.designation)}">Presentation</a>` : ""}
+          ${hasPresentation ? `<a class="index-action-link" data-role="presentation" href="${buildPageHref("presentation", project.designation, "", activeLocale)}">Presentation</a>` : ""}
         </div>
-        <div class="index-helper">${project.hasLocal && project.hasWeb ? "Choose a source to continue." : ""}</div>
-        <div class="index-warning">this will overwrite the local version.</div>
+        <div class="index-helper">${project.hasLocal && project.hasWeb ? t("ui.index.helperChooseSource", "Choose a source to continue.") : ""}</div>
+        <div class="index-warning">${t("ui.index.warningOverwriteLocal", "this will overwrite the local version.")}</div>
       </div>
     </td>
   `;
@@ -266,17 +281,17 @@ function renderProjectRow(project) {
 
     if (!state.showActions) {
       helper.textContent = hasPresentation
-        ? "Choose a source for Play/Edit, or open the presentation."
-        : "Choose a source to continue.";
+        ? t("ui.index.helperChooseSourceOrPresentation", "Choose a source for Play/Edit, or open the presentation.")
+        : t("ui.index.helperChooseSource", "Choose a source to continue.");
       return;
     }
 
     helper.textContent = state.source === "local"
-      ? "Using the local draft."
-      : "Using the bundled web version.";
+      ? t("ui.index.helperUsingLocal", "Using the local draft.")
+      : t("ui.index.helperUsingWeb", "Using the bundled web version.");
 
-    playLink.href = buildPageHref("trajectory_player", project.designation, state.source);
-    editLink.href = buildPageHref("object_motion", project.designation, state.source);
+    playLink.href = buildPageHref("trajectory_player", project.designation, state.source, activeLocale);
+    editLink.href = buildPageHref("object_motion", project.designation, state.source, activeLocale);
   }
 
   if (select) {
@@ -299,7 +314,11 @@ function renderProjectTable(projects) {
 
   if (!projects.length) {
     empty.style.display = "block";
-    summary.textContent = "0 projects";
+    summary.textContent = t("ui.index.summary", "0 projects", {
+      count: 0,
+      webCount: 0,
+      localCount: 0,
+    });
     return;
   }
 
@@ -308,7 +327,46 @@ function renderProjectTable(projects) {
 
   const webCount = projects.filter(project => project.hasWeb).length;
   const localCount = projects.filter(project => project.hasLocal).length;
-  summary.textContent = `${projects.length} projects · ${webCount} from web · ${localCount} with local drafts`;
+  summary.textContent = t("ui.index.summary", `${projects.length} projects · ${webCount} from web · ${localCount} with local drafts`, {
+    count: projects.length,
+    webCount,
+    localCount,
+  });
+}
+
+function applyStaticIndexText() {
+  document.title = t("ui.index.title", "3i-web Projects");
+  const title = document.getElementById("index-title");
+  const subtitle = document.getElementById("index-subtitle");
+  const empty = document.getElementById("index-empty");
+  const createBtn = document.getElementById("index-create-btn");
+  const projectTable = document.getElementById("index-project-table");
+  const languageLabel = document.getElementById("index-language-label");
+  const objectCol = document.getElementById("index-col-object");
+  const availabilityCol = document.getElementById("index-col-availability");
+  const sourceCol = document.getElementById("index-col-source");
+  const actionsCol = document.getElementById("index-col-actions");
+  const modalTitle = document.getElementById("index-modal-title");
+  const modalCopy = document.getElementById("index-modal-copy");
+  const modalInput = document.getElementById("index-modal-input");
+
+  if (title) title.textContent = t("ui.index.title", "3i-web Projects");
+  if (subtitle) {
+    subtitle.textContent = APP_CONFIG.useLocalStorage
+      ? t("ui.index.subtitle", "Choose a bundled object or resume a local draft")
+      : t("ui.index.subtitleWebOnly", "Choose a bundled object");
+  }
+  if (empty) empty.textContent = t("ui.index.empty", "No projects found yet. Create a new object to begin.");
+  if (createBtn) createBtn.setAttribute("aria-label", t("ui.index.createAriaLabel", "Create new object"));
+  if (projectTable) projectTable.setAttribute("aria-label", t("ui.index.projectListAriaLabel", "Project list"));
+  if (languageLabel) languageLabel.textContent = t("ui.index.languageLabel", "Language");
+  if (objectCol) objectCol.textContent = t("ui.index.table.object", "Object");
+  if (availabilityCol) availabilityCol.textContent = t("ui.index.table.availability", "Availability");
+  if (sourceCol) sourceCol.textContent = t("ui.index.table.source", "Source");
+  if (actionsCol) actionsCol.textContent = t("ui.index.table.actions", "Actions");
+  if (modalTitle) modalTitle.textContent = t("ui.index.createModalTitle", "Create New Object");
+  if (modalCopy) modalCopy.textContent = t("ui.index.createModalCopy", "Enter the object designation. The Object Motion Tracker will open and let you fetch or annotate its trajectory.");
+  if (modalInput) modalInput.placeholder = t("ui.index.createModalPlaceholder", "Examples: 3I or C/2025 N1");
 }
 
 function setupCreateObjectModal() {
@@ -336,13 +394,13 @@ function setupCreateObjectModal() {
   function submit() {
     const designation = String(input.value || "").trim();
     if (!designation) {
-      error.textContent = "Enter an object designation before continuing.";
+      error.textContent = t("ui.index.validationEnterDesignation", "Enter an object designation before continuing.");
       error.classList.add("visible");
       input.focus();
       return;
     }
 
-    window.location.href = buildPageHref("object_motion", designation);
+    window.location.href = buildPageHref("object_motion", designation, "", activeLocale);
   }
 
   openBtn.addEventListener("click", openModal);
@@ -360,14 +418,28 @@ function setupCreateObjectModal() {
   });
 }
 
+function setupLanguageSelector() {
+  const select = document.getElementById("index-language-select");
+  if (!select) return;
+  select.value = activeLocale;
+  select.addEventListener("change", event => {
+    const nextLocale = AppTranslations.normalizeLocale?.(event.target.value) || "en";
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", nextLocale);
+    window.location.href = `${url.pathname.replace(/^\/+/, "")}${url.search}${url.hash}`;
+  });
+}
+
 async function bootstrapIndexPage() {
+  await AppTranslations.loadTranslations?.();
+  activeLocale = AppTranslations.getLocaleFromSearch?.(window.location.search) || activeLocale;
+  AppTranslations.setDocumentLocale?.(activeLocale);
+  applyStaticIndexText();
+  setupLanguageSelector();
+
   const bundledObjects = await loadBundledObjects();
   const localProjects = APP_CONFIG.useLocalStorage ? readLocalObjects() : [];
   const projects = mergeProjectSources(bundledObjects, localProjects, APP_CONFIG.useLocalStorage);
-  const subtitle = document.getElementById("index-subtitle");
-  if (subtitle && !APP_CONFIG.useLocalStorage) {
-    subtitle.textContent = "Choose a bundled object";
-  }
   renderProjectTable(projects);
   setupCreateObjectModal();
 }

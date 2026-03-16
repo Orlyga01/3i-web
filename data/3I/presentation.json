@@ -5,24 +5,24 @@
   "mainHref": "trajectory_player?designation=3I&source=web",
   "slides": [
     {
+      "id": "intro-video",
+      "title": "Intro Video",
+      "src": "slides/3I/intro_video.html"
+    },
+    {
       "id": "small-bodies-overview",
       "title": "Small Bodies Overview",
       "src": "slides/3I/wow_signal.html"
     },
     {
+      "id": "comparison-video",
+      "title": "Comparison Video",
+      "src": "slides/3I/comparison_video.html"
+    },
+    {
       "id": "comet-tail-formation",
       "title": "How a Comet Tail Forms",
       "src": "slides/3I/comet_tail.html"
-    },
-    {
-      "id": "gravity-orbit",
-      "title": "Gravity and Orbit",
-      "src": "slides/3I/gravity_orbit.html"
-    },
-    {
-      "id": "lagrange-points",
-      "title": "Lagrange Points",
-      "src": "slides/3I/lagrange_points.html"
     },
     {
       "id": "interstellar-comets",
@@ -33,6 +33,11 @@
       "id": "jupiter-hill-radius",
       "title": "Jupiter Hill Radius",
       "src": "slides/3I/hill_radius.html"
+    },
+    {
+      "id": "dark-side-laser-show",
+      "title": "Dark Side of the Moon Laser Show",
+      "src": "slides/3I/dark_side_laser_show.html"
     },
     {
       "id": "spherex",

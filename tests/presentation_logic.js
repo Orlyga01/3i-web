@@ -5,14 +5,19 @@ function buildPresentationManifestPath(designation) {
     return `data/${normalized}/presentation.json`;
 }
 
-function buildPresentationMainHref(designation, explicitHref = '') {
+function buildPresentationMainHref(designation, explicitHref = '', locale = 'en') {
     const trimmedExplicitHref = String(explicitHref || '').trim();
-    if (trimmedExplicitHref) return trimmedExplicitHref;
+    if (trimmedExplicitHref) {
+        const url = new URL(trimmedExplicitHref, 'https://example.com/');
+        url.searchParams.set('lang', locale || 'en');
+        return `${url.pathname.replace(/^\//, '')}${url.search}${url.hash}`;
+    }
 
     const normalized = String(designation || '').trim() || '3I';
     const params = new URLSearchParams({
         designation: normalized,
         source: 'web',
+        lang: locale || 'en',
     });
     return `trajectory_player?${params.toString()}`;
 }
@@ -54,9 +59,56 @@ function getPresentationControls(state) {
     };
 }
 
+function getIntroFlyoverAdvanceResult(state, delta) {
+    const slideCount = Number.isFinite(state?.slideCount) ? state.slideCount : 0;
+    const currentIndex = Number.isFinite(state?.currentIndex) ? state.currentIndex : -1;
+    const started = Boolean(state?.started) && slideCount > 0 && currentIndex >= 0;
+    const introFlyoverPrimed = Boolean(state?.introFlyoverPrimed);
+
+    if (!started) {
+        return {
+            currentIndex,
+            introFlyoverPrimed,
+            shouldPlayFlyover: false,
+            shouldStopFlyover: false,
+            didMove: false,
+        };
+    }
+
+    if (delta > 0 && currentIndex === 0 && !introFlyoverPrimed) {
+        return {
+            currentIndex,
+            introFlyoverPrimed: true,
+            shouldPlayFlyover: true,
+            shouldStopFlyover: false,
+            didMove: false,
+        };
+    }
+
+    const nextIndex = currentIndex + delta;
+    if (nextIndex < 0 || nextIndex >= slideCount) {
+        return {
+            currentIndex,
+            introFlyoverPrimed: delta < 0 ? false : introFlyoverPrimed,
+            shouldPlayFlyover: false,
+            shouldStopFlyover: false,
+            didMove: false,
+        };
+    }
+
+    return {
+        currentIndex: nextIndex,
+        introFlyoverPrimed: false,
+        shouldPlayFlyover: false,
+        shouldStopFlyover: true,
+        didMove: true,
+    };
+}
+
 module.exports = {
     buildPresentationManifestPath,
     buildPresentationMainHref,
     normalizePresentationManifest,
     getPresentationControls,
+    getIntroFlyoverAdvanceResult,
 };

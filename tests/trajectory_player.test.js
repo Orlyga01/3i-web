@@ -111,19 +111,24 @@ describe('sanitize and buildPath', () => {
     });
 
     test('builds object motion back link with designation', () => {
-        expect(buildObjectMotionHref('3I')).toBe('object_motion?designation=3I');
+        expect(buildObjectMotionHref('3I')).toBe('object_motion?designation=3I&lang=en');
     });
 
     test('builds object motion back link with source', () => {
-        expect(buildObjectMotionHref('3I', 'local')).toBe('object_motion?designation=3I&source=local');
+        expect(buildObjectMotionHref('3I', 'local')).toBe('object_motion?designation=3I&source=local&lang=en');
     });
 
     test('builds trajectory player link with designation', () => {
-        expect(buildTrajectoryPlayerHref('3I')).toBe('trajectory_player?designation=3I');
+        expect(buildTrajectoryPlayerHref('3I')).toBe('trajectory_player?designation=3I&lang=en');
     });
 
     test('builds trajectory player link with source', () => {
-        expect(buildTrajectoryPlayerHref('3I', 'web')).toBe('trajectory_player?designation=3I&source=web');
+        expect(buildTrajectoryPlayerHref('3I', 'web')).toBe('trajectory_player?designation=3I&source=web&lang=en');
+    });
+
+    test('builds localized links when a non-default language is requested', () => {
+        expect(buildObjectMotionHref('3I', 'web', 'he')).toBe('object_motion?designation=3I&source=web&lang=he');
+        expect(buildTrajectoryPlayerHref('3I', 'local', 'he')).toBe('trajectory_player?designation=3I&source=local&lang=he');
     });
 });
 

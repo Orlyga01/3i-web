@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wow! Signal - 12 Aug 1977</title>
+  <title>Dark Side of the Moon Laser Show</title>
   <style>
     * {
       box-sizing: border-box;
@@ -51,12 +51,10 @@
       letter-spacing: 0.02em;
     }
 
-    .date {
+    .subtitle {
       margin-top: 8px;
       font-size: clamp(21px, 2.3vw, 30px);
       color: rgba(194, 218, 250, 0.88);
-      text-transform: uppercase;
-      letter-spacing: 0.22em;
     }
 
     .image-frame {
@@ -100,17 +98,20 @@
 <body>
   <main>
     <header>
-      <h1 id="slide-title">Wow! Signal</h1>
-      <div id="slide-date" class="date">12 Aug 1977</div>
+      <h1 id="slide-title">Dark Side of the Moon Laser Show</h1>
     </header>
 
-    <section id="image-frame" class="image-frame" aria-label="Wow Signal printout image">
-      <img id="slide-image" src="https://bilimgenc.tubitak.gov.tr/sites/default/files/styles/bp-770px-custom_user_desktop_1x/public/wowcl.jpg?itok=Kf67AtyK" alt="Historic Wow Signal printout with the famous circled notation">
+    <section id="image-frame" class="image-frame" aria-label="Dark Side of the Moon laser show image">
+      <img
+        id="slide-image"
+        src="https://flandrau.org/sites/default/files/styles/az_large/public/2022-12/Pink%20Floyd%20Dark%20Side%20of%20the%20Moon%20Laser%20Show%20%282%29.png.webp?itok=5czsDuCH"
+        alt="Pink Floyd Dark Side of the Moon laser show image"
+      >
     </section>
   </main>
   <script src="../../translations.js"></script>
   <script>
-    (async function applyWowSignalTranslations() {
+    (async function applyDarkSideLaserShowTranslations() {
       const AppTranslations = window.AppTranslations || {};
       const locale = AppTranslations.getLocaleFromSearch?.(window.location.search) || "en";
       AppTranslations.setDocumentLocale?.(locale);
@@ -118,14 +119,14 @@
         await AppTranslations.loadTranslations?.();
 
         const read = fallback => AppTranslations.translate?.(fallback, { locale, fallback }) || fallback;
-        document.title = `${read("Wow! Signal")} - ${read("12 Aug 1977")}`;
+        document.title = read("Dark Side of the Moon Laser Show");
         const titleEl = document.getElementById("slide-title");
-        const dateEl = document.getElementById("slide-date");
+        const subtitleEl = document.getElementById("slide-subtitle");
         const frameEl = document.getElementById("image-frame");
         const imageEl = document.getElementById("slide-image");
-        if (titleEl) titleEl.textContent = read("Wow! Signal");
-        if (dateEl) dateEl.textContent = read("12 Aug 1977");
-        if (frameEl) frameEl.setAttribute("aria-label", read(frameEl.getAttribute("aria-label") || "Wow Signal printout image"));
+        if (titleEl) titleEl.textContent = read("Dark Side of the Moon Laser Show");
+        if (subtitleEl) subtitleEl.textContent = read(subtitleEl.textContent);
+        if (frameEl) frameEl.setAttribute("aria-label", read(frameEl.getAttribute("aria-label") || "Dark Side of the Moon laser show image"));
         if (imageEl) imageEl.alt = read(imageEl.alt);
       } finally {
         document.documentElement.dataset.i18nReady = "true";

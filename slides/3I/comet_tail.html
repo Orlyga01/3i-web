@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-i18n-ready="false">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,6 +29,10 @@
       font-family: Georgia, serif;
     }
 
+    html[data-i18n-ready="false"] body {
+      visibility: hidden;
+    }
+
     canvas {
       display: block;
       width: 100vw;
@@ -40,7 +44,27 @@
 <body>
   <canvas id="scene" aria-label="Animated comet-tail formation scene"></canvas>
 
+  <script src="../../translations.js"></script>
   <script>
+    (async function applyCometTailTranslations() {
+      const AppTranslations = window.AppTranslations || {};
+      const locale = AppTranslations.getLocaleFromSearch?.(window.location.search) || "en";
+      AppTranslations.setDocumentLocale?.(locale);
+      try {
+        await AppTranslations.loadTranslations?.();
+        document.title = AppTranslations.translate?.("How a Comet Tail Forms", { locale, fallback: document.title }) || document.title;
+        const canvasEl = document.getElementById("scene");
+        if (canvasEl) {
+          canvasEl.setAttribute(
+            "aria-label",
+            AppTranslations.translate?.("Animated comet-tail formation scene", { locale, fallback: canvasEl.getAttribute("aria-label") || "Animated comet-tail formation scene" }) || canvasEl.getAttribute("aria-label")
+          );
+        }
+      } finally {
+        document.documentElement.dataset.i18nReady = "true";
+      }
+    }());
+
     const canvas = document.getElementById("scene");
     const ctx = canvas.getContext("2d");
 
@@ -49,7 +73,10 @@
     const assetMetrics = {};
     const DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
     const startDelayMs = 1000;
-    const sceneDurationMs = 22600;
+    const burstPauseAfterRevealMs = 3000;
+    const buildDelayAfterDustRevealMs = burstPauseAfterRevealMs;
+    const defaultBuildDelayAfterDustRevealMs = 350;
+    const sceneDurationMs = 22600 + (buildDelayAfterDustRevealMs - defaultBuildDelayAfterDustRevealMs);
     const BURST_ROTATION_OFFSET = 20 * Math.PI / 180;
 
     const timeline = {
@@ -544,7 +571,7 @@
       const waterRevealEnd = waterStart + 2000;
       const dustStart = waterRevealEnd;
       const dustRevealEnd = dustStart + 2000;
-      const buildStart = dustRevealEnd + 350;
+      const buildStart = dustRevealEnd + buildDelayAfterDustRevealMs;
       const buildEnd = buildStart + 2000;
       const coverStart = buildStart;
       const coverEnd = buildEnd;
@@ -584,7 +611,7 @@
       const solarWindAmount = clamp((tail - 0.38) / 0.62, 0, 1);
       drawSolarWind(width, height, hotSpot.hotX, hotSpot.hotY, solarWindAmount, t, effectsOpacity);
 
-      const burstScale = 0.22 + waterAmount * 0.28;
+      const burstScale = (0.22 + waterAmount * 0.28) * 1.5;
       drawBurstImage(
         assets.waterSplash,
         hotSpot.hotX - cometSize * 0.035,
@@ -601,8 +628,8 @@
         assets.greenDust,
         hotSpot.hotX - cometSize * 0.02,
         hotSpot.hotY - cometSize * 0.03,
-        cometSize * (0.24 + dustAmount * 0.3),
-        cometSize * (0.24 + dustAmount * 0.3),
+        cometSize * (0.24 + dustAmount * 0.3) * 1.5,
+        cometSize * (0.24 + dustAmount * 0.3) * 1.5,
         cometRotation + Math.PI * 1.97 + BURST_ROTATION_OFFSET,
         dustAmount * burstFade,
         "drop-shadow(0 0 18px rgba(154, 255, 160, 0.34)) saturate(0.88)",

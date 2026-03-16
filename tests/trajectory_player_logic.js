@@ -116,17 +116,19 @@ function normalizePoint(point, index, designation) {
     };
 }
 
-function buildObjectMotionHref(designation, source = '') {
+function buildObjectMotionHref(designation, source = '', locale = 'en') {
     const params = new URLSearchParams({ designation: designation || '3I' });
     const normalizedSource = normalizeRequestedSource(source);
     if (normalizedSource) params.set('source', normalizedSource);
+    params.set('lang', locale || 'en');
     return `object_motion?${params.toString()}`;
 }
 
-function buildTrajectoryPlayerHref(designation, source = '') {
+function buildTrajectoryPlayerHref(designation, source = '', locale = 'en') {
     const params = new URLSearchParams({ designation: designation || '3I' });
     const normalizedSource = normalizeRequestedSource(source);
     if (normalizedSource) params.set('source', normalizedSource);
+    params.set('lang', locale || 'en');
     return `trajectory_player?${params.toString()}`;
 }
 

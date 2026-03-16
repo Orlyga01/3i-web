@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-i18n-ready="false">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,6 +26,10 @@
       overflow: hidden;
     }
 
+    html[data-i18n-ready="false"] body {
+      visibility: hidden;
+    }
+
     main {
       width: min(1200px, calc(100vw - 48px));
       height: 100vh;
@@ -49,7 +53,7 @@
 
     .subtitle {
       margin-top: 8px;
-      font-size: clamp(18px, 2vw, 26px);
+      font-size: clamp(21px, 2.3vw, 30px);
       color: rgba(194, 218, 250, 0.88);
     }
 
@@ -94,13 +98,37 @@
 <body>
   <main>
     <header>
-      <h1>SPHEREx</h1>
-      <div class="subtitle">NASA's all-sky infrared survey mission</div>
+      <h1 id="slide-title">SPHEREx</h1>
+      <div id="slide-subtitle" class="subtitle">NASA's all-sky infrared survey mission</div>
     </header>
 
-    <section class="image-frame" aria-label="SPHEREx mission image">
-      <img src="../../assets/spherex.webp" alt="SPHEREx mission artwork">
+    <section id="image-frame" class="image-frame" aria-label="SPHEREx mission image">
+      <img id="slide-image" src="../../assets/spherex.webp" alt="SPHEREx mission artwork">
     </section>
   </main>
+  <script src="../../translations.js"></script>
+  <script>
+    (async function applySpherexTranslations() {
+      const AppTranslations = window.AppTranslations || {};
+      const locale = AppTranslations.getLocaleFromSearch?.(window.location.search) || "en";
+      AppTranslations.setDocumentLocale?.(locale);
+      try {
+        await AppTranslations.loadTranslations?.();
+
+        const read = fallback => AppTranslations.translate?.(fallback, { locale, fallback }) || fallback;
+        document.title = read("SPHEREx");
+        const titleEl = document.getElementById("slide-title");
+        const subtitleEl = document.getElementById("slide-subtitle");
+        const frameEl = document.getElementById("image-frame");
+        const imageEl = document.getElementById("slide-image");
+        if (titleEl) titleEl.textContent = read("SPHEREx");
+        if (subtitleEl) subtitleEl.textContent = read(subtitleEl.textContent);
+        if (frameEl) frameEl.setAttribute("aria-label", read(frameEl.getAttribute("aria-label") || "SPHEREx mission image"));
+        if (imageEl) imageEl.alt = read(imageEl.alt);
+      } finally {
+        document.documentElement.dataset.i18nReady = "true";
+      }
+    }());
+  </script>
 </body>
 </html>

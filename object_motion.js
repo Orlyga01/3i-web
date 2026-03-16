@@ -814,6 +814,7 @@ function syncObjectMotionUrl(designation, source = '') {
     const params = new URLSearchParams({ designation: value });
     const normalizedSource = normalizeRequestedSource(source);
     if (normalizedSource) params.set('source', normalizedSource);
+    params.set('lang', objectMotionLocale);
     window.history.replaceState(null, '', `object_motion?${params.toString()}`);
 }
 
@@ -829,6 +830,19 @@ function normalizeCameraState(camera) {
 
 const MoreInfoHelpers = window.MoreInfoShared || {};
 const APP_CONFIG = window.AppConfigShared?.readAppConfig?.(window.AppConfig) || { useLocalStorage: false };
+const AppTranslations = window.AppTranslations || {};
+const objectMotionLocale = AppTranslations.getLocaleFromSearch?.(window.location.search) || 'en';
+
+AppTranslations.setDocumentLocale?.(objectMotionLocale);
+
+function ot(name, fallback = '', params = null) {
+    const sourceText = fallback || (typeof name === 'string' ? name : '');
+    return AppTranslations.translate?.(sourceText, {
+        locale: objectMotionLocale,
+        params,
+        fallback: sourceText,
+    }) || sourceText;
+}
 
 function isLocalStorageEnabled() {
     return APP_CONFIG.useLocalStorage && typeof window.localStorage !== 'undefined';
@@ -925,8 +939,24 @@ function formatTrajDate(str) {
     const moreInfoBtn = document.getElementById('om-more-info-btn');
     const moreInfoModal = document.getElementById('om-more-info-modal');
     const moreInfoModalController = (window.MoreInfoModalShared?.createModalController && moreInfoModal)
-        ? window.MoreInfoModalShared.createModalController(moreInfoModal, { title: 'Point More Info' })
+        ? window.MoreInfoModalShared.createModalController(moreInfoModal, { title: ot('ui.objectMotion.moreInfoTitle', 'Point More Info') })
         : null;
+
+    function applyObjectMotionPageText() {
+        document.title = `${ot('ui.objectMotion.pageTitle', 'Object Motion Tracker')} · 3I/ATLAS`;
+        const backLink = document.getElementById('om-back-link');
+        const titleEl = document.getElementById('om-title');
+        const subtitleEl = document.getElementById('om-subtitle');
+
+        if (backLink) {
+            backLink.textContent = ot('ui.objectMotion.backToProjects', '← Projects');
+            backLink.href = AppTranslations.withLangParam?.('index.html', objectMotionLocale) || 'index.html';
+        }
+        if (titleEl) titleEl.textContent = ot('ui.objectMotion.pageTitle', 'Object Motion Tracker');
+        if (subtitleEl) subtitleEl.textContent = ot('ui.objectMotion.subtitle', 'Fetch & annotate a heliocentric trajectory');
+    }
+
+    applyObjectMotionPageText();
 
     // ── Form status helpers ───────────────────────────────────
 
@@ -980,7 +1010,6 @@ function formatTrajDate(str) {
             point,
             designation: TrajectoryStore.getDesignation(),
             dateText: formatTrajDate(point?.date),
-            description: point?.description || '',
         });
     }
 
@@ -1304,7 +1333,7 @@ function formatTrajDate(str) {
 
     function _openPlayer() {
         const designation = (TrajectoryStore.getDesignation() || '').trim() || '3I';
-        const params = new URLSearchParams({ designation, source: 'local' });
+        const params = new URLSearchParams({ designation, source: 'local', lang: objectMotionLocale });
         window.open(`trajectory_player?${params.toString()}`, '_blank');
     }
 

@@ -34,9 +34,11 @@ describe('index helpers', () => {
 
     test('builds source-aware links for player and editor pages', () => {
         expect(buildPageHref('trajectory_player', '3I', 'local'))
-            .toBe('trajectory_player?designation=3I&source=local');
+            .toBe('trajectory_player?designation=3I&source=local&lang=en');
         expect(buildPageHref('object_motion', '3I', 'web'))
-            .toBe('object_motion?designation=3I&source=web');
+            .toBe('object_motion?designation=3I&source=web&lang=en');
+        expect(buildPageHref('presentation', '3I', '', 'he'))
+            .toBe('presentation?designation=3I&lang=he');
     });
 
     test('merges web and local entries by sanitized designation', () => {

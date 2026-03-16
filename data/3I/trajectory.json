@@ -432,7 +432,7 @@
         "wz": 5
       },
       "durationPct": 100,
-      "stoppable": false,
+      "stoppable": true,
       "camera": {
         "el": 4.6,
         "az": 0.14,
@@ -442,7 +442,7 @@
         "tz": 11.05
       },
       "description": null,
-      "image": null
+      "image": "https://miro.medium.com/v2/resize:fit:1100/format:webp/1*OtIy3u2ZK4CPArMLvyfYNw.jpeg"
     },
     {
       "color": "green",

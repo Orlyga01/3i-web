@@ -5,6 +5,7 @@ const {
     buildPresentationMainHref,
     normalizePresentationManifest,
     getPresentationControls,
+    getIntroFlyoverAdvanceResult,
 } = require('./presentation_logic');
 
 describe('presentation helpers', () => {
@@ -14,8 +15,9 @@ describe('presentation helpers', () => {
     });
 
     test('builds the default main experience link', () => {
-        expect(buildPresentationMainHref('3I')).toBe('trajectory_player?designation=3I&source=web');
-        expect(buildPresentationMainHref('3I', 'object_motion?designation=3I')).toBe('object_motion?designation=3I');
+        expect(buildPresentationMainHref('3I')).toBe('trajectory_player?designation=3I&source=web&lang=en');
+        expect(buildPresentationMainHref('3I', 'object_motion?designation=3I')).toBe('object_motion?designation=3I&lang=en');
+        expect(buildPresentationMainHref('3I', '', 'he')).toBe('trajectory_player?designation=3I&source=web&lang=he');
     });
 
     test('normalizes slide manifests and filters invalid entries', () => {
@@ -31,7 +33,7 @@ describe('presentation helpers', () => {
             designation: '3I',
             title: '3I Atlas Presentation',
             subtitle: '',
-            mainHref: 'trajectory_player?designation=3I&source=web',
+            mainHref: 'trajectory_player?designation=3I&source=web&lang=en',
             slides: [
                 { id: 'wow', title: 'Wow! Signal', src: 'slides/3I/wow_signal.html' },
             ],
@@ -55,6 +57,34 @@ describe('presentation helpers', () => {
             canStart: false,
             canBack: true,
             canNext: false,
+        });
+    });
+
+    test('stops the intro flyover once the second next click advances', () => {
+        expect(getIntroFlyoverAdvanceResult({
+            started: true,
+            currentIndex: 0,
+            slideCount: 3,
+            introFlyoverPrimed: false,
+        }, 1)).toEqual({
+            currentIndex: 0,
+            introFlyoverPrimed: true,
+            shouldPlayFlyover: true,
+            shouldStopFlyover: false,
+            didMove: false,
+        });
+
+        expect(getIntroFlyoverAdvanceResult({
+            started: true,
+            currentIndex: 0,
+            slideCount: 3,
+            introFlyoverPrimed: true,
+        }, 1)).toEqual({
+            currentIndex: 1,
+            introFlyoverPrimed: false,
+            shouldPlayFlyover: false,
+            shouldStopFlyover: true,
+            didMove: true,
         });
     });
 });

@@ -40,10 +40,11 @@ function normalizeManifestObjects(payload, fallbackObjects = DEFAULT_WEB_OBJECTS
     return normalized.length ? normalized : [...fallbackObjects];
 }
 
-function buildPageHref(pageName, designation, source = '') {
+function buildPageHref(pageName, designation, source = '', locale = 'en') {
     const params = new URLSearchParams({ designation: designation || '3I' });
     const normalizedSource = normalizeRequestedSource(source);
     if (normalizedSource) params.set('source', normalizedSource);
+    params.set('lang', locale || 'en');
     return `${pageName}?${params.toString()}`;
 }
 

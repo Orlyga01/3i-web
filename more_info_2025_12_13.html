@@ -352,38 +352,38 @@
         </div>
         <div class="compact-materials">
           <article class="material-card" data-material="co2">
-            <h3><span class="formula">CO&#8322;</span> · Carbon Dioxide</h3>
-            <div class="material-meta">About 87% of gas mass</div>
+            <h3><span class="formula">CO&#8322;</span> · <span id="material-co2-title">Carbon Dioxide</span></h3>
+            <div id="material-co2-meta" class="material-meta">About 87% of gas mass</div>
           </article>
 
           <article class="material-card" data-material="co">
-            <h3><span class="formula">CO</span> · Carbon Monoxide</h3>
-            <div class="material-meta">About 9% of gas mass</div>
+            <h3><span class="formula">CO</span> · <span id="material-co-title">Carbon Monoxide</span></h3>
+            <div id="material-co-meta" class="material-meta">About 9% of gas mass</div>
           </article>
 
           <article class="material-card is-experiment" data-material="h2o">
-            <h3><span class="formula">H&#8322;O</span> · Water</h3>
-            <div class="material-meta">About 4% pre-perihelion</div>
+            <h3><span class="formula">H&#8322;O</span> · <span id="material-h2o-title">Water</span></h3>
+            <div id="material-h2o-meta" class="material-meta">About 4% pre-perihelion</div>
           </article>
 
           <article class="material-card" data-material="cn">
-            <h3><span class="formula">CN</span> · Cyanide</h3>
-            <div class="material-meta">Newly appeared after perihelion</div>
+            <h3><span class="formula">CN</span> · <span id="material-cn-title">Cyanide</span></h3>
+            <div id="material-cn-meta" class="material-meta">Newly appeared after perihelion</div>
           </article>
 
           <article class="material-card" data-material="organics">
-            <h3><span class="formula">C-H</span> · Organics</h3>
-            <div class="material-meta">Detected at 3.2–3.6 microns</div>
+            <h3><span class="formula">C-H</span> · <span id="material-organics-title">Organics</span></h3>
+            <div id="material-organics-meta" class="material-meta">Detected at 3.2–3.6 microns</div>
           </article>
 
           <article class="material-card is-experiment" data-material="ch4">
-            <h3><span class="formula">CH&#8324;</span> · Methane</h3>
-            <div class="material-meta">Reported post-perihelion</div>
+            <h3><span class="formula">CH&#8324;</span> · <span id="material-ch4-title">Methane</span></h3>
+            <div id="material-ch4-meta" class="material-meta">Reported post-perihelion</div>
           </article>
 
           <article class="material-card" data-material="nickel">
-            <h3><span class="formula">Ni</span> · Nickel without Iron</h3>
-            <div class="material-meta">Deeply anomalous</div>
+            <h3><span class="formula">Ni</span> · <span id="material-nickel-title">Nickel without Iron</span></h3>
+            <div id="material-nickel-meta" class="material-meta">Deeply anomalous</div>
           </article>
         </div>
       </div>
@@ -392,14 +392,15 @@
         <img id="hero-image" src="assets/materials.jpg" alt="3I/ATLAS materials image">
         <div id="hero-image-copy" class="hero-media-copy">
           <ul class="hero-media-list">
-            <li>
+            <li id="hero-bullet-1">
               Scientists mixed water, hydrogen, ammonia, and methane, simulating early Earth's atmosphere, zapped it
               with electrical sparks, and shockingly produced amino acids, the building blocks of life, from scratch.
             </li>
             <li>
-              <span class="hero-media-term">Panspermia:</span>
-              The theory that life's ingredients, or even life itself, can travel across the galaxy carried by objects
+              <span id="hero-bullet-2-label" class="hero-media-term">Panspermia:</span>
+              <span id="hero-bullet-2-copy">The theory that life's ingredients, or even life itself, can travel across the galaxy carried by objects
               like comets, asteroids, or interstellar visitors like 3I/ATLAS, potentially seeding life on other planets.
+              </span>
             </li>
           </ul>
         </div>
@@ -407,6 +408,7 @@
     </section>
   </main>
 
+  <script src="translations.js"></script>
   <script>
     (function () {
       const playButton = document.getElementById('play-sequence');
@@ -425,6 +427,31 @@
         ch4: document.querySelector('[data-material="ch4"]')
       };
       const timers = [];
+
+      (async function applyMaterialsTranslations() {
+        const AppTranslations = window.AppTranslations || {};
+        const locale = AppTranslations.getLocaleFromSearch?.(window.location.search) || "en";
+        AppTranslations.setDocumentLocale?.(locale);
+        await AppTranslations.loadTranslations?.();
+
+        const read = fallback => AppTranslations.translate?.(fallback, { locale, fallback }) || fallback;
+
+        document.title = read(document.title);
+        heroImage.alt = read(defaultHeroImageAlt);
+        document.getElementById("hero-image-title").textContent = read(document.getElementById("hero-image-title").textContent);
+        document.getElementById("hero-bullet-1").textContent = read(document.getElementById("hero-bullet-1").textContent);
+        document.getElementById("hero-bullet-2-label").textContent = read(document.getElementById("hero-bullet-2-label").textContent);
+        document.getElementById("hero-bullet-2-copy").textContent = read(document.getElementById("hero-bullet-2-copy").textContent);
+        experimentImageAlt && (window.__experimentImageAlt = read(experimentImageAlt));
+
+        const materialIds = ["co2", "co", "h2o", "cn", "organics", "ch4", "nickel"];
+        materialIds.forEach(material => {
+          const titleEl = document.getElementById(`material-${material}-title`);
+          const metaEl = document.getElementById(`material-${material}-meta`);
+          if (titleEl) titleEl.textContent = read(titleEl.textContent);
+          if (metaEl) metaEl.textContent = read(metaEl.textContent);
+        });
+      }());
 
       function clearHighlights() {
         Object.values(cards).forEach(card => {
@@ -459,7 +486,7 @@
         resetSequence();
         playButton.disabled = true;
         heroImage.src = experimentImageSrc;
-        heroImage.alt = experimentImageAlt;
+        heroImage.alt = window.__experimentImageAlt || experimentImageAlt;
         heroMedia.classList.add('is-experiment-view');
         heroImageTitle.classList.add('is-visible');
         heroImageCopy.classList.add('is-visible');

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-i18n-ready="false">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comparison Video</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Georgia, serif;
+      color: rgba(230, 240, 255, 0.98);
+    }
+
+    html[data-i18n-ready="false"] body {
+      visibility: hidden;
+    }
+
+    .video-shell {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+    }
+
+    .video-shell iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #000;
+    }
+
+  </style>
+</head>
+<body>
+  <main id="comparison-video-shell" class="video-shell" aria-label="Comparison video slide">
+    <iframe
+      id="comparison-video-frame"
+      src="https://www.youtube.com/embed/rBHB75KgXKI?autoplay=1&mute=1&playsinline=1&rel=0"
+      title="Small bodies comparison video"
+      allow="autoplay; fullscreen; picture-in-picture"
+      allowfullscreen
+      referrerpolicy="strict-origin-when-cross-origin"
+    ></iframe>
+  </main>
+
+  <script src="../../translations.js"></script>
+  <script>
+    (async function applyComparisonVideoTranslations() {
+      const AppTranslations = window.AppTranslations || {};
+      const locale = AppTranslations.getLocaleFromSearch?.(window.location.search) || "en";
+      AppTranslations.setDocumentLocale?.(locale);
+      try {
+        await AppTranslations.loadTranslations?.();
+
+        const shell = document.getElementById("comparison-video-shell");
+        const frame = document.getElementById("comparison-video-frame");
+        const pageTitle = AppTranslations.translate?.("Comparison Video", { locale, fallback: "Comparison Video" }) || "Comparison Video";
+        document.title = pageTitle;
+        if (shell) shell.setAttribute("aria-label", AppTranslations.translate?.("Comparison video slide", { locale, fallback: "Comparison video slide" }) || "Comparison video slide");
+        if (frame) frame.title = AppTranslations.translate?.("Small bodies comparison video", { locale, fallback: "Small bodies comparison video" }) || "Small bodies comparison video";
+      } finally {
+        document.documentElement.dataset.i18nReady = "true";
+      }
+    }());
+
+    (function requestBestEffortFullscreen() {
+      const target = document.documentElement;
+      const request =
+        target.requestFullscreen ||
+        target.webkitRequestFullscreen ||
+        target.msRequestFullscreen;
+      if (!request) return;
+
+      window.addEventListener("load", () => {
+        try {
+          request.call(target);
+        } catch (error) {
+          // Browsers usually require a user gesture here; fail silently.
+        }
+      }, { once: true });
+    }());
+  </script>
+</body>
+</html>

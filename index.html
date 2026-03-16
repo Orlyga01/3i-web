@@ -63,6 +63,42 @@
       font-weight: normal;
     }
 
+    #index-header-actions {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    #index-language-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 132px;
+    }
+
+    #index-language-label {
+      color: rgba(155, 198, 255, 0.78);
+      font-size: 11px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+    }
+
+    #index-language-select {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: rgba(200, 220, 255, 0.92);
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 13px;
+      font-family: Georgia, serif;
+      outline: none;
+    }
+
+    #index-language-select:focus {
+      border-color: rgba(100, 180, 255, 0.55);
+      box-shadow: 0 0 10px rgba(80, 160, 255, 0.2);
+    }
+
     #index-card {
       background: rgba(0, 8, 28, 0.76);
       border: 1px solid rgba(100, 160, 255, 0.22);
@@ -349,6 +385,10 @@
         align-items: stretch;
       }
 
+      #index-header-actions {
+        justify-content: space-between;
+      }
+
       th,
       td {
         padding: 16px 14px;
@@ -376,18 +416,27 @@
         <div id="index-subtitle">Choose a bundled object or resume a local draft</div>
         <div id="index-summary"></div>
       </div>
-      <button id="index-create-btn" type="button" aria-label="Create new object">+</button>
+      <div id="index-header-actions">
+        <label id="index-language-wrap" for="index-language-select">
+          <span id="index-language-label">Language</span>
+          <select id="index-language-select">
+            <option value="en">English</option>
+            <option value="he">עברית</option>
+          </select>
+        </label>
+        <button id="index-create-btn" type="button" aria-label="Create new object">+</button>
+      </div>
     </section>
 
     <section id="index-card">
       <div id="index-table-wrap">
-        <table aria-label="Project list">
+        <table id="index-project-table" aria-label="Project list">
           <thead>
             <tr>
-              <th scope="col">Object</th>
-              <th scope="col">Availability</th>
-              <th scope="col">Source</th>
-              <th scope="col">Actions</th>
+              <th id="index-col-object" scope="col">Object</th>
+              <th id="index-col-availability" scope="col">Availability</th>
+              <th id="index-col-source" scope="col">Source</th>
+              <th id="index-col-actions" scope="col">Actions</th>
             </tr>
           </thead>
           <tbody id="index-table-body"></tbody>
@@ -410,6 +459,7 @@
     </div>
   </div>
 
+  <script src="translations.js"></script>
   <script src="app_config.js"></script>
   <script src="app_config_shared.js"></script>
   <script type="module" src="index.js"></script>

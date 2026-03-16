@@ -1,15 +1,30 @@
 /* 3I/ATLAS · Interstellar Visitor Animation Styles */
 
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap');
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* Global font: Georgia (default) / Fredoka (Hebrew) */
+html {
+  font-family: 'Georgia', serif;
+}
+
+html[lang="he"] {
+  font-family: "Fredoka", "Segoe UI", Tahoma, sans-serif;
+}
+
+html[lang="he"] * {
+  font-family: inherit;
+}
+
 body {
   background: #000;
   overflow: hidden;
-  font-family: 'Georgia', serif;
+  font-family: inherit;
 }
 
 canvas {
@@ -44,7 +59,7 @@ canvas {
 
 #timeIndicator {
   color: rgba(180, 220, 255, .85);
-  font-size: 13px;
+  font-size: 15px;
   letter-spacing: 1.5px;
   text-shadow: 0 0 12px rgba(100, 180, 255, .6);
   min-height: 20px;
@@ -56,7 +71,7 @@ canvas {
   left: 50%;
   transform: translateX(-50%);
   color: rgba(200, 230, 255, .9);
-  font-size: 16px;
+  font-size: 18px;
   letter-spacing: 2px;
   text-shadow: 0 0 18px rgba(120, 200, 255, .7);
   font-weight: bold;
@@ -109,9 +124,9 @@ canvas {
   position: absolute;
   top: -12px;
   transform: translateX(-50%);
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(180, 220, 255, 0.85);
-  font-family: Georgia;
+  font-family: inherit;
   font-weight: bold;
   pointer-events: none;
   user-select: none;
@@ -138,7 +153,7 @@ canvas {
   left: 50%;
   transform: translateX(-50%);
   color: rgba(160, 200, 255, .65);
-  font-size: 12px;
+  font-size: 15px;
   letter-spacing: 2px;
   text-transform: uppercase;
   pointer-events: none;
@@ -152,7 +167,7 @@ button {
   padding: 8px 22px;
   border-radius: 20px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 15px;
   letter-spacing: 1px;
   transition: all .25s;
 }

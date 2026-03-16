@@ -5,6 +5,7 @@
 
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
+const AppTranslations = window.AppTranslations || {};
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 window.addEventListener('resize', () => {
@@ -90,6 +91,13 @@ const planets = [
 ];
 const N_PLANETS = planets.length;
 
+function getLocalizedPlanetName(name) {
+  return AppTranslations.getPlanetName?.(
+    name,
+    AppTranslations.getLocaleFromSearch?.(window.location.search) || 'en'
+  ) || name;
+}
+
 // Load planet textures
 const planetTextures = {};
 function loadPlanetTexture(planet) {
@@ -102,8 +110,22 @@ function loadPlanetTexture(planet) {
 planets.forEach(loadPlanetTexture);
 
 // Load comet texture
-const cometImage = new Image();
-cometImage.src = 'assets/comet.png';
+const sharedSpriteImageCache = new Map();
+
+function getSharedSpriteImage(src) {
+  const normalizedSrc = String(src || '').trim();
+  if (!normalizedSrc) return null;
+
+  const cached = sharedSpriteImageCache.get(normalizedSrc);
+  if (cached) return cached;
+
+  const image = new Image();
+  image.src = normalizedSrc;
+  sharedSpriteImageCache.set(normalizedSrc, image);
+  return image;
+}
+
+const cometImage = getSharedSpriteImage('assets/comet.png');
 
 function parseCometTint(col) {
   if (Array.isArray(col) && col.length >= 3) {
@@ -226,6 +248,7 @@ function drawCometBillboard(targetCtx, options = {}) {
     tint = parseCometTint(),
     image = cometImage,
     tailReveal = 1,
+    anchorY = 0.9,
   } = options;
 
   if (image?.complete && image.naturalWidth > 0) {
@@ -234,11 +257,11 @@ function drawCometBillboard(targetCtx, options = {}) {
     const imgH = image.naturalHeight || image.height;
     const drawH = size;
     const drawW = drawH * (imgW / Math.max(imgH, 1));
-    const anchorY = drawH * 0.9;
+    const anchorYpx = drawH * anchorY;
     const visibleFrac = lerp(0.2, 1, reveal);
     const srcY = imgH * (1 - visibleFrac);
     const srcH = imgH - srcY;
-    const destY = -anchorY + (srcY / imgH) * drawH;
+    const destY = -anchorYpx + (srcY / imgH) * drawH;
     const destH = drawH * visibleFrac;
 
     targetCtx.save();
@@ -396,7 +419,7 @@ function drawPlanet(p, showLabel) {
     ctx.textAlign = 'center';
     // Ringed textured planets: label clears the planet body (rings extend sideways)
     const labelOffset = pr + 5;
-    ctx.fillText(p.name, sx, sy - labelOffset);
+    ctx.fillText(getLocalizedPlanetName(p.name), sx, sy - labelOffset);
   }
 }
 
@@ -499,6 +522,7 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
     sizeMultiplier = 1,
     tailReveal = 1,
     image = cometImage,
+    anchorY,
   } = options;
   const { sx, sy, depth } = project3(wx, wy, wz);
   if (depth < 5) return;
@@ -537,6 +561,7 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
       tint,
       image,
       tailReveal,
+      ...(anchorY !== undefined && { anchorY }),
     });
   } else {
     drawCometBillboard(ctx, {
@@ -547,9 +572,11 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
       tint,
       image,
       tailReveal,
+      ...(anchorY !== undefined && { anchorY }),
     });
   }
 }
 
 window.drawCometBillboard = drawCometBillboard;
 window.parseCometTint = parseCometTint;
+window.getSharedSpriteImage = getSharedSpriteImage;

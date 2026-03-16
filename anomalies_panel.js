@@ -9,14 +9,26 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (AnomaliesShared) {
     'use strict';
 
+    const root = typeof globalThis !== 'undefined' ? globalThis : this;
+    const AppTranslations = root.AppTranslations || {};
+    const anpLocale = () => (typeof document !== 'undefined' && AppTranslations.getLocaleFromSearch)
+        ? AppTranslations.getLocaleFromSearch(document?.location?.search || '')
+        : 'en';
+    function anpT(name, fallback = '', params = null) {
+        const source = fallback || (typeof name === 'string' ? name : '');
+        return AppTranslations.translate?.(source, { locale: anpLocale(), params, fallback: source }) || source;
+    }
+
     const normalizeDataset = typeof AnomaliesShared.normalizeDataset === 'function'
         ? AnomaliesShared.normalizeDataset
         : payload => payload || { title: '', subtitle: '', entries: [], visibleEntries: [] };
     const createPlaceholderDataset = typeof AnomaliesShared.createPlaceholderDataset === 'function'
         ? AnomaliesShared.createPlaceholderDataset
         : (designation, message) => ({
-            title: `${designation || 'Object'} anomalies`,
-            subtitle: message || 'No anomaly entries are available yet.',
+            title: designation
+                ? anpT('{{designation}} anomalies', `${designation} anomalies`, { designation })
+                : anpT('Object anomalies', 'Object anomalies'),
+            subtitle: message || anpT('No anomaly entries are available yet.', 'No anomaly entries are available yet.'),
             entries: [],
             visibleEntries: [],
         });
@@ -70,19 +82,27 @@
 
     function createUnavailableDataset(designation, error) {
         const messages = {
-            'missing-designation': 'Choose a designation to load anomaly data.',
-            'not-found': `No anomaly dataset was found for '${designation}'.`,
-            'invalid-json': `The anomaly dataset for '${designation}' could not be read.`,
-            'network': 'Could not load anomaly data right now. Try again in a moment.',
+            'missing-designation': anpT('Choose a designation to load anomaly data.', 'Choose a designation to load anomaly data.'),
+            'not-found': anpT('No anomaly dataset was found for \'{{designation}}\'.', `No anomaly dataset was found for '${designation}'.`, { designation }),
+            'invalid-json': anpT('The anomaly dataset for \'{{designation}}\' could not be read.', `The anomaly dataset for '${designation}' could not be read.`, { designation }),
+            'network': anpT('Could not load anomaly data right now. Try again in a moment.', 'Could not load anomaly data right now. Try again in a moment.'),
         };
-        return createPlaceholderDataset(designation, messages[error?.code] || 'Anomaly data is currently unavailable.');
+        const subtitle = messages[error?.code] || anpT('Anomaly data is currently unavailable.', 'Anomaly data is currently unavailable.');
+        return normalizeDataset({
+            title: designation
+                ? anpT('{{designation}} anomalies', `${designation} anomalies`, { designation })
+                : anpT('Object anomalies', 'Object anomalies'),
+            subtitle,
+            entries: [],
+            visibleEntries: [],
+        });
     }
 
     async function loadAnomaliesDataset(designation, options = {}) {
         if (!String(designation || '').trim()) {
             throw new AnomaliesLoadError(
                 'missing-designation',
-                'Enter a designation to load anomaly data.'
+                anpT('Enter a designation to load anomaly data.', 'Enter a designation to load anomaly data.')
             );
         }
 
@@ -90,7 +110,7 @@
         if (!fetchImpl) {
             throw new AnomaliesLoadError(
                 'network',
-                'Fetch is unavailable in this environment.'
+                anpT('Fetch is unavailable in this environment.', 'Fetch is unavailable in this environment.')
             );
         }
 
@@ -162,7 +182,8 @@
         if (!Number.isFinite(combinedProbability) || combinedProbability <= 0) return '';
 
         const denominator = Math.max(1, Math.round(1 / combinedProbability));
-        return `Combined probability: 1 out of ${denominator.toLocaleString('en-US')}`;
+        const n = denominator.toLocaleString(anpLocale() === 'he' ? 'he-IL' : 'en-US');
+        return anpT('Combined probability: 1 out of {{n}}', `Combined probability: 1 out of ${n}`, { n });
     }
 
     function getEntryKey(entry) {
@@ -178,7 +199,7 @@
         return {
             visible: Boolean(hasExtraPlayStep || pendingCount > 0),
             disabled: false,
-            label: 'Play',
+            label: anpT('Play', 'Play'),
         };
     }
 
@@ -190,19 +211,21 @@
         const hasQueuedRows = Boolean((queueState.pendingEntries?.length || 0) + (queueState.revealedEntries?.length || 0));
 
         if (!model.entries.length) {
-            return model.subtitle || 'No anomaly entries are available yet.';
+            return model.subtitle || anpT('No anomaly entries are available yet.', 'No anomaly entries are available yet.');
         }
         if (!activeDate) {
-            return hasVisibleRows ? 'Waiting for the active trajectory date.' : 'No visible anomaly rows are available.';
+            return hasVisibleRows
+                ? anpT('Waiting for the active trajectory date.', 'Waiting for the active trajectory date.')
+                : anpT('No visible anomaly rows are available.', 'No visible anomaly rows are available.');
         }
         if (!hasQueuedRows) {
             const visibleMatchesForDate = model.visibleEntries.filter(entry => entry.triggerDate === activeDate).length;
             if (visibleMatchesForDate) {
-                return `All visible anomalies for ${activeDate} are already shown.`;
+                return anpT('All visible anomalies for {{date}} are already shown.', `All visible anomalies for ${activeDate} are already shown.`, { date: activeDate });
             }
-            return `No visible anomalies for ${activeDate}.`;
+            return anpT('No visible anomalies for {{date}}.', `No visible anomalies for ${activeDate}.`, { date: activeDate });
         }
-        return 'Press Play to reveal anomalies for this date.';
+        return anpT('Press Play to reveal anomalies for this date.', 'Press Play to reveal anomalies for this date.');
     }
 
     function getTypewriterStepSize(length) {
@@ -222,7 +245,7 @@
         constructor(root, options = {}) {
             this.root = root;
             this.options = options;
-            this.dataset = normalizeDataset(options.dataset || createPlaceholderDataset(options.designation || '', 'No anomaly data loaded yet.'));
+            this.dataset = normalizeDataset(options.dataset || createPlaceholderDataset(options.designation || '', anpT('No anomaly data loaded yet.', 'No anomaly data loaded yet.')));
             this.queueController = createDateQueueController(this.dataset);
             this.typewriterTimers = [];
             this.activeTypewriterTarget = null;
@@ -237,13 +260,13 @@
             this.root.classList.add('anp-root');
             this.root.innerHTML = `
                 <div class="anp-panel">
-                    <button class="anp-tab" type="button" aria-expanded="false" aria-label="Toggle anomalies panel">
-                        <span class="anp-tab-title">Anomalies</span>
+                    <button class="anp-tab" type="button" aria-expanded="false" aria-label="${anpT('Toggle anomalies panel', 'Toggle anomalies panel')}">
+                        <span class="anp-tab-title">${anpT('Anomalies', 'Anomalies')}</span>
                         <span class="anp-tab-alert" aria-hidden="true"></span>
                     </button>
                     <div class="anp-shell">
                         <div class="anp-header">
-                            <div class="anp-kicker">Date-Driven Narrative</div>
+                            <div class="anp-kicker">${anpT('Date-Driven Narrative', 'Date-Driven Narrative')}</div>
                             <div class="anp-title"></div>
                             <div class="anp-subtitle"></div>
                         </div>
@@ -251,8 +274,8 @@
                             <table class="anp-table" aria-live="polite">
                                 <thead>
                                     <tr>
-                                        <th>Anomaly</th>
-                                        <th>Probability</th>
+                                        <th>${anpT('Anomaly', 'Anomaly')}</th>
+                                        <th>${anpT('Probability', 'Probability')}</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -260,7 +283,7 @@
                             <div class="anp-empty"></div>
                         </div>
                         <div class="anp-footer">
-                            <button class="anp-play-btn" type="button">Play</button>
+                            <button class="anp-play-btn" type="button">${anpT('Play', 'Play')}</button>
                         </div>
                     </div>
                 </div>
@@ -508,10 +531,10 @@
             );
 
             if (this.titleEl) {
-                this.titleEl.textContent = this.dataset.title || 'Object anomalies';
+                this.titleEl.textContent = this.dataset.title || anpT('Object anomalies', 'Object anomalies');
             }
             if (this.subtitleEl) {
-                this.subtitleEl.textContent = this.dataset.subtitle || 'Date-driven anomaly reveal panel';
+                this.subtitleEl.textContent = this.dataset.subtitle || anpT('Date-driven anomaly reveal panel', 'Date-driven anomaly reveal panel');
             }
             if (this.playBtn) {
                 this.playBtn.disabled = playButton.disabled;
@@ -564,14 +587,27 @@
 
     async function bootstrapStandalonePage() {
         if (typeof document === 'undefined') return;
+        await AppTranslations.loadTranslations?.();
+        const locale = AppTranslations.getLocaleFromSearch?.(document?.location?.search || '') || 'en';
+        AppTranslations.setDocumentLocale?.(locale);
         const pageRoot = document.getElementById('anp-page');
         if (!pageRoot) return;
+
+        const pageTitleEl = document.getElementById('anp-page-title');
+        const pageSubtitleEl = document.getElementById('anp-page-subtitle');
+        const fieldLabels = document.querySelectorAll('#anp-page-controls .anp-field-label');
+        const loadBtn = document.getElementById('anp-load-btn');
+        const applyBtn = document.getElementById('anp-apply-date-btn');
+        if (pageTitleEl) pageTitleEl.textContent = anpT('Date-Driven Anomalies Panel', 'Date-Driven Anomalies Panel');
+        if (pageSubtitleEl) pageSubtitleEl.textContent = anpT('Load `data/<designation>/anomalies.json`, then apply dates manually to rehearse the reveal flow before using it inside the trajectory player.', 'Load `data/<designation>/anomalies.json`, then apply dates manually to rehearse the reveal flow before using it inside the trajectory player.');
+        if (fieldLabels[0]) fieldLabels[0].textContent = anpT('Designation', 'Designation');
+        if (loadBtn) loadBtn.textContent = anpT('Load Dataset', 'Load Dataset');
+        if (fieldLabels[1]) fieldLabels[1].textContent = anpT('Test Date', 'Test Date');
+        if (applyBtn) applyBtn.textContent = anpT('Apply Date', 'Apply Date');
 
         const panelRoot = document.getElementById('anp-panel-root');
         const designationInput = document.getElementById('anp-designation-input');
         const dateInput = document.getElementById('anp-date-input');
-        const loadBtn = document.getElementById('anp-load-btn');
-        const applyBtn = document.getElementById('anp-apply-date-btn');
         const panel = createPanelController(panelRoot, {
             initialCollapsed: false,
             designation: designationInput?.value || readDesignationFromUrl(),
@@ -581,11 +617,11 @@
             const designation = String(designationInput?.value || '').trim();
             if (!designation) {
                 panel.setDataset(createUnavailableDataset('', new AnomaliesLoadError('missing-designation', '')));
-                setStandaloneStatus('Enter a designation to load anomaly data.', true);
+                setStandaloneStatus(anpT('Enter a designation to load anomaly data.', 'Enter a designation to load anomaly data.'), true);
                 return;
             }
 
-            setStandaloneStatus(`Loading anomaly data for ${designation}…`, false);
+            setStandaloneStatus(anpT('Loading anomaly data for {{designation}}…', `Loading anomaly data for ${designation}…`, { designation }), false);
 
             try {
                 const dataset = await loadAnomaliesDataset(designation);
@@ -595,8 +631,10 @@
                 }
                 setStandaloneStatus(
                     dataset.entries.length
-                        ? `Loaded ${dataset.entries.length} anomaly row${dataset.entries.length === 1 ? '' : 's'} for ${designation}.`
-                        : `Loaded ${designation}, but the dataset currently has no rows.`
+                        ? (dataset.entries.length === 1
+                            ? anpT('Loaded {{count}} anomaly row for {{designation}}.', `Loaded ${dataset.entries.length} anomaly row for ${designation}.`, { count: dataset.entries.length, designation })
+                            : anpT('Loaded {{count}} anomaly rows for {{designation}}.', `Loaded ${dataset.entries.length} anomaly rows for ${designation}.`, { count: dataset.entries.length, designation }))
+                        : anpT('Loaded {{designation}}, but the dataset currently has no rows.', `Loaded ${designation}, but the dataset currently has no rows.`, { designation })
                 );
             } catch (error) {
                 panel.setDataset(createUnavailableDataset(designation, error));
@@ -612,7 +650,8 @@
             const value = String(dateInput?.value || '').trim();
             panel.applyDate(value);
             if (value) {
-                setStandaloneStatus(`Applied test date ${toIsoDate(value) || value}.`, false);
+                const dateStr = toIsoDate(value) || value;
+                setStandaloneStatus(anpT('Applied test date {{date}}.', `Applied test date ${dateStr}.`, { date: dateStr }), false);
             }
         }
 
@@ -646,7 +685,7 @@
             loadCurrentDesignation();
         } else {
             panel.setDataset(createUnavailableDataset('', new AnomaliesLoadError('missing-designation', '')));
-            setStandaloneStatus('Enter a designation to load anomaly data.', false);
+            setStandaloneStatus(anpT('Enter a designation to load anomaly data.', 'Enter a designation to load anomaly data.'), false);
         }
     }
 

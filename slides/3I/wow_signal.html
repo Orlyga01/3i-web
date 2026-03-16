@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-i18n-ready="false">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,6 +26,10 @@
       overflow: hidden;
     }
 
+    html[data-i18n-ready="false"] body {
+      visibility: hidden;
+    }
+
     main {
       width: min(1180px, calc(100vw - 48px));
       margin: 0 auto;
@@ -42,7 +46,7 @@
     }
 
     p {
-      font-size: clamp(16px, 1.45vw, 19px);
+      font-size: clamp(18px, 1.7vw, 22px);
       line-height: 1.58;
       color: rgba(194, 218, 250, 0.88);
     }
@@ -53,6 +57,7 @@
     }
 
     .concept-grid {
+      --card-size: calc((min(1180px, calc(100vw - 48px)) - (2 * clamp(14px, 1.8vw, 22px))) / 3);
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: clamp(14px, 1.8vw, 22px);
@@ -63,6 +68,7 @@
     .concept-card {
       overflow: hidden;
       min-height: 0;
+      height: calc(var(--card-size) + 30px);
       border: 1px solid rgba(120, 170, 255, 0.22);
       border-radius: 22px;
       background: rgba(6, 16, 40, 0.76);
@@ -95,7 +101,7 @@
 
     .concept-card p {
       margin: 0;
-      font-size: clamp(15px, 1.2vw, 17px);
+      font-size: clamp(17px, 1.45vw, 20px);
       line-height: 1.48;
     }
 
@@ -106,6 +112,7 @@
 
       .concept-grid {
         grid-template-columns: 1fr;
+        --card-size: auto;
       }
 
       main {
@@ -116,34 +123,76 @@
 </head>
 <body>
   <main>
-    <h1>Small Bodies Overview</h1>
-    <p class="slide-intro">These three small-body types can look similar at first glance, but each one behaves differently near the Sun. This quick comparison sets up the comet-tail animation that comes next.</p>
+    <h1 id="slide-title">Small Bodies Overview</h1>
+    <p id="slide-intro" class="slide-intro">These three small-body types can look similar at first glance, but each one behaves differently near the Sun. This quick comparison sets up the comet-tail animation that comes next.</p>
 
-    <section class="concept-grid" aria-label="Asteroid comet and meteoroid comparison">
+    <section id="concept-grid" class="concept-grid" aria-label="Asteroid comet and meteoroid comparison">
       <article class="concept-card">
-        <img src="https://dq0hsqwjhea1.cloudfront.net/asteroid-243-Ida.jpg" alt="Asteroid Ida floating in space">
+        <img id="asteroid-image" src="https://dq0hsqwjhea1.cloudfront.net/asteroid-243-Ida.jpg" alt="Asteroid Ida floating in space">
         <div class="concept-card-body">
-          <h2>Asteroid</h2>
-          <p>A mostly rocky body orbiting the Sun, often larger than a meteoroid and usually found in long-lasting orbital paths.</p>
+          <h2 id="asteroid-title">Asteroid</h2>
+          <p id="asteroid-copy">A mostly rocky body orbiting the Sun, often larger than a meteoroid and usually found in long-lasting orbital paths.</p>
         </div>
       </article>
 
       <article class="concept-card">
-        <img src="https://cdn.mos.cms.futurecdn.net/zwCmiEtaUidG37zts6Cw4A-650-80.jpg.webp" alt="Bright comet with a glowing coma and tail">
+        <img id="comet-image" src="https://cdn.mos.cms.futurecdn.net/zwCmiEtaUidG37zts6Cw4A-650-80.jpg.webp" alt="Bright comet with a glowing coma and tail">
         <div class="concept-card-body">
-          <h2>Comet</h2>
-          <p>An icy and dusty object that can grow a glowing coma and tail when sunlight heats it near the Sun.</p>
+          <h2 id="comet-title">Comet</h2>
+          <p id="comet-copy">An icy and dusty object that can grow a glowing coma and tail when sunlight heats it near the Sun.</p>
         </div>
       </article>
 
       <article class="concept-card">
-        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh4QmAQDrd7qC85EyPu-Fyhhi6vAuk-79F8E-QN1h-THM91Jfvq3Vb_PylisWcOaYjW00HqdVFCnvossPX724s9B9o1KaaJDqoX5dRNoTC1ImSx6jBJw48VD_QuSI8N8PkEtSY0UmnoKCsaGoTeOQLnUp-6urnsrIEVPVd_xOmd_TU8OWMN1BeSmrEh/s1200/Meteorite%20Identification%20Identify%20Meteorites%20in%207%20Steps.webp" alt="Rock sample used here to illustrate a meteoroid">
+        <img id="meteoroid-image" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh4QmAQDrd7qC85EyPu-Fyhhi6vAuk-79F8E-QN1h-THM91Jfvq3Vb_PylisWcOaYjW00HqdVFCnvossPX724s9B9o1KaaJDqoX5dRNoTC1ImSx6jBJw48VD_QuSI8N8PkEtSY0UmnoKCsaGoTeOQLnUp-6urnsrIEVPVd_xOmd_TU8OWMN1BeSmrEh/s1200/Meteorite%20Identification%20Identify%20Meteorites%20in%207%20Steps.webp" alt="Rock sample used here to illustrate a meteoroid">
         <div class="concept-card-body">
-          <h2>Meteoroid</h2>
-          <p>A much smaller rocky or metallic piece traveling through space. If it enters Earth’s atmosphere, it can create a meteor.</p>
+          <h2 id="meteoroid-title">Meteoroid</h2>
+          <p id="meteoroid-copy">A much smaller rocky or metallic piece traveling through space. If it enters Earth’s atmosphere, it can create a meteor.</p>
         </div>
       </article>
     </section>
   </main>
+  <script src="../../translations.js"></script>
+  <script>
+    (async function applySmallBodiesTranslations() {
+      const AppTranslations = window.AppTranslations || {};
+      const locale = AppTranslations.getLocaleFromSearch?.(window.location.search) || "en";
+      AppTranslations.setDocumentLocale?.(locale);
+      try {
+        await AppTranslations.loadTranslations?.();
+
+        const read = (fallback) => AppTranslations.translate?.(fallback, { locale, fallback }) || fallback;
+
+        document.title = read("Small Bodies Overview");
+        const titleEl = document.getElementById("slide-title");
+        const introEl = document.getElementById("slide-intro");
+        const gridEl = document.getElementById("concept-grid");
+        const asteroidTitle = document.getElementById("asteroid-title");
+        const asteroidCopy = document.getElementById("asteroid-copy");
+        const cometTitle = document.getElementById("comet-title");
+        const cometCopy = document.getElementById("comet-copy");
+        const meteoroidTitle = document.getElementById("meteoroid-title");
+        const meteoroidCopy = document.getElementById("meteoroid-copy");
+        const asteroidImage = document.getElementById("asteroid-image");
+        const cometImage = document.getElementById("comet-image");
+        const meteoroidImage = document.getElementById("meteoroid-image");
+
+        if (titleEl) titleEl.textContent = read("Small Bodies Overview");
+        if (introEl) introEl.textContent = read(introEl.textContent);
+        if (gridEl) gridEl.setAttribute("aria-label", read("Asteroid comet and meteoroid comparison"));
+        if (asteroidTitle) asteroidTitle.textContent = read("Asteroid");
+        if (asteroidCopy) asteroidCopy.textContent = read(asteroidCopy.textContent);
+        if (cometTitle) cometTitle.textContent = read("Comet");
+        if (cometCopy) cometCopy.textContent = read(cometCopy.textContent);
+        if (meteoroidTitle) meteoroidTitle.textContent = read("Meteoroid");
+        if (meteoroidCopy) meteoroidCopy.textContent = read(meteoroidCopy.textContent);
+        if (asteroidImage) asteroidImage.alt = read(asteroidImage.alt);
+        if (cometImage) cometImage.alt = read(cometImage.alt);
+        if (meteoroidImage) meteoroidImage.alt = read(meteoroidImage.alt);
+      } finally {
+        document.documentElement.dataset.i18nReady = "true";
+      }
+    }());
+  </script>
 </body>
 </html>

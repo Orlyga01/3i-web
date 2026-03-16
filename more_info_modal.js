@@ -9,6 +9,23 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (MoreInfoShared) {
     'use strict';
 
+    const AppTranslations = (typeof globalThis !== 'undefined' ? globalThis.AppTranslations : null) || {};
+
+    function getModalLocale() {
+        return AppTranslations.getLocaleFromSearch?.(
+            typeof location !== 'undefined' ? location.search : ''
+        ) || 'en';
+    }
+
+    function mt(name, fallback = '', params = null) {
+        const sourceText = fallback || (typeof name === 'string' ? name : '');
+        return AppTranslations.translate?.(sourceText, {
+            locale: getModalLocale(),
+            params,
+            fallback: sourceText,
+        }) || sourceText;
+    }
+
     function buildMoreInfoModalModel(point, designation, options = {}) {
         const normalizeMoreInfo = MoreInfoShared.normalizeMoreInfo || (() => ({
             images: [],
@@ -18,14 +35,15 @@
             hasContent: false,
         }));
         const trimOptionalString = MoreInfoShared.trimOptionalString || (value => typeof value === 'string' ? value.trim() : '');
-        const info = normalizeMoreInfo(point?.more_info, designation);
+        const translatedPoint = AppTranslations.translatePoint?.(designation, point, getModalLocale()) || point;
+        const info = normalizeMoreInfo(translatedPoint?.more_info, designation);
 
         return {
-            title: trimOptionalString(options.title) || 'Point More Info',
-            dateText: trimOptionalString(options.dateText) || trimOptionalString(point?.date) || '--',
-            description: trimOptionalString(options.description ?? point?.description),
+            title: trimOptionalString(options.title) || mt('ui.trajectoryPlayer.pointMoreInfoTitle', 'Point More Info'),
+            dateText: trimOptionalString(options.dateText) || trimOptionalString(translatedPoint?.date) || '--',
+            description: trimOptionalString(options.description ?? translatedPoint?.description),
             designation: trimOptionalString(designation),
-            point: point || null,
+            point: translatedPoint || null,
             info,
             hasContent: Boolean(info.hasContent),
         };
@@ -71,7 +89,7 @@
             if (!this.root || !this.imageEl) return;
             this.scale = 1;
             this.imageEl.src = image?.url || '';
-            this.imageEl.alt = image?.caption || 'Zoomed image';
+            this.imageEl.alt = image?.caption || mt('ui.moreInfoModal.zoomedImageAlt', 'Zoomed image');
             this.applyScale();
             if (this.captionEl) {
                 this.captionEl.textContent = image?.caption || '';
@@ -135,7 +153,7 @@
             this.closeBtn = this.root.querySelector('.mi-close-btn');
             this.zoomController = new MoreInfoImageZoomController(this.root.querySelector('.mi-zoom-root'));
 
-            this.kickerEl.textContent = this.options.title || 'Point More Info';
+            this.kickerEl.textContent = this.options.title || mt('ui.trajectoryPlayer.pointMoreInfoTitle', 'Point More Info');
 
             this.closeBtn?.addEventListener('click', () => this.hide());
             this.expandBtn?.addEventListener('click', () => this.toggleExpanded());
@@ -188,7 +206,7 @@
                 const img = document.createElement('img');
                 img.className = 'mi-image';
                 img.src = image.url;
-                img.alt = image.caption || 'More info image';
+                img.alt = image.caption || mt('ui.moreInfoModal.moreInfoImageAlt', 'More info image');
                 img.addEventListener('click', () => this.zoomController.show(image));
                 card.appendChild(img);
 
@@ -234,7 +252,7 @@
                 const frame = document.createElement('iframe');
                 frame.className = 'mi-video-frame';
                 frame.src = model.src;
-                frame.title = model.title || 'Embedded video';
+                frame.title = model.title || mt('ui.moreInfoModal.embeddedVideoTitle', 'Embedded video');
                 frame.loading = 'lazy';
                 frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
                 frame.allowFullscreen = true;
@@ -258,7 +276,7 @@
                 link.href = model.src;
                 link.target = '_blank';
                 link.rel = 'noreferrer noopener';
-                link.textContent = model.title || 'Open video';
+                link.textContent = model.title || mt('ui.moreInfoModal.openVideo', 'Open video');
                 section.appendChild(link);
                 return true;
             }
@@ -269,7 +287,7 @@
         show(context = {}) {
             if (!this.root || !this.bodyEl || !this.dateEl || !this.descriptionEl) return;
             const model = buildMoreInfoModalModel(context.point, context.designation, {
-                title: context.title || this.options.title || 'Point More Info',
+                title: context.title || this.options.title || mt('ui.trajectoryPlayer.pointMoreInfoTitle', 'Point More Info'),
                 dateText: context.dateText,
                 description: context.description,
             });
@@ -282,18 +300,18 @@
             this.bodyEl.innerHTML = '';
 
             if (model.info.pageName) {
-                const pageSection = this.buildSection('Custom Page');
+                const pageSection = this.buildSection(mt('ui.moreInfoModal.customPage', 'Custom Page'));
                 const frame = document.createElement('iframe');
                 frame.className = 'mi-page-frame';
-                frame.src = model.info.pageName;
-                frame.title = 'Embedded more info page';
+                frame.src = AppTranslations.withLangParam?.(model.info.pageName, getModalLocale()) || model.info.pageName;
+                frame.title = mt('ui.moreInfoModal.embeddedPageTitle', 'Embedded more info page');
                 frame.loading = 'lazy';
                 pageSection.appendChild(frame);
                 this.bodyEl.appendChild(pageSection);
             }
 
             if (model.info.text) {
-                const textSection = this.buildSection('Additional Text');
+                const textSection = this.buildSection(mt('ui.moreInfoModal.additionalText', 'Additional Text'));
                 const textEl = document.createElement('div');
                 textEl.className = 'mi-text';
                 textEl.textContent = model.info.text;
@@ -302,13 +320,13 @@
             }
 
             if (model.info.images.length) {
-                const imageSection = this.buildSection('Images');
+                const imageSection = this.buildSection(mt('ui.moreInfoModal.images', 'Images'));
                 this.appendImages(imageSection, model.info.images);
                 this.bodyEl.appendChild(imageSection);
             }
 
             if (model.info.video) {
-                const videoSection = this.buildSection('Video');
+                const videoSection = this.buildSection(mt('ui.moreInfoModal.video', 'Video'));
                 if (this.appendVideo(videoSection, model.info.video, model.designation)) {
                     this.bodyEl.appendChild(videoSection);
                 }
@@ -317,7 +335,7 @@
             if (!this.bodyEl.childElementCount) {
                 const empty = document.createElement('div');
                 empty.className = 'mi-empty';
-                empty.textContent = 'No additional information is available for this point yet.';
+                empty.textContent = mt('ui.moreInfoModal.noContent', 'No additional information is available for this point yet.');
                 this.bodyEl.appendChild(empty);
             }
 
