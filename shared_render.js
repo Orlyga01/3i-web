@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 // SHARED RENDERING LIBRARY
-// Common functions used by both solar_comet and atlas_journey
+// Common rendering helpers shared across the interactive viewer pages
 // ═══════════════════════════════════════════════════════════════
 
 const canvas = document.getElementById('c');
@@ -248,8 +248,13 @@ function drawCometBillboard(targetCtx, options = {}) {
     tint = parseCometTint(),
     image = cometImage,
     tailReveal = 1,
+    tailRevealMode = 'default',
+    tailRevealAngle = null,
+    anchorX = 0.5,
     anchorY = 0.9,
     preserveSpriteColor = false,
+    showCoreGlow = true,
+    showNucleusGlow = true,
   } = options;
 
   if (image?.complete && image.naturalWidth > 0) {
@@ -258,22 +263,74 @@ function drawCometBillboard(targetCtx, options = {}) {
     const imgH = image.naturalHeight || image.height;
     const drawH = size;
     const drawW = drawH * (imgW / Math.max(imgH, 1));
+    const anchorXpx = drawW * anchorX;
     const anchorYpx = drawH * anchorY;
-    const visibleFrac = lerp(0.2, 1, reveal);
-    const srcY = imgH * (1 - visibleFrac);
-    const srcH = imgH - srcY;
-    const destY = -anchorYpx + (srcY / imgH) * drawH;
-    const destH = drawH * visibleFrac;
+    let srcY;
+    let srcH;
+    let destY;
+    let destH;
+    let clipRect = null;
+    let clipPolygon = null;
+
+    if (tailRevealMode === 'tail-start') {
+      srcY = 0;
+      srcH = imgH;
+      destY = -anchorYpx;
+      destH = drawH;
+      const axisAngle = Number.isFinite(tailRevealAngle) ? tailRevealAngle : 0;
+      const axisX = Math.cos(axisAngle);
+      const axisY = Math.sin(axisAngle);
+      const normalX = -axisY;
+      const normalY = axisX;
+      const diagonal = Math.hypot(drawW, drawH);
+      const revealLength = Math.max(0, diagonal * reveal);
+      const headPadding = Math.max(drawW, drawH) * 0.18;
+      // Keep the reveal band wider than the rotated sprite bounds so the far
+      // end of the tail is not cropped while the visible length grows.
+      const halfWidth = diagonal;
+      const startX = -axisX * headPadding;
+      const startY = -axisY * headPadding;
+      const endX = axisX * revealLength;
+      const endY = axisY * revealLength;
+      clipPolygon = [
+        { x: startX + normalX * halfWidth, y: startY + normalY * halfWidth },
+        { x: startX - normalX * halfWidth, y: startY - normalY * halfWidth },
+        { x: endX - normalX * halfWidth, y: endY - normalY * halfWidth },
+        { x: endX + normalX * halfWidth, y: endY + normalY * halfWidth },
+      ];
+    } else {
+      const visibleFrac = lerp(0.2, 1, reveal);
+      srcY = imgH * (1 - visibleFrac);
+      srcH = imgH - srcY;
+      destY = -anchorYpx + (srcY / imgH) * drawH;
+      destH = drawH * visibleFrac;
+    }
+
+    const destX = -anchorXpx;
 
     if (preserveSpriteColor) {
       targetCtx.save();
       targetCtx.translate(x, y);
       targetCtx.rotate(rotationAngle);
+      if (clipPolygon) {
+        targetCtx.beginPath();
+        targetCtx.moveTo(clipPolygon[0].x, clipPolygon[0].y);
+        for (let i = 1; i < clipPolygon.length; i += 1) {
+          targetCtx.lineTo(clipPolygon[i].x, clipPolygon[i].y);
+        }
+        targetCtx.closePath();
+        targetCtx.clip();
+      }
+      if (clipRect) {
+        targetCtx.beginPath();
+        targetCtx.rect(clipRect.x, clipRect.y, clipRect.width, clipRect.height);
+        targetCtx.clip();
+      }
       targetCtx.globalAlpha = alpha;
       targetCtx.drawImage(
         image,
         0, srcY, imgW, srcH,
-        -drawW / 2, destY, drawW, destH,
+        destX, destY, drawW, destH,
       );
       targetCtx.restore();
       return;
@@ -282,19 +339,35 @@ function drawCometBillboard(targetCtx, options = {}) {
     targetCtx.save();
     targetCtx.translate(x, y);
     targetCtx.rotate(rotationAngle);
-    const coreGlowRadius = Math.max(size * (0.16 + reveal * 0.06), 10);
-    const coreGlow = targetCtx.createRadialGradient(0, 0, 0, 0, 0, coreGlowRadius);
-    coreGlow.addColorStop(0, `rgba(${tint.r},${tint.g},${tint.b},${0.32 * alpha})`);
-    coreGlow.addColorStop(0.65, `rgba(${tint.r},${tint.g},${tint.b},${0.14 * alpha})`);
-    coreGlow.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
-    targetCtx.beginPath();
-    targetCtx.arc(0, 0, coreGlowRadius, 0, Math.PI * 2);
-    targetCtx.fillStyle = coreGlow;
-    targetCtx.fill();
+    if (clipPolygon) {
+      targetCtx.beginPath();
+      targetCtx.moveTo(clipPolygon[0].x, clipPolygon[0].y);
+      for (let i = 1; i < clipPolygon.length; i += 1) {
+        targetCtx.lineTo(clipPolygon[i].x, clipPolygon[i].y);
+      }
+      targetCtx.closePath();
+      targetCtx.clip();
+    }
+    if (clipRect) {
+      targetCtx.beginPath();
+      targetCtx.rect(clipRect.x, clipRect.y, clipRect.width, clipRect.height);
+      targetCtx.clip();
+    }
+    if (showCoreGlow) {
+      const coreGlowRadius = Math.max(size * (0.16 + reveal * 0.06), 10);
+      const coreGlow = targetCtx.createRadialGradient(0, 0, 0, 0, 0, coreGlowRadius);
+      coreGlow.addColorStop(0, `rgba(${tint.r},${tint.g},${tint.b},${0.32 * alpha})`);
+      coreGlow.addColorStop(0.65, `rgba(${tint.r},${tint.g},${tint.b},${0.14 * alpha})`);
+      coreGlow.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
+      targetCtx.beginPath();
+      targetCtx.arc(0, 0, coreGlowRadius, 0, Math.PI * 2);
+      targetCtx.fillStyle = coreGlow;
+      targetCtx.fill();
+    }
     drawTintedSprite(
       targetCtx,
       image,
-      -drawW / 2,
+      destX,
       destY,
       drawW,
       destH,
@@ -302,39 +375,45 @@ function drawCometBillboard(targetCtx, options = {}) {
       tint,
       { x: 0, y: srcY, width: imgW, height: srcH },
     );
-    const nucleusRadius = Math.max(size * 0.06, 3.5);
-    const nucleus = targetCtx.createRadialGradient(0, 0, 0, 0, 0, nucleusRadius);
-    nucleus.addColorStop(0, `rgba(255,255,255,${Math.min(1, alpha)})`);
-    nucleus.addColorStop(0.45, `rgba(${tint.r},${tint.g},${tint.b},${0.92 * alpha})`);
-    nucleus.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
-    targetCtx.beginPath();
-    targetCtx.arc(0, 0, nucleusRadius, 0, Math.PI * 2);
-    targetCtx.fillStyle = nucleus;
-    targetCtx.fill();
+    if (showNucleusGlow) {
+      const nucleusRadius = Math.max(size * 0.06, 3.5);
+      const nucleus = targetCtx.createRadialGradient(0, 0, 0, 0, 0, nucleusRadius);
+      nucleus.addColorStop(0, `rgba(255,255,255,${Math.min(1, alpha)})`);
+      nucleus.addColorStop(0.45, `rgba(${tint.r},${tint.g},${tint.b},${0.92 * alpha})`);
+      nucleus.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
+      targetCtx.beginPath();
+      targetCtx.arc(0, 0, nucleusRadius, 0, Math.PI * 2);
+      targetCtx.fillStyle = nucleus;
+      targetCtx.fill();
+    }
     targetCtx.restore();
     return;
   }
 
-  const glowSize = Math.max(size * 0.44, 12);
-  const outerGlow = targetCtx.createRadialGradient(x, y, 0, x, y, glowSize);
-  outerGlow.addColorStop(0, `rgba(${tint.r},${tint.g},${tint.b},${0.5 * alpha})`);
-  outerGlow.addColorStop(0.3, `rgba(${tint.r},${tint.g},${tint.b},${0.3 * alpha})`);
-  outerGlow.addColorStop(0.6, `rgba(${tint.r},${tint.g},${tint.b},${0.15 * alpha})`);
-  outerGlow.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
-  targetCtx.beginPath();
-  targetCtx.arc(x, y, glowSize, 0, Math.PI * 2);
-  targetCtx.fillStyle = outerGlow;
-  targetCtx.fill();
+  if (showCoreGlow) {
+    const glowSize = Math.max(size * 0.44, 12);
+    const outerGlow = targetCtx.createRadialGradient(x, y, 0, x, y, glowSize);
+    outerGlow.addColorStop(0, `rgba(${tint.r},${tint.g},${tint.b},${0.5 * alpha})`);
+    outerGlow.addColorStop(0.3, `rgba(${tint.r},${tint.g},${tint.b},${0.3 * alpha})`);
+    outerGlow.addColorStop(0.6, `rgba(${tint.r},${tint.g},${tint.b},${0.15 * alpha})`);
+    outerGlow.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
+    targetCtx.beginPath();
+    targetCtx.arc(x, y, glowSize, 0, Math.PI * 2);
+    targetCtx.fillStyle = outerGlow;
+    targetCtx.fill();
+  }
 
-  const nucleusRadius = Math.max(size * 0.11, 3);
-  const nucleus = targetCtx.createRadialGradient(x, y, 0, x, y, nucleusRadius);
-  nucleus.addColorStop(0, `rgba(255,255,255,${alpha})`);
-  nucleus.addColorStop(0.4, `rgba(${tint.r},${tint.g},${tint.b},${0.85 * alpha})`);
-  nucleus.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
-  targetCtx.beginPath();
-  targetCtx.arc(x, y, nucleusRadius, 0, Math.PI * 2);
-  targetCtx.fillStyle = nucleus;
-  targetCtx.fill();
+  if (showNucleusGlow) {
+    const nucleusRadius = Math.max(size * 0.11, 3);
+    const nucleus = targetCtx.createRadialGradient(x, y, 0, x, y, nucleusRadius);
+    nucleus.addColorStop(0, `rgba(255,255,255,${alpha})`);
+    nucleus.addColorStop(0.4, `rgba(${tint.r},${tint.g},${tint.b},${0.85 * alpha})`);
+    nucleus.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
+    targetCtx.beginPath();
+    targetCtx.arc(x, y, nucleusRadius, 0, Math.PI * 2);
+    targetCtx.fillStyle = nucleus;
+    targetCtx.fill();
+  }
 }
 
 function drawOrbit(p, alpha) {
@@ -536,12 +615,18 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
   const {
     sizeMultiplier = 1,
     tailReveal = 1,
+    tailRevealMode = 'default',
+    tailRevealAngle,
     image = cometImage,
+    anchorX,
     anchorY,
     imageBaseTailAngle = -Math.PI / 2,
     alignToSun = true,
+    tailDirectionSign = 1,
     rotationOffset = 0,
     preserveSpriteColor = false,
+    showCoreGlow = true,
+    showNucleusGlow = true,
   } = options;
   const { sx, sy, depth } = project3(wx, wy, wz);
   if (depth < 5) return;
@@ -551,18 +636,20 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
   if (image.complete && image.naturalWidth > 0) {
     let rotationAngle = rotationOffset;
     if (alignToSun) {
-      // Calculate direction AWAY from the Sun so the tail always points anti-sunward.
+      // Rotate the sprite so its built-in tail direction lines up with the
+      // requested Sun-relative direction for this object.
       const d3 = Math.sqrt(wx * wx + wy * wy + wz * wz) || 1;
-      const awaySunX = wx / d3;
-      const awaySunY = wy / d3;
-      const awaySunZ = wz / d3;
+      const directionSign = Number(tailDirectionSign) < 0 ? -1 : 1;
+      const tailDirX = (wx / d3) * directionSign;
+      const tailDirY = (wy / d3) * directionSign;
+      const tailDirZ = (wz / d3) * directionSign;
       
-      // Project that anti-sun direction into screen space to rotate the sprite.
+      // Project that target tail direction into screen space to rotate the sprite.
       const pointLen = 100;
       const { sx: tailSx, sy: tailSy } = project3(
-        wx + awaySunX * pointLen,
-        wy + awaySunY * pointLen,
-        wz + awaySunZ * pointLen,
+        wx + tailDirX * pointLen,
+        wy + tailDirY * pointLen,
+        wz + tailDirZ * pointLen,
       );
       const screenAngle = Math.atan2(tailSy - sy, tailSx - sx);
       rotationAngle += screenAngle - imageBaseTailAngle;
@@ -580,7 +667,12 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
       tint,
       image,
       tailReveal,
+      tailRevealMode,
+      tailRevealAngle,
       preserveSpriteColor,
+      showCoreGlow,
+      showNucleusGlow,
+      ...(anchorX !== undefined && { anchorX }),
       ...(anchorY !== undefined && { anchorY }),
     });
   } else {
@@ -593,7 +685,12 @@ function drawComet(wx, wy, wz, alpha, col, options = {}) {
       tint,
       image,
       tailReveal,
+      tailRevealMode,
+      tailRevealAngle,
       preserveSpriteColor,
+      showCoreGlow,
+      showNucleusGlow,
+      ...(anchorX !== undefined && { anchorX }),
       ...(anchorY !== undefined && { anchorY }),
     });
   }

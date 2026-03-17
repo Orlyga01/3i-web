@@ -8,9 +8,7 @@ const PUBLIC_ROOT_FILES = Object.freeze([
     'object_motion.html',
     'trajectory_player.html',
     'more_info_2025_12_13.html',
-    'solar_comet.html',
     'solar_system.html',
-    'atlas_journey.html',
     'styles.css',
     'more_info_modal.css',
     'app_config.js',
@@ -23,8 +21,6 @@ const PUBLIC_ROOT_FILES = Object.freeze([
     'solar_system.js',
     'shared_render.js',
     'main.js',
-    'atlas_main.js',
-    'atlas_data.js',
 ]);
 
 const PUBLIC_DIRECTORIES = Object.freeze([

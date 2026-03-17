@@ -2,10 +2,9 @@
   "object": "Oumuamua",
   "designation": "Oumuamua",
   "createdAt": "2026-03-16T00:00:00Z",
-  "updatedAt": "2026-03-16T00:00:00Z",
-  "defaultSpeedMultiplier": 3,
+  "updatedAt": "2026-03-16T13:03:45.476Z",
   "source": "JPL Horizons VECTORS",
-  "dateRange": "2017-01-01 -> 2019-04-21",
+  "dateRange": "2017-01-01 → 2019-04-21",
   "scale": {
     "auToPx": 175
   },
@@ -106,8 +105,8 @@
         "wy": -46.545,
         "wz": 23.518
       },
-      "durationPct": 100,
-      "stoppable": true,
+      "durationPct": 20,
+      "stoppable": false,
       "camera": {
         "el": 52.8,
         "az": 0.03,
@@ -132,9 +131,16 @@
         "wy": -33.379,
         "wz": 7.99
       },
-      "durationPct": 100,
+      "durationPct": 20,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 15.6,
+        "az": 0,
+        "zoom": 95,
+        "tx": 9.21,
+        "ty": -1065.45,
+        "tz": 60.28
+      },
       "description": null,
       "image": null
     },
@@ -151,9 +157,16 @@
         "wy": -23.837,
         "wz": -2.557
       },
-      "durationPct": 100,
+      "durationPct": 20,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 14,
+        "az": -0.01,
+        "zoom": 95,
+        "tx": 7.16,
+        "ty": -1137.16,
+        "tz": -227.42
+      },
       "description": null,
       "image": null
     },
@@ -170,9 +183,16 @@
         "wy": -13.639,
         "wz": -13.011
       },
-      "durationPct": 100,
+      "durationPct": 20,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 22.65,
+        "az": 0,
+        "zoom": 6,
+        "tx": -3.84,
+        "ty": 695.7,
+        "tz": -439.2
+      },
       "description": null,
       "image": null
     },
@@ -420,12 +440,12 @@
       "durationPct": 100,
       "stoppable": false,
       "camera": {
-        "el": 52.8,
-        "az": 0.03,
+        "el": 8.6,
+        "az": 0.06,
         "zoom": 95,
-        "tx": -3.64,
-        "ty": -699.99,
-        "tz": 388.9
+        "tx": 47.38,
+        "ty": -919.66,
+        "tz": 40.41
       },
       "description": null,
       "image": null
@@ -601,5 +621,6 @@
       "description": null,
       "image": null
     }
-  ]
+  ],
+  "defaultSpeedMultiplier": 2
 }

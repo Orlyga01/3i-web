@@ -166,7 +166,7 @@
         "el": 4.6,
         "az": 0.08,
         "zoom": 40,
-        "tx": 10,
+        "tx": 30,
         "ty": 30,
         "tz": 0
       },
@@ -322,9 +322,9 @@
       "camera": {
         "el": 5,
         "az": -0.08,
-        "zoom": 85,
+        "zoom": 68,
         "tx": -143.26,
-        "ty": 26.46,
+        "ty": 146.46,
         "tz": 3.26
       },
       "description": null,
@@ -348,9 +348,9 @@
       "camera": {
         "el": 3.8,
         "az": 0.18,
-        "zoom": 90,
+        "zoom": 70,
         "tx": -205.48,
-        "ty": -9.85,
+        "ty": 100,
         "tz": 15.13
       },
       "description": "Perihelion — closest approach to Sun, 1.356 AU. Peak brightness.",
@@ -559,14 +559,14 @@
       "jd": 2461115.5,
       "date": "2026-03-16",
       "au": {
-        "x": -2.0571,
-        "y": 5.2571,
-        "z": -0.2571
+        "x": -1.9614,
+        "y": 4.6859,
+        "z": -0.2134
       },
       "px": {
-        "wx": -360,
-        "wy": 920,
-        "wz": -45
+        "wx": -343,
+        "wy": 820,
+        "wz": -37
       },
       "durationPct": 100,
       "stoppable": false,
@@ -578,7 +578,59 @@
         "ty": 83.4,
         "tz": 50.48
       },
-      "description": "Jupiter flyby — 0.36 AU from Jupiter. Exits solar system permanently. (Extrapolated point)",
+      "description": "Jupiter flyby — 0.355 AU from Jupiter. Exits solar system permanently. (Extrapolated point)",
+      "image": null
+    },
+    {
+      "jd": 2461115.5,
+      "date": "2026-03-16",
+      "au": {
+        "x": -1.9614,
+        "y": 4.6859,
+        "z": -0.2134
+      },
+      "px": {
+        "wx": -343,
+        "wy": 820,
+        "wz": -37
+      },
+      "durationPct": 100,
+      "stoppable": true,
+      "camera": {
+        "el": 21.4,
+        "az": 0.82,
+        "zoom": 100,
+        "tx": -307.88,
+        "ty": 480.4,
+        "tz": 50.48
+      },
+      "description": "Jupiter flyby — 0.355 AU from Jupiter. Exits solar system permanently. (Extrapolated point)",
+      "image": null
+    },
+    {
+      "jd": 2461115.5,
+      "date": "2026-03-16",
+      "au": {
+        "x": -1.9614,
+        "y": 4.6859,
+        "z": -0.2134
+      },
+      "px": {
+        "wx": -343,
+        "wy": 820,
+        "wz": -37
+      },
+      "durationPct": 100,
+      "stoppable": false,
+      "camera": {
+        "el": 21.4,
+        "az": 0.82,
+        "zoom": 100,
+        "tx": -307.88,
+        "ty": 670.4,
+        "tz": 80.48
+      },
+      "description": "Jupiter flyby — 0.355 AU from Jupiter. Exits solar system permanently. (Extrapolated point)",
       "image": null
     }
   ]

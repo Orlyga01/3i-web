@@ -25,9 +25,14 @@
       "src": "slides/3I/comet_tail.html"
     },
     {
-      "id": "interstellar-comets",
-      "title": "Interstellar Comets",
-      "src": "solar_comet.html"
+      "id": "borisov-trajectory-player",
+      "title": "2I/Borisov Trajectory Player",
+      "src": "trajectory_player?designation=2I%2FBorisov&source=web"
+    },
+    {
+      "id": "oumuamua-trajectory-player",
+      "title": "Oumuamua Trajectory Player",
+      "src": "trajectory_player?designation=Oumuamua&source=web&autoplay=1"
     },
     {
       "id": "jupiter-hill-radius",

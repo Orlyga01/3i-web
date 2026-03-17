@@ -626,8 +626,8 @@
     {
       "name": "Small Bodies Overview",
       "translations": {
-        "en": "Small Bodies Overview",
-        "he": "סקירת גופים קטנים"
+        "en": "Small Interstellar Bodies ",
+        "he": "גופים בין כוכביים קטנים"
       }
     },
     {
@@ -682,8 +682,8 @@
     {
       "name": "These three small-body types can look similar at first glance, but each one behaves differently near the Sun. This quick comparison sets up the comet-tail animation that comes next.",
       "translations": {
-        "en": "These three small-body types can look similar at first glance, but each one behaves differently near the Sun.",
-        "he": "שלושת סוגי הגופים הקטנים האלה יכולים להיראות דומים במבט ראשון, אבל כל אחד מהם מתנהג אחרת ליד השמש."
+        "en": "Interstellar bodies are objects that travel between stars.",
+        "he": "גוף בין כוכבי משמעו: גוף שהגיע מחוץ למערכת השמש שלנו"
       }
     },
     {
@@ -897,10 +897,10 @@
       }
     },
     {
-      "name": "Jupiter flyby — 0.36 AU from Jupiter. Exits solar system permanently. (Extrapolated point)",
+      "name": "Jupiter flyby — 0.355 AU from Jupiter. Exits solar system permanently. (Extrapolated point)",
       "translations": {
-        "en": "Jupiter flyby — 0.36 AU from Jupiter. Exits solar system permanently. (Extrapolated point)",
-        "he": "מעבר ליד צדק — 0.36 AU מצדק. יוצא ממערכת השמש לצמיתות. (נקודת אקסטרפולציה)"
+        "en": "Jupiter flyby — 0.355 AU from Jupiter. Exits solar system permanently. (Extrapolated point)",
+        "he": "מעבר ליד צדק — 0.355 AU מצדק. יוצא ממערכת השמש לצמיתות. (נקודת אקסטרפולציה)"
       }
     },
     {

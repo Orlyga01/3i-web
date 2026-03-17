@@ -16,6 +16,7 @@
     const SCRIPT_BASE_URL = getScriptBaseUrl();
     const HEBREW_FONT_URL = 'https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap';
     const HEBREW_FONT_LINK_ID = 'app-hebrew-font-link';
+    const HEBREW_FONT_STYLE_ID = 'app-hebrew-font-style';
 
     let cachedTranslations = null;
     let cachedMaps = {};
@@ -63,6 +64,20 @@
         return RTL_LOCALES.has(normalizeLocale(locale));
     }
 
+    function getHebrewFontCss() {
+        return [
+            'html[lang="he"],',
+            'html[lang="he"] body,',
+            'html[lang="he"] body *,',
+            'html[lang="he"] button,',
+            'html[lang="he"] input,',
+            'html[lang="he"] select,',
+            'html[lang="he"] textarea {',
+            '    font-family: "Fredoka", "Segoe UI", Tahoma, sans-serif !important;',
+            '}',
+        ].join('\n');
+    }
+
     function ensureHebrewFont(locale) {
         if (typeof document === 'undefined') return;
         if (normalizeLocale(locale) !== 'he') return;
@@ -75,7 +90,12 @@
             document.head.appendChild(link);
         }
 
-        /* Font rules are in styles.css; link ensures Fredoka loads on pages without styles.css (e.g. presentation) */
+        if (!document.getElementById(HEBREW_FONT_STYLE_ID)) {
+            const style = document.createElement('style');
+            style.id = HEBREW_FONT_STYLE_ID;
+            style.textContent = getHebrewFontCss();
+            document.head.appendChild(style);
+        }
     }
 
     function setDocumentLocale(locale) {
@@ -341,6 +361,7 @@
         getLocaleFromSearch,
         getCurrentLocale,
         isRtlLocale,
+        getHebrewFontCss,
         setDocumentLocale,
         loadTranslations,
         getTranslationsUrl,

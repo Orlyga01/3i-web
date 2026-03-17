@@ -10,6 +10,7 @@ const {
     readDesignationFromUrl,
     normalizeRequestedSource,
     readSourceFromUrl,
+    readAutoplayFromUrl,
     resolveRequestedSource,
     sanitize,
     buildPath,
@@ -19,6 +20,7 @@ const {
     normalizeVisualColor,
     resolveDefaultSpeedMultiplier,
     getObjectVisualConfig,
+    getObjectRenderScale,
     getObjectSpinRotation,
     getObjectTailReveal,
     getNamedVisualColorRgb,
@@ -27,17 +29,23 @@ const {
     interpolateAppearanceForSegment,
     catmullRom,
     getSegmentDurationMs,
+    getTimelineProgress,
     buildTrailThroughIndex,
     interpolateWorldPosition,
     interpolateDate,
     interpolateSunDistance,
     getCameraTargetForSegment,
     lerpCameraState,
+    formatCompactStatsDate,
+    is3iTailWindow,
     shouldPauseAtPoint,
     getCanvasClickAction,
     getPlayAction,
     areSecondaryControlsDisabled,
     getControlBarState,
+    shouldEnableTrajectoryOverlay,
+    shouldShow3iJupiterDistanceSphere,
+    get3iJupiterDistanceSphereRadiusWorld,
     getFloatingStatsLayout,
     shouldIgnorePlaybackShortcut,
     getFixedReferencePoint,
@@ -93,6 +101,14 @@ describe('source query helpers', () => {
         expect(readSourceFromUrl('?source=local')).toBe('local');
         expect(readSourceFromUrl('?s=web')).toBe('web');
         expect(readSourceFromUrl('?designation=3I')).toBe('');
+    });
+
+    test('reads autoplay query parameter and alias', () => {
+        expect(readAutoplayFromUrl('?autoplay=1')).toBe(true);
+        expect(readAutoplayFromUrl('?auto=true')).toBe(true);
+        expect(readAutoplayFromUrl('?autoplay=false')).toBe(false);
+        expect(readAutoplayFromUrl('?autoplay=0')).toBe(false);
+        expect(readAutoplayFromUrl('?designation=3I')).toBe(false);
     });
 
     test('falls back to web when local storage is globally disabled', () => {
@@ -243,12 +259,15 @@ describe('animation helpers', () => {
     test('uses Borisov comet visuals without changing other objects', () => {
         expect(getObjectVisualConfig('3I')).toEqual({
             spriteSrc: 'assets/3igreen_1.png',
-            imageBaseTailAngleRad: 150 * (Math.PI / 180),
+            imageBaseTailAngleRad: 55 * (Math.PI / 180),
             anchorY: 0.5,
             alignToSun: true,
+            tailDirectionSign: -1,
             axialSpinMultiplier: 0,
             preserveSpriteColor: false,
-            showColorRing: true,
+            showCoreGlow: false,
+            showNucleusGlow: false,
+            showColorRing: false,
             tailRevealMode: 'full',
         });
         expect(getObjectVisualConfig('2I/Borisov')).toEqual({
@@ -256,6 +275,7 @@ describe('animation helpers', () => {
             imageBaseTailAngleRad: -Math.PI / 2,
             anchorY: 0.9,
             alignToSun: true,
+            tailDirectionSign: 1,
             axialSpinMultiplier: 0,
             preserveSpriteColor: false,
             showColorRing: true,
@@ -273,20 +293,54 @@ describe('animation helpers', () => {
             showColorRing: false,
             tailRevealMode: 'full',
         });
+        expect(is3iTailWindow('3I', '2025-11-12')).toBe(false);
+        expect(is3iTailWindow('3I', '2025-11-13')).toBe(true);
+        expect(is3iTailWindow('3I', '2026-02-28')).toBe(true);
+        expect(is3iTailWindow('3I', '2026-03-01')).toBe(false);
+        expect(getObjectVisualConfig('3I', '2025-11-13')).toEqual({
+            spriteSrc: 'assets/3i_tail.png',
+            imageBaseTailAngleRad: 55 * (Math.PI / 180),
+            anchorX: 240 / 533,
+            anchorY: 240 / 800,
+            alignToSun: true,
+            tailDirectionSign: -1,
+            axialSpinMultiplier: 0,
+            preserveSpriteColor: false,
+            showCoreGlow: false,
+            showNucleusGlow: false,
+            showColorRing: false,
+            tailRevealMode: 'tail-start',
+        });
+        expect(getObjectRenderScale('3I', '2025-11-13')).toBeCloseTo(1, 6);
+        expect(getObjectRenderScale('3I', '2026-02-28')).toBeCloseTo(1.85, 6);
+        expect(getObjectRenderScale('3I', '2026-01-15')).toBeGreaterThan(1);
+        expect(getObjectRenderScale('2I/Borisov', '2026-01-15')).toBe(1);
         expect(getObjectSpinRotation('3I', 2.5)).toBe(0);
         expect(getObjectSpinRotation('2I/Borisov', 2.5)).toBe(0);
         expect(getObjectSpinRotation('Oumuamua', 2.5)).toBe(0.5);
         expect(getObjectTailReveal('3I', 2.5)).toBe(1);
+        expect(getObjectTailReveal('3I', 0, '2025-11-13')).toBe(0);
+        expect(getObjectTailReveal('3I', 0, '2026-02-28')).toBe(1);
+        expect(getObjectTailReveal('3I', 0, '2026-01-15')).toBeGreaterThan(0);
+        expect(getObjectTailReveal('3I', 0, '2026-01-15')).toBeLessThan(1);
         expect(getObjectTailReveal('2I/Borisov', 6)).toBe(0);
         expect(getObjectTailReveal('2I/Borisov', 0.5)).toBe(1);
         expect(getObjectTailReveal('2I/Borisov', 2.85)).toBeGreaterThan(0);
         expect(getObjectTailReveal('2I/Borisov', 2.85)).toBeLessThan(1);
     });
 
-    test('segment duration uses destination point durationPct', () => {
-        expect(getSegmentDurationMs(points, 0, 1)).toBe(6000);
-        expect(getSegmentDurationMs(points, 1, 2)).toBe(4000);
-        expect(getSegmentDurationMs(points, 0, 0.25)).toBe(24000);
+    test('segment duration uses current point durationPct with 1 second base', () => {
+        expect(getSegmentDurationMs(points, 0, 1)).toBe(1000);
+        expect(getSegmentDurationMs(points, 1, 2)).toBe(750);
+        expect(getSegmentDurationMs(points, 0, 0.25)).toBe(4000);
+    });
+
+    test('timeline progress is weighted by segment duration', () => {
+        expect(getTimelineProgress(points, 0, 0.5, 1)).toBeCloseTo(500 / 4500, 6);
+        expect(getTimelineProgress(points, 1, 0, 1)).toBeCloseTo(1000 / 4500, 6);
+        expect(getTimelineProgress(points, 1, 0.5, 1)).toBeCloseTo(1750 / 4500, 6);
+        expect(getTimelineProgress(points, 2, 1, 1)).toBe(1);
+        expect(getTimelineProgress(points, 3, 0, 1)).toBe(1);
     });
 
     test('rebuilds trail points through a selected point index', () => {
@@ -303,6 +357,21 @@ describe('animation helpers', () => {
         expect(pos.wx).toBeCloseTo(15, 5);
         expect(pos.wy).toBeCloseTo(30, 5);
         expect(pos.wz).toBeCloseTo(45, 5);
+    });
+
+    test('clamps spline overshoot within the current segment endpoints', () => {
+        const overshootPoints = [
+            normalizePoint({ date: '2025-01-01', px: { wx: 0, wy: 0, wz: 0 }, au: { x: 0, y: 0, z: 0 } }, 0, '3I'),
+            normalizePoint({ date: '2025-01-02', px: { wx: 1, wy: 10, wz: 0 }, au: { x: 0, y: 0, z: 0 } }, 1, '3I'),
+            normalizePoint({ date: '2025-01-03', px: { wx: 2, wy: 0, wz: 0 }, au: { x: 0, y: 0, z: 0 } }, 2, '3I'),
+            normalizePoint({ date: '2025-01-04', px: { wx: 3, wy: 0, wz: 0 }, au: { x: 0, y: 0, z: 0 } }, 3, '3I'),
+        ];
+        const pos = interpolateWorldPosition(overshootPoints, 1, 0.5);
+        expect(pos.wx).toBeGreaterThanOrEqual(1);
+        expect(pos.wx).toBeLessThanOrEqual(2);
+        expect(pos.wy).toBeGreaterThanOrEqual(0);
+        expect(pos.wy).toBeLessThanOrEqual(10);
+        expect(pos.wz).toBe(0);
     });
 
     test('resolves point colors and interpolates appearance across segments', () => {
@@ -480,6 +549,34 @@ describe('animation helpers', () => {
             top: 16,
             visible: false,
         });
+
+        expect(getFloatingStatsLayout(
+            { sx: 100, sy: 100, depth: 20 },
+            { width: 190, height: 56 },
+            { width: 800, height: 600 },
+            '3I'
+        )).toEqual({
+            left: 108,
+            top: 38,
+            visible: true,
+        });
+    });
+
+    test('enables the top-right overlay only for 3I', () => {
+        expect(shouldEnableTrajectoryOverlay('3I')).toBe(true);
+        expect(shouldEnableTrajectoryOverlay('2I/Borisov')).toBe(false);
+        expect(shouldEnableTrajectoryOverlay('Oumuamua')).toBe(false);
+    });
+
+    test('shows the Jupiter distance sphere only at the last 3I point', () => {
+        expect(shouldShow3iJupiterDistanceSphere('3I', points, points.length - 1)).toBe(true);
+        expect(shouldShow3iJupiterDistanceSphere('3I', points, points.length - 2)).toBe(false);
+        expect(shouldShow3iJupiterDistanceSphere('2I/Borisov', points, points.length - 1)).toBe(false);
+        expect(get3iJupiterDistanceSphereRadiusWorld()).toBeCloseTo(0.355 * 175, 6);
+    });
+
+    test('formats floating stats dates with month names', () => {
+        expect(formatCompactStatsDate('2025-03-10')).toBe('Mar 10, 2025');
     });
 
     test('ignores playback shortcuts for text-entry targets only', () => {

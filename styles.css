@@ -1,7 +1,5 @@
 /* 3I/ATLAS · Interstellar Visitor Animation Styles */
 
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap');
-
 * {
   margin: 0;
   padding: 0;
@@ -13,12 +11,14 @@ html {
   font-family: 'Georgia', serif;
 }
 
-html[lang="he"] {
-  font-family: "Fredoka", "Segoe UI", Tahoma, sans-serif;
-}
-
-html[lang="he"] * {
-  font-family: inherit;
+html[lang="he"],
+html[lang="he"] body,
+html[lang="he"] body *,
+html[lang="he"] button,
+html[lang="he"] input,
+html[lang="he"] select,
+html[lang="he"] textarea {
+  font-family: "Fredoka", "Segoe UI", Tahoma, sans-serif !important;
 }
 
 body {

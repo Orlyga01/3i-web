@@ -69,6 +69,10 @@ describe('prepare-hosting script', () => {
             'more_info_modal.js',
         ]));
 
+        for (const removedFile of ['solar_comet.html', 'atlas_journey.html', 'atlas_main.js', 'atlas_data.js']) {
+            expect(PUBLIC_ROOT_FILES).not.toContain(removedFile);
+        }
+
         expect(PUBLIC_DIRECTORIES).toEqual(['assets', 'data']);
     });
 });

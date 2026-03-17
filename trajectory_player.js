@@ -38,6 +38,14 @@ class TrajectoryLoader {
     return this.normalizeRequestedSource(params.get('source') ?? params.get('s'));
   }
 
+  static readAutoplayFromUrl(search = location.search) {
+    const params = new URLSearchParams(search);
+    const rawValue = params.get('autoplay') ?? params.get('auto');
+    if (rawValue == null) return false;
+    const normalized = String(rawValue).trim().toLowerCase();
+    return !['', '0', 'false', 'no', 'off'].includes(normalized);
+  }
+
   static decodeDesignation(value) {
     if (typeof value !== 'string') return '';
     const trimmed = value.trim();
@@ -261,19 +269,37 @@ const TP_FIXED_REFERENCE_POINT_KM = Object.freeze({
 });
 const TP_DEFAULT_OBJECT_VISUAL = Object.freeze({
   spriteSrc: 'assets/3igreen_1.png',
-  imageBaseTailAngleRad: 150 * (Math.PI / 180),
+  imageBaseTailAngleRad: 55 * (Math.PI / 180),
   anchorY: 0.5,
   alignToSun: true,
+  tailDirectionSign: -1,
   axialSpinMultiplier: 0,
   preserveSpriteColor: false,
-  showColorRing: true,
+  showCoreGlow: false,
+  showNucleusGlow: false,
+  showColorRing: false,
   tailRevealMode: 'full',
+});
+const TP_3I_TAIL_OBJECT_VISUAL = Object.freeze({
+  spriteSrc: 'assets/3i_tail.png',
+  imageBaseTailAngleRad: 55 * (Math.PI / 180),
+  anchorX: 240 / 533,
+  anchorY: 240 / 800,
+  alignToSun: true,
+  tailDirectionSign: -1,
+  axialSpinMultiplier: 0,
+  preserveSpriteColor: false,
+  showCoreGlow: false,
+  showNucleusGlow: false,
+  showColorRing: false,
+  tailRevealMode: 'tail-start',
 });
 const TP_BORISOV_OBJECT_VISUAL = Object.freeze({
   spriteSrc: 'assets/comet.png',
   imageBaseTailAngleRad: -Math.PI / 2,
   anchorY: 0.9,
   alignToSun: true,
+  tailDirectionSign: 1,
   axialSpinMultiplier: 0,
   preserveSpriteColor: false,
   showColorRing: true,
@@ -292,20 +318,63 @@ const TP_OUMUAMUA_OBJECT_VISUAL = Object.freeze({
   tailRevealMode: 'full',
 });
 
-function getObjectVisualConfig(designation) {
+const TP_3I_TAIL_START_DATE = '2025-11-13';
+const TP_3I_TAIL_END_DATE = '2026-02-28';
+const TP_3I_TAIL_START_SCALE = 1;
+const TP_3I_TAIL_END_SCALE = 1.85;
+const TP_3I_JUPITER_SPHERE_RADIUS_AU = 0.355;
+const TP_3I_JUPITER_SPHERE_RADIUS_WORLD = TP_3I_JUPITER_SPHERE_RADIUS_AU * TP_WORLD_PX_PER_AU;
+
+function is3iTailWindow(designation, dateValue = null) {
+  const key = String(designation || '').trim().toLowerCase();
+  if (key !== '3i') return false;
+  const date = parseTrajectoryDate(dateValue);
+  const start = parseTrajectoryDate(TP_3I_TAIL_START_DATE);
+  const end = parseTrajectoryDate(TP_3I_TAIL_END_DATE);
+  if ([date, start, end].some(value => Number.isNaN(value.getTime()))) return false;
+  const time = date.getTime();
+  return time >= start.getTime() && time <= end.getTime();
+}
+
+function get3iTailScale(dateValue = null) {
+  const date = parseTrajectoryDate(dateValue);
+  const start = parseTrajectoryDate(TP_3I_TAIL_START_DATE);
+  const end = parseTrajectoryDate(TP_3I_TAIL_END_DATE);
+  if ([date, start, end].some(value => Number.isNaN(value.getTime()))) return TP_3I_TAIL_START_SCALE;
+  const spanMs = Math.max(1, end.getTime() - start.getTime());
+  const progress = tpClamp((date.getTime() - start.getTime()) / spanMs, 0, 1);
+  return tpLerp(TP_3I_TAIL_START_SCALE, TP_3I_TAIL_END_SCALE, progress);
+}
+
+function get3iTailReveal(dateValue = null) {
+  const date = parseTrajectoryDate(dateValue);
+  const start = parseTrajectoryDate(TP_3I_TAIL_START_DATE);
+  const end = parseTrajectoryDate(TP_3I_TAIL_END_DATE);
+  if ([date, start, end].some(value => Number.isNaN(value.getTime()))) return 0;
+  const spanMs = Math.max(1, end.getTime() - start.getTime());
+  return tpClamp((date.getTime() - start.getTime()) / spanMs, 0, 1);
+}
+
+function getObjectRenderScale(designation, dateValue = null) {
+  return is3iTailWindow(designation, dateValue) ? get3iTailScale(dateValue) : 1;
+}
+
+function getObjectVisualConfig(designation, dateValue = null) {
   const key = String(designation || '').trim().toLowerCase();
   if (key === '2i/borisov') return TP_BORISOV_OBJECT_VISUAL;
   if (key === 'oumuamua') return TP_OUMUAMUA_OBJECT_VISUAL;
+  if (is3iTailWindow(designation, dateValue)) return TP_3I_TAIL_OBJECT_VISUAL;
   return TP_DEFAULT_OBJECT_VISUAL;
 }
 
-function getObjectSpinRotation(designation, phase = 0) {
-  const config = getObjectVisualConfig(designation);
+function getObjectSpinRotation(designation, phase = 0, dateValue = null) {
+  const config = getObjectVisualConfig(designation, dateValue);
   return (config.axialSpinMultiplier || 0) * Number(phase || 0);
 }
 
-function getObjectTailReveal(designation, sunDistanceAu = 0) {
-  const config = getObjectVisualConfig(designation);
+function getObjectTailReveal(designation, sunDistanceAu = 0, dateValue = null) {
+  const config = getObjectVisualConfig(designation, dateValue);
+  if (config.tailRevealMode === 'tail-start') return get3iTailReveal(dateValue);
   if (config.tailRevealMode !== 'sunDistance') return 1;
   const near = Number(config.tailRevealNearAu);
   const far = Number(config.tailRevealFarAu);
@@ -315,8 +384,8 @@ function getObjectTailReveal(designation, sunDistanceAu = 0) {
   return Math.max(0, Math.min(1, reveal));
 }
 
-function resolveObjectSprite(designation) {
-  const spriteSrc = getObjectVisualConfig(designation).spriteSrc;
+function resolveObjectSprite(designation, dateValue = null) {
+  const spriteSrc = getObjectVisualConfig(designation, dateValue).spriteSrc;
   return typeof window.getSharedSpriteImage === 'function'
     ? window.getSharedSpriteImage(spriteSrc)
     : null;
@@ -424,11 +493,18 @@ class PlaybackController {
       this.referenceConnectorRenderer?.draw(this.currentDate);
     });
 
+    window.SolarSystem.layers.register('trajectory-player-jupiter-sphere', () => {
+      draw3iJupiterDistanceSphere(this.designation, this.points, this.currentPointIndex);
+    });
+
     window.SolarSystem.layers.register('trajectory-player-object', () => {
       if (!this.currentWorldPosition || typeof drawComet !== 'function') return;
       const objectAlpha = 0.98;
       const ringAlpha = 0.22;
       const tint = this.currentAppearance?.rgb || getNamedVisualColorRgb(TP_DEFAULT_VISUAL_COLOR);
+      const currentVisual = getObjectVisualConfig(this.designation, this.currentDate);
+      const currentObjectSprite = resolveObjectSprite(this.designation, this.currentDate);
+      const currentObjectScale = getObjectRenderScale(this.designation, this.currentDate);
       drawComet(
         this.currentWorldPosition.wx,
         this.currentWorldPosition.wy,
@@ -436,17 +512,23 @@ class PlaybackController {
         objectAlpha,
         `${tint.r},${tint.g},${tint.b}`,
         {
-          sizeMultiplier: 0.95,
-          image: this.objectSprite || undefined,
-          imageBaseTailAngle: this.objectVisual.imageBaseTailAngleRad,
-          anchorY: this.objectVisual.anchorY,
-          tailReveal: getObjectTailReveal(this.designation, this.currentSunDistance),
-          alignToSun: this.objectVisual.alignToSun,
-          rotationOffset: getObjectSpinRotation(this.designation, this.engine.pulsePhase),
-          preserveSpriteColor: this.objectVisual.preserveSpriteColor,
+          sizeMultiplier: 0.95 * currentObjectScale,
+          image: currentObjectSprite || undefined,
+          imageBaseTailAngle: currentVisual.imageBaseTailAngleRad,
+          anchorX: currentVisual.anchorX,
+          anchorY: currentVisual.anchorY,
+          tailReveal: getObjectTailReveal(this.designation, this.currentSunDistance, this.currentDate),
+          tailRevealMode: currentVisual.tailRevealMode,
+          tailRevealAngle: currentVisual.imageBaseTailAngleRad,
+          alignToSun: currentVisual.alignToSun,
+          tailDirectionSign: currentVisual.tailDirectionSign,
+          rotationOffset: getObjectSpinRotation(this.designation, this.engine.pulsePhase, this.currentDate),
+          preserveSpriteColor: currentVisual.preserveSpriteColor,
+          showCoreGlow: currentVisual.showCoreGlow !== false,
+          showNucleusGlow: currentVisual.showNucleusGlow !== false,
         }
       );
-      if (this.objectVisual.showColorRing !== false) {
+      if (currentVisual.showColorRing !== false) {
         drawTrajectoryObjectColorRing(this.currentWorldPosition, tint, ringAlpha);
       }
     });
@@ -493,7 +575,7 @@ class PlaybackController {
       this.currentPoint = this.points[this.currentPointIndex];
 
       this.applyPointFrame(this.currentPointIndex, { snapCamera: true });
-      this.timelineScrubber.setProgress(this.currentPointIndex / Math.max(1, this.points.length - 1));
+      this.timelineScrubber.setProgress(getTimelineProgress(this.points, this.currentPointIndex, 0, this.speedMultiplier));
 
       if (this.segmentIndex >= this.points.length - 1) {
         this.segmentElapsedMs = 0;
@@ -524,6 +606,19 @@ class PlaybackController {
     return getSegmentDurationMs(this.points, this.segmentIndex, this.speedMultiplier);
   }
 
+  setSpeedMultiplier(nextSpeed) {
+    const resolvedSpeed = resolveDefaultSpeedMultiplier(nextSpeed);
+    const currentDurationMs = this.getCurrentSegmentDurationMs();
+    const currentProgress = Number.isFinite(currentDurationMs) && currentDurationMs > 0
+      ? tpClamp(this.segmentElapsedMs / currentDurationMs, 0, 1)
+      : 0;
+    this.speedMultiplier = resolvedSpeed;
+    const nextDurationMs = this.getCurrentSegmentDurationMs();
+    if (Number.isFinite(nextDurationMs) && nextDurationMs >= 0) {
+      this.segmentElapsedMs = nextDurationMs * currentProgress;
+    }
+  }
+
   updateInterpolatedFrame() {
     const maxSegmentIndex = Math.max(0, this.points.length - 2);
     const segmentIndex = Math.max(0, Math.min(maxSegmentIndex, this.segmentIndex));
@@ -550,7 +645,7 @@ class PlaybackController {
     }
 
     this.statsDisplay.update(this.currentDate, this.currentSunDistance, this.currentWorldPosition);
-    this.timelineScrubber.setProgress((segmentIndex + t) / Math.max(1, this.points.length - 1));
+    this.timelineScrubber.setProgress(getTimelineProgress(this.points, segmentIndex, t, this.speedMultiplier));
   }
 
   jumpToSegmentStart(index, options = {}) {
@@ -578,7 +673,7 @@ class PlaybackController {
     }
 
     this.statsDisplay.update(this.currentDate, this.currentSunDistance, this.currentWorldPosition);
-    this.timelineScrubber.setProgress(clampedIndex / Math.max(1, this.points.length - 1));
+    this.timelineScrubber.setProgress(getTimelineProgress(this.points, clampedIndex, 0, this.speedMultiplier));
     this.syncUi();
   }
 
@@ -954,7 +1049,7 @@ class ControlBar {
         return;
       }
       const speed = ControlBar.SPEED_STEPS[Number(this.speedSlider.value)] ?? 1;
-      controller.speedMultiplier = speed;
+      controller.setSpeedMultiplier(speed);
       this.speedValue.textContent = `${speed}×`;
     });
 
@@ -1115,7 +1210,12 @@ class AnnotationOverlay {
     if (this.previewEl) {
       this.previewEl.style.display = model.showPreview ? 'block' : 'none';
       if (model.showPreview) {
-        renderLivePreview(this.previewEl, model.previewAppearance, this.currentContext?.designation || '');
+        renderLivePreview(
+          this.previewEl,
+          model.previewAppearance,
+          this.currentContext?.designation || '',
+          this.currentContext?.point?.date || null
+        );
       }
     }
     if (!this.imageEl) return;
@@ -1160,8 +1260,9 @@ class AnnotationOverlay {
 }
 
 class StatsDisplay {
-  constructor(root) {
+  constructor(root, designation = '') {
     this.root = root;
+    this.designation = designation;
     this.dateEl = document.getElementById('tp-stats-date');
     this.distanceEl = document.getElementById('tp-stats-distance');
   }
@@ -1191,7 +1292,8 @@ class StatsDisplay {
       {
         width: window.innerWidth,
         height: window.innerHeight,
-      }
+      },
+      this.designation
     );
 
     this.root.style.left = `${layout.left}px`;
@@ -1348,9 +1450,38 @@ function computeSunDistance(au) {
 }
 
 function getSegmentDurationMs(points, segmentIndex, speedMultiplier = 1) {
+  const startPoint = points[segmentIndex];
   const destinationPoint = points[segmentIndex + 1];
-  if (!destinationPoint) return Number.POSITIVE_INFINITY;
-  return (destinationPoint.durationPct / 100) * 4000 * (1 / speedMultiplier);
+  if (!startPoint || !destinationPoint) return Number.POSITIVE_INFINITY;
+  return (startPoint.durationPct / 100) * 1000 * (1 / speedMultiplier);
+}
+
+function getTimelineProgress(points, segmentIndex, t = 0, speedMultiplier = 1) {
+  if (!Array.isArray(points) || points.length <= 1) return 1;
+  if (segmentIndex >= points.length - 1) return 1;
+  const lastSegmentIndex = points.length - 2;
+  const clampedSegmentIndex = Math.max(0, Math.min(lastSegmentIndex, segmentIndex));
+  const clampedT = tpClamp(t, 0, 1);
+  let elapsedMs = 0;
+  let totalMs = 0;
+
+  for (let index = 0; index <= lastSegmentIndex; index += 1) {
+    const segmentMs = getSegmentDurationMs(points, index, speedMultiplier);
+    if (!Number.isFinite(segmentMs)) continue;
+    totalMs += segmentMs;
+    if (index < clampedSegmentIndex) {
+      elapsedMs += segmentMs;
+    } else if (index === clampedSegmentIndex) {
+      elapsedMs += segmentMs * clampedT;
+    }
+  }
+
+  if (totalMs <= 0) return 0;
+  return tpClamp(elapsedMs / totalMs, 0, 1);
+}
+
+function clampSegmentComponent(value, startValue, endValue) {
+  return tpClamp(value, Math.min(startValue, endValue), Math.max(startValue, endValue));
 }
 
 function buildTrailThroughIndex(points, throughIndex, samplesPerSegment = 8) {
@@ -1372,11 +1503,16 @@ function interpolateWorldPosition(points, segmentIndex, t) {
   const i1 = tpClamp(segmentIndex, 0, points.length - 1);
   const i2 = tpClamp(segmentIndex + 1, 0, points.length - 1);
   const i3 = tpClamp(segmentIndex + 2, 0, points.length - 1);
+  const startPoint = points[i1].px;
+  const endPoint = points[i2].px;
+  const wx = tpCatmullRom(points[i0].px.wx, points[i1].px.wx, points[i2].px.wx, points[i3].px.wx, t);
+  const wy = tpCatmullRom(points[i0].px.wy, points[i1].px.wy, points[i2].px.wy, points[i3].px.wy, t);
+  const wz = tpCatmullRom(points[i0].px.wz, points[i1].px.wz, points[i2].px.wz, points[i3].px.wz, t);
 
   return {
-    wx: tpCatmullRom(points[i0].px.wx, points[i1].px.wx, points[i2].px.wx, points[i3].px.wx, t),
-    wy: tpCatmullRom(points[i0].px.wy, points[i1].px.wy, points[i2].px.wy, points[i3].px.wy, t),
-    wz: tpCatmullRom(points[i0].px.wz, points[i1].px.wz, points[i2].px.wz, points[i3].px.wz, t),
+    wx: clampSegmentComponent(wx, startPoint.wx, endPoint.wx),
+    wy: clampSegmentComponent(wy, startPoint.wy, endPoint.wy),
+    wz: clampSegmentComponent(wz, startPoint.wz, endPoint.wz),
   };
 }
 
@@ -1465,7 +1601,7 @@ function getControlBarState(state, currentPointIndex, totalPoints) {
   };
 }
 
-function getFloatingStatsLayout(projected, panelSize, viewportSize) {
+function getFloatingStatsLayout(projected, panelSize, viewportSize, designation = '') {
   const margin = 16;
   const panelWidth = Math.max(0, Number(panelSize?.width) || 190);
   const panelHeight = Math.max(0, Number(panelSize?.height) || 56);
@@ -1480,11 +1616,12 @@ function getFloatingStatsLayout(projected, panelSize, viewportSize) {
     };
   }
 
-  let left = projected.sx + 18;
-  let top = projected.sy - panelHeight - 14;
+  const is3iOverlay = shouldEnableTrajectoryOverlay(designation);
+  let left = projected.sx + (is3iOverlay ? 8 : 18);
+  let top = projected.sy - panelHeight - (is3iOverlay ? 6 : 14);
 
   if (top < margin) {
-    top = projected.sy + 18;
+    top = projected.sy + (is3iOverlay ? 10 : 18);
   }
 
   left = tpClamp(left, margin, viewportWidth - panelWidth - margin);
@@ -1614,7 +1751,7 @@ function getTrajectoryOverlayKey(context = {}) {
   });
 }
 
-function renderLivePreview(canvasEl, appearance, designation = '') {
+function renderLivePreview(canvasEl, appearance, designation = '', dateValue = null) {
   if (!canvasEl?.getContext) return;
   const previewCtx = canvasEl.getContext('2d');
   if (!previewCtx) return;
@@ -1630,27 +1767,35 @@ function renderLivePreview(canvasEl, appearance, designation = '') {
   previewCtx.fillStyle = bg;
   previewCtx.fillRect(0, 0, width, height);
 
-  const halo = previewCtx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width * 0.42);
-  halo.addColorStop(0, `rgba(${tint.r},${tint.g},${tint.b},0.34)`);
-  halo.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
-  previewCtx.fillStyle = halo;
-  previewCtx.fillRect(0, 0, width, height);
+  if (!shouldEnableTrajectoryOverlay(designation)) {
+    const halo = previewCtx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width * 0.42);
+    halo.addColorStop(0, `rgba(${tint.r},${tint.g},${tint.b},0.34)`);
+    halo.addColorStop(1, `rgba(${tint.r},${tint.g},${tint.b},0)`);
+    previewCtx.fillStyle = halo;
+    previewCtx.fillRect(0, 0, width, height);
+  }
 
   if (typeof window.drawCometBillboard === 'function') {
     const previewTailDirection = -3 * Math.PI / 4;
-    const objectVisual = getObjectVisualConfig(designation);
-    const objectSprite = resolveObjectSprite(designation);
+    const objectVisual = getObjectVisualConfig(designation, dateValue);
+    const objectSprite = resolveObjectSprite(designation, dateValue);
+    const previewScale = Math.min(getObjectRenderScale(designation, dateValue), 1.2);
     window.drawCometBillboard(previewCtx, {
       x: width / 2,
       y: height / 2,
-      size: Math.min(width, height) * 0.68,
+      size: Math.min(width, height) * 0.68 * previewScale,
       rotationAngle: objectVisual.alignToSun ? (previewTailDirection - objectVisual.imageBaseTailAngleRad) : 0,
       alpha: 0.98,
       tint,
       image: objectSprite || undefined,
-      tailReveal: 1,
+      tailReveal: getObjectTailReveal(designation, 0, dateValue),
+      tailRevealMode: objectVisual.tailRevealMode,
+      tailRevealAngle: objectVisual.imageBaseTailAngleRad,
+      anchorX: objectVisual.anchorX,
       anchorY: objectVisual.anchorY,
       preserveSpriteColor: objectVisual.preserveSpriteColor,
+      showCoreGlow: objectVisual.showCoreGlow !== false,
+      showNucleusGlow: objectVisual.showNucleusGlow !== false,
     });
   }
 
@@ -1683,6 +1828,69 @@ function drawTrajectoryObjectColorRing(worldPosition, tint, alpha = 1) {
   ctx.restore();
 }
 
+function getPlanetStateByName(name) {
+  if (typeof planets === 'undefined' || !Array.isArray(planets)) return null;
+  const targetName = String(name || '').trim().toLowerCase();
+  return planets.find(planet => String(planet?.name || '').trim().toLowerCase() === targetName) || null;
+}
+
+function getPlanetWorldPosition(name) {
+  const planet = getPlanetStateByName(name);
+  if (!planet) return null;
+  return {
+    wx: Math.cos(planet.angle) * planet.orbit,
+    wy: Math.sin(planet.angle) * planet.orbit,
+    wz: 0,
+  };
+}
+
+function shouldShow3iJupiterDistanceSphere(designation, points, currentPointIndex) {
+  const key = String(designation || '').trim().toLowerCase();
+  return key === '3i'
+    && Array.isArray(points)
+    && points.length > 0
+    && currentPointIndex >= points.length - 1;
+}
+
+function draw3iJupiterDistanceSphere(designation, points, currentPointIndex) {
+  if (!shouldShow3iJupiterDistanceSphere(designation, points, currentPointIndex)) return;
+  if (typeof project3 !== 'function' || typeof ctx === 'undefined') return;
+  const jupiterWorld = getPlanetWorldPosition('Jupiter');
+  if (!jupiterWorld) return;
+
+  const projected = project3(jupiterWorld.wx, jupiterWorld.wy, jupiterWorld.wz);
+  if (projected.depth < 10) return;
+
+  const scale = typeof getScale === 'function' ? getScale(projected.depth) : 1;
+  const radius = Math.max(10, TP_3I_JUPITER_SPHERE_RADIUS_WORLD * scale);
+
+  ctx.save();
+  const glow = ctx.createRadialGradient(
+    projected.sx,
+    projected.sy,
+    radius * 0.35,
+    projected.sx,
+    projected.sy,
+    radius * 1.35
+  );
+  glow.addColorStop(0, 'rgba(255, 216, 120, 0.04)');
+  glow.addColorStop(0.6, 'rgba(255, 216, 120, 0.08)');
+  glow.addColorStop(1, 'rgba(255, 216, 120, 0)');
+  ctx.beginPath();
+  ctx.arc(projected.sx, projected.sy, radius * 1.35, 0, Math.PI * 2);
+  ctx.fillStyle = glow;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(projected.sx, projected.sy, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255, 228, 150, 0.95)';
+  ctx.lineWidth = Math.max(1.4, Math.min(3, scale * 2));
+  ctx.shadowBlur = 14;
+  ctx.shadowColor = 'rgba(255, 214, 120, 0.55)';
+  ctx.stroke();
+  ctx.restore();
+}
+
 function getAnnotationOverlayKey(point, sanitizedName) {
   return JSON.stringify({
     sanitizedName: sanitizedName || '',
@@ -1709,11 +1917,15 @@ function formatCompactStatsDate(value) {
   const date = parseTrajectoryDate(value);
   if (Number.isNaN(date.getTime())) return '--';
   return date.toLocaleDateString(trajectoryPlayerLocale === 'he' ? 'he-IL' : 'en-US', {
-    month: '2-digit',
+    month: 'short',
     day: '2-digit',
-    year: '2-digit',
+    year: 'numeric',
     timeZone: 'UTC',
   });
+}
+
+function shouldEnableTrajectoryOverlay(designation) {
+  return String(designation || '').trim().toLowerCase() === '3i';
 }
 
 function getAnomaliesDateForPoint(point) {
@@ -1810,6 +2022,7 @@ function showImageLightbox(src) {
 async function bootstrapTrajectoryPlayer() {
   await AppTranslations.loadTranslations?.();
   document.title = `${tt('ui.trajectoryPlayer.pageTitle', 'Trajectory Player')} · 3I-web`;
+  document.body?.setAttribute('data-show-trajectory-overlay', 'false');
   const backLink = document.getElementById('tp-back-link');
   const errorLink = document.getElementById('tp-error-link');
   const titleEl = document.getElementById('tp-title');
@@ -1824,6 +2037,7 @@ async function bootstrapTrajectoryPlayer() {
   try {
     const designation = TrajectoryLoader.readDesignationFromUrl();
     const requestedSource = TrajectoryLoader.resolveRequestedSource(TrajectoryLoader.readSourceFromUrl());
+    const shouldAutoplay = TrajectoryLoader.readAutoplayFromUrl();
     if (designation) {
       syncPlayerUrl(designation, requestedSource, trajectoryPlayerLocale);
       setSubtitle(tt('ui.trajectoryPlayer.loadingDesignation', `Loading ${designation}${requestedSource ? ` (${requestedSource})` : ''}`, {
@@ -1853,7 +2067,7 @@ async function bootstrapTrajectoryPlayer() {
     }));
 
     const controlBar = new ControlBar(document.getElementById('tp-controls'));
-    const statsDisplay = new StatsDisplay(document.getElementById('tp-stats'));
+    const statsDisplay = new StatsDisplay(document.getElementById('tp-stats'), result.designation);
     const trailRenderer = new TrailRenderer();
     const timelineScrubber = new TimelineScrubber(document.getElementById('tp-timeline-shell'));
     const moreInfoModal = (window.MoreInfoModalShared?.createModalController)
@@ -1862,6 +2076,7 @@ async function bootstrapTrajectoryPlayer() {
       })
       : null;
     const annotationOverlay = new AnnotationOverlay(document.getElementById('tp-overlay'), moreInfoModal);
+    document.body?.setAttribute('data-show-trajectory-overlay', shouldEnableTrajectoryOverlay(result.designation) ? 'true' : 'false');
     const referenceConnectorRenderer = new ReferenceConnectorRenderer(getFixedConnectorConfiguration(result.points));
     const anomaliesPanelController = (typeof AnomaliesPanelApi.createPanelController === 'function')
       ? AnomaliesPanelApi.createPanelController(document.getElementById('tp-anomalies-panel'), {
@@ -1904,7 +2119,12 @@ async function bootstrapTrajectoryPlayer() {
     controlBar.connect(controller);
     statsDisplay.update(parseTrajectoryDate(result.points[0].date), computeSunDistance(result.points[0].au), result.points[0].px);
 
-    requestAnimationFrame(() => controller.bootstrap());
+    requestAnimationFrame(() => {
+      controller.bootstrap();
+      if (shouldAutoplay) {
+        controller.onPlayButton();
+      }
+    });
   } catch (error) {
     if (error instanceof TrajectoryLoadError) {
       updateObjectMotionLinks(error.details?.designation || '3I', error.details?.source || '', trajectoryPlayerLocale);

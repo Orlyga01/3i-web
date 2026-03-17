@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 const {
     buildPresentationManifestPath,
     buildPresentationMainHref,
@@ -38,6 +41,22 @@ describe('presentation helpers', () => {
                 { id: 'wow', title: 'Wow! Signal', src: 'slides/3I/wow_signal.html' },
             ],
         });
+    });
+
+    test('ships Borisov manual-start and Oumuamua autoplay player slides in the 3I manifest', () => {
+        const manifestPath = path.join(__dirname, '..', 'data', '3I', 'presentation.json');
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+
+        expect(manifest.slides).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: 'borisov-trajectory-player',
+                src: 'trajectory_player?designation=2I%2FBorisov&source=web',
+            }),
+            expect.objectContaining({
+                id: 'oumuamua-trajectory-player',
+                src: 'trajectory_player?designation=Oumuamua&source=web&autoplay=1',
+            }),
+        ]));
     });
 
     test('derives button state from the active slide state', () => {

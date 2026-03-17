@@ -2,6 +2,7 @@
 
 const {
     buildTranslationMap,
+    getHebrewFontCss,
     normalizeLocale,
     translate,
     formatTemplate,
@@ -19,6 +20,13 @@ describe('translation helpers', () => {
 
     test('formats templates with named params', () => {
         expect(formatTemplate('{{count}} projects', { count: 3 })).toBe('3 projects');
+    });
+
+    test('defines a global Hebrew font rule for the whole document tree', () => {
+        const css = getHebrewFontCss();
+        expect(css).toContain('html[lang="he"] body *');
+        expect(css).toContain('"Fredoka"');
+        expect(css).toContain('!important');
     });
 
     test('builds a locale map from name-based entries', () => {

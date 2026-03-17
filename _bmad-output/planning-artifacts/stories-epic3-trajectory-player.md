@@ -100,7 +100,7 @@
   ```
   segmentMs = (durationPct / 100) × 1000 × (1 / speedMultiplier)
   ```
-  Where `durationPct` is from the **destination** point (defaults to `100` if absent), and `speedMultiplier` is from the speed ruler (§3.5, defaults to `1`)
+  Where `durationPct` is taken from the **current/start** point of the segment (defaults to `100` if absent), and `speedMultiplier` is from the speed ruler (§3.5, defaults to `1`)
 - [x] **Points with `camera: null`** are handled gracefully: the engine skips the null point and interpolates camera between the nearest non-null neighbors on either side; object position still passes through the null point's coordinates
 - [x] **Date display** updates every frame: the current date is linearly interpolated between the two adjacent point dates as `t` progresses. Displayed as `"Mon DD, YYYY"` in the stats area (Story 3.9)
 - [x] When `t` reaches `1.0` for the last segment, playback stops; the `PlaybackController` transitions to the `stopped` state
@@ -122,6 +122,7 @@
 - Added per-frame interpolation for date and Sun distance, and kept the player stats panel synced throughout playback.
 - Added camera smooth-follow lerp for `el`, `az`, `zoom`, `tx`, `ty`, and `tz`, with null-camera segments targeting the nearest non-null camera on the right and preserving the last valid camera on the left.
 - Removed per-frame pan debug logging from `solar_system.js` so continuous camera playback does not flood the console.
+- Corrected segment timing so each point's `durationPct` now controls the segment that starts at that point, using the intended 1-second base before global speed scaling.
 
 ### File List
 
@@ -242,7 +243,7 @@
 - [ ] Default value: `1×`
 - [ ] A live text label beside the slider shows the current value, e.g., `"1×"`, updating as the user drags
 - [ ] A **total video duration** readout updates in real-time as the slider changes, e.g., `"Total: 23s"`:
-  - Total = sum of all segments: `Σ (durationPct[i] / 100) × 1000 × (1 / speedMultiplier)` in seconds, rounded to 1 decimal place
+  - Total = sum of all playable segments (exclude the terminal point with no outgoing segment): `Σ (durationPct[i] / 100) × 1000 × (1 / speedMultiplier)` in seconds, rounded to 1 decimal place
 - [ ] Changing the speed ruler **mid-playback** takes effect immediately on the current segment — no need to restart
 - [ ] The speed multiplier is stored in `PlaybackController` state and read by `PlaybackEngine` on every `tick()`
 

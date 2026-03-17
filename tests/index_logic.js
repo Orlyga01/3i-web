@@ -1,6 +1,6 @@
 'use strict';
 
-const DEFAULT_WEB_OBJECTS = Object.freeze(['3I', 'solar_comet']);
+const DEFAULT_WEB_OBJECTS = Object.freeze(['2I/Borisov', '3I', 'Oumuamua']);
 const PRESENTATION_OBJECTS = Object.freeze(['3I']);
 
 function sanitizeDesignation(name) {

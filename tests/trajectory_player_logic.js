@@ -44,6 +44,14 @@ function readSourceFromUrl(search = '') {
     return normalizeRequestedSource(params.get('source') ?? params.get('s'));
 }
 
+function readAutoplayFromUrl(search = '') {
+    const params = new URLSearchParams(search);
+    const rawValue = params.get('autoplay') ?? params.get('auto');
+    if (rawValue == null) return false;
+    const normalized = String(rawValue).trim().toLowerCase();
+    return !['', '0', 'false', 'no', 'off'].includes(normalized);
+}
+
 function resolveRequestedSource(value, useLocalStorage = true) {
     const requestedSource = normalizeRequestedSource(value);
     if (requestedSource !== 'local') return requestedSource;
@@ -153,19 +161,37 @@ const FIXED_REFERENCE_POINT_KM = Object.freeze({
 });
 const DEFAULT_OBJECT_VISUAL = Object.freeze({
     spriteSrc: 'assets/3igreen_1.png',
-    imageBaseTailAngleRad: 150 * (Math.PI / 180),
+    imageBaseTailAngleRad: 55 * (Math.PI / 180),
     anchorY: 0.5,
     alignToSun: true,
+    tailDirectionSign: -1,
     axialSpinMultiplier: 0,
     preserveSpriteColor: false,
-    showColorRing: true,
+    showCoreGlow: false,
+    showNucleusGlow: false,
+    showColorRing: false,
     tailRevealMode: 'full',
+});
+const TAIL_OBJECT_VISUAL = Object.freeze({
+    spriteSrc: 'assets/3i_tail.png',
+    imageBaseTailAngleRad: 55 * (Math.PI / 180),
+    anchorX: 240 / 533,
+    anchorY: 240 / 800,
+    alignToSun: true,
+    tailDirectionSign: -1,
+    axialSpinMultiplier: 0,
+    preserveSpriteColor: false,
+    showCoreGlow: false,
+    showNucleusGlow: false,
+    showColorRing: false,
+    tailRevealMode: 'tail-start',
 });
 const BORISOV_OBJECT_VISUAL = Object.freeze({
     spriteSrc: 'assets/comet.png',
     imageBaseTailAngleRad: -Math.PI / 2,
     anchorY: 0.9,
     alignToSun: true,
+    tailDirectionSign: 1,
     axialSpinMultiplier: 0,
     preserveSpriteColor: false,
     showColorRing: true,
@@ -183,6 +209,12 @@ const OUMUAMUA_OBJECT_VISUAL = Object.freeze({
     showColorRing: false,
     tailRevealMode: 'full',
 });
+const TAIL_START_DATE = '2025-11-13';
+const TAIL_END_DATE = '2026-02-28';
+const TAIL_START_SCALE = 1;
+const TAIL_END_SCALE = 1.85;
+const JUPITER_SPHERE_RADIUS_AU = 0.355;
+const JUPITER_SPHERE_RADIUS_WORLD = JUPITER_SPHERE_RADIUS_AU * WORLD_PX_PER_AU;
 
 function lerp(a, b, t) {
     return a + (b - a) * t;
@@ -207,20 +239,54 @@ function resolveDefaultSpeedMultiplier(value) {
     return SUPPORTED_SPEED_MULTIPLIERS.includes(numeric) ? numeric : 1;
 }
 
-function getObjectVisualConfig(designation) {
+function is3iTailWindow(designation, dateValue = null) {
+    const key = String(designation || '').trim().toLowerCase();
+    if (key !== '3i') return false;
+    const date = parseDate(dateValue);
+    const start = parseDate(TAIL_START_DATE);
+    const end = parseDate(TAIL_END_DATE);
+    if ([date, start, end].some(value => Number.isNaN(value.getTime()))) return false;
+    const time = date.getTime();
+    return time >= start.getTime() && time <= end.getTime();
+}
+
+function get3iTailScale(dateValue = null) {
+    const date = parseDate(dateValue);
+    const start = parseDate(TAIL_START_DATE);
+    const end = parseDate(TAIL_END_DATE);
+    if ([date, start, end].some(value => Number.isNaN(value.getTime()))) return TAIL_START_SCALE;
+    const spanMs = Math.max(1, end.getTime() - start.getTime());
+    const progress = Math.max(0, Math.min(1, (date.getTime() - start.getTime()) / spanMs));
+    return lerp(TAIL_START_SCALE, TAIL_END_SCALE, progress);
+}
+
+function getObjectRenderScale(designation, dateValue = null) {
+    return is3iTailWindow(designation, dateValue) ? get3iTailScale(dateValue) : 1;
+}
+
+function getObjectVisualConfig(designation, dateValue = null) {
     const key = String(designation || '').trim().toLowerCase();
     if (key === '2i/borisov') return BORISOV_OBJECT_VISUAL;
     if (key === 'oumuamua') return OUMUAMUA_OBJECT_VISUAL;
+    if (is3iTailWindow(designation, dateValue)) return TAIL_OBJECT_VISUAL;
     return DEFAULT_OBJECT_VISUAL;
 }
 
-function getObjectSpinRotation(designation, phase = 0) {
-    const config = getObjectVisualConfig(designation);
+function getObjectSpinRotation(designation, phase = 0, dateValue = null) {
+    const config = getObjectVisualConfig(designation, dateValue);
     return (config.axialSpinMultiplier || 0) * Number(phase || 0);
 }
 
-function getObjectTailReveal(designation, sunDistanceAu = 0) {
-    const config = getObjectVisualConfig(designation);
+function getObjectTailReveal(designation, sunDistanceAu = 0, dateValue = null) {
+    const config = getObjectVisualConfig(designation, dateValue);
+    if (config.tailRevealMode === 'tail-start') {
+        const date = parseDate(dateValue);
+        const start = parseDate(TAIL_START_DATE);
+        const end = parseDate(TAIL_END_DATE);
+        if ([date, start, end].some(value => Number.isNaN(value.getTime()))) return 0;
+        const spanMs = Math.max(1, end.getTime() - start.getTime());
+        return Math.max(0, Math.min(1, (date.getTime() - start.getTime()) / spanMs));
+    }
     if (config.tailRevealMode !== 'sunDistance') return 1;
     const near = Number(config.tailRevealNearAu);
     const far = Number(config.tailRevealFarAu);
@@ -275,9 +341,38 @@ function clampSegmentIndex(points, index) {
 }
 
 function getSegmentDurationMs(points, segmentIndex, speedMultiplier = 1) {
+    const startPoint = points[segmentIndex];
     const destinationPoint = points[segmentIndex + 1];
-    if (!destinationPoint) return Number.POSITIVE_INFINITY;
-    return (destinationPoint.durationPct / 100) * 4000 * (1 / speedMultiplier);
+    if (!startPoint || !destinationPoint) return Number.POSITIVE_INFINITY;
+    return (startPoint.durationPct / 100) * 1000 * (1 / speedMultiplier);
+}
+
+function getTimelineProgress(points, segmentIndex, t = 0, speedMultiplier = 1) {
+    if (!Array.isArray(points) || points.length <= 1) return 1;
+    if (segmentIndex >= points.length - 1) return 1;
+    const lastSegmentIndex = points.length - 2;
+    const clampedSegmentIndex = Math.max(0, Math.min(lastSegmentIndex, segmentIndex));
+    const clampedT = Math.max(0, Math.min(1, t));
+    let elapsedMs = 0;
+    let totalMs = 0;
+
+    for (let index = 0; index <= lastSegmentIndex; index += 1) {
+        const segmentMs = getSegmentDurationMs(points, index, speedMultiplier);
+        if (!Number.isFinite(segmentMs)) continue;
+        totalMs += segmentMs;
+        if (index < clampedSegmentIndex) {
+            elapsedMs += segmentMs;
+        } else if (index === clampedSegmentIndex) {
+            elapsedMs += segmentMs * clampedT;
+        }
+    }
+
+    if (totalMs <= 0) return 0;
+    return Math.max(0, Math.min(1, elapsedMs / totalMs));
+}
+
+function clampSegmentComponent(value, startValue, endValue) {
+    return Math.max(Math.min(value, Math.max(startValue, endValue)), Math.min(startValue, endValue));
 }
 
 function buildTrailThroughIndex(points, throughIndex, samplesPerSegment = 8) {
@@ -299,11 +394,16 @@ function interpolateWorldPosition(points, segmentIndex, t) {
     const i1 = clampSegmentIndex(points, segmentIndex);
     const i2 = clampSegmentIndex(points, segmentIndex + 1);
     const i3 = clampSegmentIndex(points, segmentIndex + 2);
+    const startPoint = points[i1].px;
+    const endPoint = points[i2].px;
+    const wx = catmullRom(points[i0].px.wx, points[i1].px.wx, points[i2].px.wx, points[i3].px.wx, t);
+    const wy = catmullRom(points[i0].px.wy, points[i1].px.wy, points[i2].px.wy, points[i3].px.wy, t);
+    const wz = catmullRom(points[i0].px.wz, points[i1].px.wz, points[i2].px.wz, points[i3].px.wz, t);
 
     return {
-        wx: catmullRom(points[i0].px.wx, points[i1].px.wx, points[i2].px.wx, points[i3].px.wx, t),
-        wy: catmullRom(points[i0].px.wy, points[i1].px.wy, points[i2].px.wy, points[i3].px.wy, t),
-        wz: catmullRom(points[i0].px.wz, points[i1].px.wz, points[i2].px.wz, points[i3].px.wz, t),
+        wx: clampSegmentComponent(wx, startPoint.wx, endPoint.wx),
+        wy: clampSegmentComponent(wy, startPoint.wy, endPoint.wy),
+        wz: clampSegmentComponent(wz, startPoint.wz, endPoint.wz),
     };
 }
 
@@ -313,6 +413,28 @@ function parseDate(value) {
         return new Date(`${value}T00:00:00Z`);
     }
     return new Date(value);
+}
+
+function formatCompactStatsDate(value, locale = 'en') {
+    const date = parseDate(value);
+    if (Number.isNaN(date.getTime())) return '--';
+    return date.toLocaleDateString(locale === 'he' ? 'he-IL' : 'en-US', {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+        timeZone: 'UTC',
+    });
+}
+
+function formatDisplayDate(value, locale = 'en') {
+    const date = parseDate(value);
+    if (Number.isNaN(date.getTime())) return '--';
+    return date.toLocaleDateString(locale === 'he' ? 'he-IL' : 'en-US', {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+        timeZone: 'UTC',
+    });
 }
 
 function convertKmToAuPosition(positionKm) {
@@ -461,7 +583,22 @@ function getControlBarState(state, currentPointIndex, totalPoints) {
     };
 }
 
-function getFloatingStatsLayout(projected, panelSize, viewportSize) {
+function shouldEnableTrajectoryOverlay(designation) {
+    return String(designation || '').trim().toLowerCase() === '3i';
+}
+
+function shouldShow3iJupiterDistanceSphere(designation, points, currentPointIndex) {
+    return shouldEnableTrajectoryOverlay(designation)
+        && Array.isArray(points)
+        && points.length > 0
+        && currentPointIndex >= points.length - 1;
+}
+
+function get3iJupiterDistanceSphereRadiusWorld() {
+    return JUPITER_SPHERE_RADIUS_WORLD;
+}
+
+function getFloatingStatsLayout(projected, panelSize, viewportSize, designation = '') {
     const margin = 16;
     const panelWidth = Math.max(0, Number(panelSize?.width) || 190);
     const panelHeight = Math.max(0, Number(panelSize?.height) || 56);
@@ -476,11 +613,12 @@ function getFloatingStatsLayout(projected, panelSize, viewportSize) {
         };
     }
 
-    let left = projected.sx + 18;
-    let top = projected.sy - panelHeight - 14;
+    const is3iOverlay = shouldEnableTrajectoryOverlay(designation);
+    let left = projected.sx + (is3iOverlay ? 8 : 18);
+    let top = projected.sy - panelHeight - (is3iOverlay ? 6 : 14);
 
     if (top < margin) {
-        top = projected.sy + 18;
+        top = projected.sy + (is3iOverlay ? 10 : 18);
     }
 
     left = Math.max(margin, Math.min(viewportWidth - panelWidth - margin, left));
@@ -561,12 +699,7 @@ function buildAnnotationOverlayModel(point, sanitizedName, imageState = 'ready')
     const showImage = Boolean(imageSrc) && imageState !== 'error';
 
     return {
-        dateText: point?.date ? parseDate(point.date).toLocaleDateString('en-US', {
-            month: 'short',
-            day: '2-digit',
-            year: 'numeric',
-            timeZone: 'UTC',
-        }) : '--',
+        dateText: formatDisplayDate(point?.date),
         description,
         imageSrc,
         hasContent: Boolean(description || imageSrc),
@@ -600,12 +733,7 @@ function buildTrajectoryOverlayModel(context = {}, imageState = 'ready') {
     return {
         mode: showStoppedImage ? 'image' : 'preview',
         kicker: showStoppedImage ? 'Point Image' : `${capitalizeVisualColor(colorName)} Preview`,
-        dateText: point?.date ? parseDate(point.date).toLocaleDateString('en-US', {
-            month: 'short',
-            day: '2-digit',
-            year: 'numeric',
-            timeZone: 'UTC',
-        }) : '--',
+        dateText: formatDisplayDate(point?.date),
         description,
         imageSrc: showStoppedImage ? stopImageSrc : null,
         showImage: showStoppedImage && imageState !== 'error',
@@ -623,6 +751,7 @@ module.exports = {
     readDesignationFromUrl,
     normalizeRequestedSource,
     readSourceFromUrl,
+    readAutoplayFromUrl,
     resolveRequestedSource,
     sanitize,
     buildPath,
@@ -632,6 +761,7 @@ module.exports = {
     normalizeVisualColor,
     resolveDefaultSpeedMultiplier,
     getObjectVisualConfig,
+    getObjectRenderScale,
     getObjectSpinRotation,
     getObjectTailReveal,
     getNamedVisualColorRgb,
@@ -641,17 +771,23 @@ module.exports = {
     lerp,
     catmullRom,
     getSegmentDurationMs,
+    getTimelineProgress,
     buildTrailThroughIndex,
     interpolateWorldPosition,
     interpolateDate,
     interpolateSunDistance,
     getCameraTargetForSegment,
     lerpCameraState,
+    formatCompactStatsDate,
+    is3iTailWindow,
     shouldPauseAtPoint,
     getCanvasClickAction,
     getPlayAction,
     areSecondaryControlsDisabled,
     getControlBarState,
+    shouldEnableTrajectoryOverlay,
+    shouldShow3iJupiterDistanceSphere,
+    get3iJupiterDistanceSphereRadiusWorld,
     getFloatingStatsLayout,
     shouldIgnorePlaybackShortcut,
     convertKmToAuPosition,

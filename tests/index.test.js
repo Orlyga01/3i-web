@@ -27,9 +27,9 @@ describe('index helpers', () => {
         expect(normalizeManifestObjects({ objects: [{ designation: '2I/Borisov' }] }))
             .toEqual(['2I/Borisov']);
         expect(normalizeManifestObjects({ objects: [] }))
-            .toEqual(['3I', 'solar_comet']);
+            .toEqual(['2I/Borisov', '3I', 'Oumuamua']);
         expect(normalizeManifestObjects({ bad: true }))
-            .toEqual(['3I', 'solar_comet']);
+            .toEqual(['2I/Borisov', '3I', 'Oumuamua']);
     });
 
     test('builds source-aware links for player and editor pages', () => {

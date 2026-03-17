@@ -1,7 +1,7 @@
 # 3i-web — Story Status Tracker
 
 **Project:** 3i-web
-**Last updated:** 2026-03-16
+**Last updated:** 2026-03-17
 **Maintained by:** All agents — update this file whenever a story's implementation status changes.
 
 > **Rule:** Any agent (dev, PM, QA, architect) that completes, partially completes, or discovers a status change for any story **must** update the relevant row in this file before ending their session. The status values are defined below.
@@ -59,8 +59,8 @@
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
-| 3.1 | Player Page Shell & URL Loading | ✅ Done | Added player shell, URL loader, friendly error states, manual-start playback wiring, explicit player-owned object sprite selection so solar-comet asset changes no longer leak into `trajectory_player`, and a `3igreen_1` tail-angle correction so the player sprite still points away from the Sun |
-| 3.2 | Animation Engine (Spline + Camera Lerp) | ✅ Done | Catmull-Rom playback, per-frame date/AU interpolation, pan-aware camera lerp, and object-specific player visuals including slower ringless `Oumuamua` rendering implemented |
+| 3.1 | Player Page Shell & URL Loading | ✅ Done | Added player shell, URL loader, friendly error states, manual-start playback wiring, explicit player-owned object sprite selection so solar-comet asset changes no longer leak into `trajectory_player`, and a corrected `3igreen_1` tail-angle calibration so the player sprite points sunward as intended |
+| 3.2 | Animation Engine (Spline + Camera Lerp) | ✅ Done | Catmull-Rom playback, per-frame date/AU interpolation, pan-aware camera lerp, and object-specific player visuals including slower ringless `Oumuamua` rendering and 3I-only progressive tail reveal implemented |
 | 3.3 | Motion Trail | ✅ Done | Glowing projected trail now accumulates during playback and resets cleanly on restart / point jumps |
 | 3.4 | Playback Controls & Keyboard Shortcuts | ✅ Done | Wired ⏮⏪⏸▶⏩ controls, disabled edge states, screen-click stop with Continue-only resume, and Space/←/→/F shortcuts |
 | 3.5 | Speed Ruler | 🚧 In Progress | Playback pacing rebased, supported trajectory-level default speed overrides now start `2I/Borisov` and `Oumuamua` at `3×`, and the total-duration readout is still pending |
@@ -69,7 +69,7 @@
 | 3.8 | Annotation Overlay | ✅ Done | Auto-shows only on automatic annotated pauses, resolves local/remote images, and dismisses on Continue/manual navigation |
 | 3.9 | Live Stats Display | 🚧 In Progress | Floating object-attached date + Sun distance panel exists; compacted box/date styling updated, but it still differs from the original top-right story spec |
 | 3.10 | Fullscreen Mode | 🔲 Pending | requestFullscreen + F key; depends on 3.4 |
-| 3.11 | Fixed Reference Point & Connector Line | ✅ Done | Static Jupiter-to-Atlas connector now stays rendered from 2025-10-31 onward, without dropping out when the camera swings behind an endpoint |
+| 3.11 | Fixed Reference Point & Connector Line | ✅ Done | Static Jupiter-to-Atlas connector now stays rendered from 2025-10-31 onward, without dropping out when the camera swings behind an endpoint, and the final 3I point now shows a Jupiter-centered 0.355 AU distance sphere |
 | 3.12 | Large Annotated Image Window | ✅ Done | Added larger paused-point media window with local/remote/root-asset image support, top-right placement, and graceful no-image fallback |
 
 **Progress: 7 / 12 stories complete**
@@ -101,11 +101,11 @@
 
 **Source stories:** `_bmad-output/planning-artifacts/stories-epic5-intro-slideshow.md`
 **Source PRD:** `_bmad-output/planning-artifacts/prd-epic5-intro-slideshow.md`
-**Files:** `index.html`, `index.js`, `assets/`
+**Files:** `presentation.html`, `presentation.js`, `data/3I/presentation.json`, `trajectory_player.js`, `assets/`
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
-| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added `presentation.html` + `presentation.js` shell, iframe autoplay/fullscreen permissions, JSON manifest loading, iframe slide hosting, Back/Next/Skip controls, iframe-safe `1`-key advance, shell-level comet pause support, and a much slower first-click `3igreen_1.png` flyover before the intro video that now clears once the next slide actually opens; also fixed the `solar_comet` slide bootstrap conflict, increased non-title presentation text sizing across the shell and current slides, inserted a new image slide before `SPHEREx`, enlarged the comet-tail burst images with a 3-second post-burst hold, and made the Small Bodies Overview cards square by reducing height instead of forcing a generic aspect-ratio rule, then added 30px more card height, and inserted a comparison video slide (YouTube Shorts) right after Small Bodies Overview with autoplay, mute, and full-viewport layout |
+| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added the slideshow shell, iframe hosting, keyboard/nav controls, intro flyover, and player embeds; the old `solar_comet` slide has now been removed and replaced with a manual-start `2I/Borisov` player slide plus an autoplaying `Oumuamua` player slide |
 | 5.2 | Wow! Signal Opening Slide | 🚧 In Progress | Added a dedicated final `Wow! Signal` slide with the historical printout image and `12 Aug 1977` date; manifest now keeps it as the last slide |
 | 5.3 | Comets 101 Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
 | 5.4 | Gravity & Orbit Basics Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
@@ -157,7 +157,7 @@
 
 **Source stories:** `_bmad-output/planning-artifacts/stories-epic8-translations.md`
 **Source PRD:** `_bmad-output/planning-artifacts/prd-epic8-translations.md`
-**Files:** `data/translations.json`, `translations.js`, `index.html`, `index.js`, `presentation.html`, `presentation.js`, `trajectory_player.html`, `trajectory_player.js`, `shared_render.js`, `solar_comet.html`, `main.js`, `more_info_modal.js`, `more_info_2025_12_13.html`, `slides/3I/*.html`
+**Files:** `data/translations.json`, `translations.js`, `index.html`, `index.js`, `presentation.html`, `presentation.js`, `trajectory_player.html`, `trajectory_player.js`, `shared_render.js`, `main.js`, `more_info_modal.js`, `more_info_2025_12_13.html`, `slides/3I/*.html`
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
@@ -174,13 +174,13 @@
 
 **Source stories:** `_bmad-output/planning-artifacts/stories-epic9-solar-comet-object.md`
 **Source PRD:** `_bmad-output/planning-artifacts/prd-epic9-solar-comet-object.md`
-**Files:** `data/solar_comet/trajectory.json`, `data/objects.json`, `index.js`, `object_motion.html`, `object_motion.js`, `solar_comet.html`
+**Files:** `data/objects.json`, `index.js`, `data/3I/presentation.json`, `scripts/prepare-hosting.js`
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
-| 9.1 | Solar Comet as a Standard Bundled Object | ✅ Done | Added bundled `solar_comet` data, homepage entry, top-level page handoff to the standard player, and per-point flying-object position controls in the tracker |
+| 9.1 | Solar Comet as a Standard Bundled Object | 🚫 Cancelled | Removed from bundled runtime scope by user request; homepage, presentation, and hosting no longer surface `solar_comet` |
 
-**Progress: 1 / 1 stories complete**
+**Progress: 0 / 1 stories complete**
 
 ---
 
@@ -195,8 +195,8 @@
 | Epic 6 | Point More Info Modal | 3 | 3 | 100% |
 | Epic 7 | Date-Driven Anomalies Panel | 6 | 6 | 100% |
 | Epic 8 | Translation & Localization | 4 | 4 | 100% |
-| Epic 9 | Solar Comet Object Refactor | 1 | 1 | 100% |
-| **Total** | | **45** | **58** | **78%** |
+| Epic 9 | Solar Comet Object Refactor | 0 | 1 | 0% |
+| **Total** | | **44** | **58** | **76%** |
 
 ---
 
@@ -204,6 +204,25 @@
 
 | Date | Change | By |
 |---|---|---|
+| 2026-03-16 | Fixed the shared comet renderer to forward the new horizontal sprite anchor too, so the measured `3I` tail-image nucleus point actually applies during live playback and not just in the preview path | dev agent |
+| 2026-03-16 | Used the measured `3i_tail.png` bright-nucleus point at `240px,240px` inside the `533x800` image to set a precise `3I` tail-sprite anchor (`anchorX`/`anchorY`) instead of a vertical-only approximation | dev agent |
+| 2026-03-16 | Re-anchored the bundled `3I` long-tail sprite to the actual bright nucleus area high in `assets/3i_tail.png`, so the object position tracks the image’s brightest spot instead of the vertical midpoint | dev agent |
+| 2026-03-16 | Restored the bundled `3I` floating date badge and switched its normal sprite to the raw-image render path so the extra synthetic inner circle/glow is no longer painted over the object | dev agent |
+| 2026-03-16 | Hid the entire floating date/distance badge for bundled `3I` so only the image stays attached to the flying object, while leaving other objects unchanged | dev agent |
+| 2026-03-16 | Disabled the attached color-ring marker for bundled `3I` in both its normal and long-tail runtime visuals so the extra circle no longer appears next to the object/date | dev agent |
+| 2026-03-16 | Forced the presentation bottom control bar to `ltr` so the controls stay left-to-right in every locale, including Hebrew, while the rest of the page can remain RTL | dev agent |
+| 2026-03-16 | Mirrored the presentation bottom control bar to right-to-left when the locale is Hebrew so the nav/buttons follow RTL ordering | dev agent |
+| 2026-03-16 | Moved the Hebrew `Fredoka` typography to a true global CSS rule through `translations.js` and strengthened `styles.css`, so presentation and other translated pages inherit the same font consistently | dev agent |
+| 2026-03-16 | Updated bundled `3I` so the runtime switches to `assets/3i_tail.png` from 2025-11-13 through 2026-02-28 and progressively scales that longer-tail sprite up across the window | dev agent |
+| 2026-03-16 | Removed the extra green preview halo from the bundled `3I` top-right box so only the sprite image remains there, without changing the other objects | dev agent |
+| 2026-03-16 | Switched the bundled `3I` top-right preview box to render the plain sprite image instead of the glowing live-preview point treatment, leaving the other objects unchanged | dev agent |
+| 2026-03-16 | Restored the trajectory-player top-right preview box only for bundled `3I`, switched the object-attached stats date to month-name formatting, and moved the `3I` floating label closer to the nucleus | dev agent |
+| 2026-03-16 | Recalibrated the bundled `3I` player sprite from the wrong built-in `150°` tail assumption to the actual `3igreen_1.png` tail angle so the first trajectory point now points toward the Sun correctly | dev agent |
+| 2026-03-16 | Densified the bundled `2I/Borisov` perihelion arc with additional JPL Horizons vectors from 2019-09-01 through 2020-02-28 so the visible turn reads closer to the Sun | dev agent |
+| 2026-03-16 | Updated the 3I presentation so the Borisov trajectory-player slide no longer autoplays, while the Oumuamua slide still does | dev agent |
+| 2026-03-16 | Removed the bundled `solar_comet` runtime surface, replaced its presentation slot with autoplaying `2I/Borisov` and `Oumuamua` trajectory-player slides, and refreshed the top-level docs | dev agent |
+| 2026-03-16 | Clamped trajectory-player spline interpolation to each segment's endpoint range to reduce fake overshoot kinks at sparse-to-dense transitions such as the visible `Oumuamua` wobble near 2017-08-29 | dev agent |
+| 2026-03-16 | Corrected player segment timing so `durationPct` now applies to the segment starting at that point and uses the intended 1-second base before `defaultSpeedMultiplier` / speed-ruler scaling | dev agent |
 | 2026-03-16 | Inserted the requested 2017-09-01 through 2017-09-29 Horizons point set into the bundled `Oumuamua` trajectory, preserving its existing schema and default playback speed metadata | dev agent |
 | 2026-03-16 | Refined Object Motion Tracker file export into a modal review/copy/save flow, preserved trajectory-level default speed metadata during draft/export round-trips, and updated `Oumuamua` in the trajectory player to hide its color ring, keep its native sprite color, spin 5x slower, and start at the same 3x default playback speed as `2I/Borisov` | dev agent |
 | 2026-03-16 | Added optional trajectory-level default playback speed support, kept null speed at the current 1x behavior, and set `2I/Borisov` to start at 3x with a white carried-forward trajectory color | dev agent |
@@ -345,3 +364,10 @@
 | 2026-03-14 | Separated player and solar-comet sprite ownership by fixing the trajectory-player shared-render call path to use its own explicit object image, while the solar-comet scene now also passes its sprite explicitly instead of relying on the shared default | dev agent |
 | 2026-03-14 | Removed Epic 5 slides `Comets 101`, `Perseids and Debris`, `Solar Wind and Solar Flare`, and `Mars vs Lagrange Missions` from the presentation manifest, cancelled Stories 5.3/5.6/5.7/5.8, and deleted their standalone slide files | dev agent |
 | 2026-03-14 | Added a new dedicated `Wow! Signal` slideshow ending slide using the historical printout image and `12 Aug 1977`, and pinned it as the final manifest entry | dev agent |
+| 2026-03-17 | Made the 3I player tail reveal progressively from the sprite tail-start point and added a final 3I-only Jupiter-centered 0.355 AU sphere plus matching trajectory text updates | dev agent |
+| 2026-03-17 | Corrected all three `2026-03-16` 3I trajectory entries to the Horizons-derived AU/world position while preserving their different camera angles | dev agent |
+| 2026-03-17 | Fixed the 3I tail reveal direction so the visible tail now grows outward from the sun-facing tail base instead of expanding around the comet head | dev agent |
+| 2026-03-17 | Restored trajectory-driven tinting for the flying 3I object by letting the player recolor both the normal and tail sprites instead of forcing their original green pixels | dev agent |
+| 2026-03-17 | Widened the 3I tail reveal clip band so the far end of the growing tail stays fully visible instead of being cut off | dev agent |
+| 2026-03-17 | Removed the extra circular core and nucleus glow from the flying 3I object so only the object sprite remains visible without a second halo ring behind it | dev agent |
+| 2026-03-17 | Reverted the temporary `3i_tail2.png` experiment and restored the requested `3i_tail.png` sprite with the original `240,240` anchor for the 3I tail window | dev agent |
