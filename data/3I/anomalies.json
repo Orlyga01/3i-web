@@ -6,6 +6,26 @@
       "dateLabel": "Jul 01 2025",
       "triggerDate": "2025-07-01",
       "category": "I — Major (no simple explanation)",
+      "anomaly": "Estimated 2.6 Km diameter",
+      "probability": "P < 0.001",
+      "explanation": "Hubble confirmed nucleus ~2.6 km diameter (Feb 2026) — at least 20,000× more massive than ʻOumuamua. Not enough rocky material in interstellar space to deliver an object this large by chance once per decade.",
+      "consensusNote": "No natural explanation currently. Listed in original Nov 2025 Loeb paper.",
+      "skip": false
+    },
+    {
+      "dateLabel": "Jul 01 2025",
+      "triggerDate": "2025-07-01",
+      "category": "I — Major (no simple explanation)",
+      "anomaly": "Nickel/iron ratio matches industrial alloys; anomalous cyanide ratio",
+      "probability": "P < 0.001",
+      "explanation": "Gas plume has far more nickel than iron — matching industrially produced alloys — and a nickel-to-cyanide ratio orders of magnitude higher than any known comet including 2I/Borisov. May indicate artificial material composition.",
+      "consensusNote": "No natural explanation currently. Listed in original Nov 2025 Loeb paper.",
+      "skip": false
+    },
+    {
+      "dateLabel": "Jul 01 2025",
+      "triggerDate": "2025-07-01",
+      "category": "I — Major (no simple explanation)",
       "anomaly": "Retrograde orbit aligned within 5° of ecliptic plane",
       "probability": "P = 0.002",
       "explanation": "Travels opposite to all planets yet nearly perfectly level with the flat plane they orbit in. A random interstellar object would be extremely unlikely to share this alignment.",
@@ -26,16 +46,6 @@
       "dateLabel": "Jul 01 2025",
       "triggerDate": "2025-07-01",
       "category": "I — Major (no simple explanation)",
-      "anomaly": "Estimated 2.6 Km diameter",
-      "probability": "P < 0.001",
-      "explanation": "Hubble confirmed nucleus ~2.6 km diameter (Feb 2026) — at least 20,000× more massive than ʻOumuamua. Not enough rocky material in interstellar space to deliver an object this large by chance once per decade.",
-      "consensusNote": "No natural explanation currently. Listed in original Nov 2025 Loeb paper.",
-      "skip": false
-    },
-    {
-      "dateLabel": "Jul 01 2025",
-      "triggerDate": "2025-07-01",
-      "category": "I — Major (no simple explanation)",
       "anomaly": "Sunward jet (anti-tail) — physically real, not perspective",
       "probability": "P < 0.001",
       "explanation": "Persistent jet pointing toward the Sun — opposite of what solar radiation causes. Confirmed by NASA's HiRISE at Mars closest approach. Pre-perihelion Hubble image shows jet ~10× longer than wide. Could be a particle shield against micrometeorite impacts at 60 km/s.",
@@ -43,8 +53,8 @@
       "skip": false
     },
     {
-      "dateLabel": "Sep 28, 2025",
-      "triggerDate": "2025-09-28",
+      "dateLabel": "Jul 01 2025",
+      "triggerDate": "2025-07-01",
       "category": "II — Medium (possible fluke)",
       "anomaly": "Arrival direction aligns with the \"Wow! Signal\" within 9°",
       "probability": "P = 0.006",
@@ -60,16 +70,6 @@
       "probability": "P < 0.01",
       "explanation": "Light reflected from 3I/ATLAS is polarized in a way never seen in any known comet. Often seen from smooth metalic/ice surfaces. No standard explanation.",
       "consensusNote": "Could be statistical coincidence. Listed in original Nov 2025 Loeb paper.",
-      "skip": false
-    },
-    {
-      "dateLabel": "2025-09-14",
-      "triggerDate": "2025-09-14",
-      "category": "I — Major (no simple explanation)",
-      "anomaly": "Nickel/iron ratio matches industrial alloys; anomalous cyanide ratio",
-      "probability": "P < 0.001",
-      "explanation": "Gas plume has far more nickel than iron — matching industrially produced alloys — and a nickel-to-cyanide ratio orders of magnitude higher than any known comet including 2I/Borisov. May indicate artificial material composition.",
-      "consensusNote": "No natural explanation currently. Listed in original Nov 2025 Loeb paper.",
       "skip": false
     },
     {

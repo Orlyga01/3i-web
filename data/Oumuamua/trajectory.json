@@ -28,9 +28,9 @@
         "el": 5,
         "az": 0,
         "zoom": 0,
-        "tx": 0,
-        "ty": -1070,
-        "tz": 0
+        "tx": 10,
+        "ty": 390,
+        "tz": 650
       },
       "description": null,
       "image": null
@@ -50,7 +50,14 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 5,
+        "az": 0,
+        "zoom": 0,
+        "tx": 0,
+        "ty": 160,
+        "tz": 180
+      },
       "description": null,
       "image": null
     },
@@ -69,7 +76,14 @@
       },
       "durationPct": 100,
       "stoppable": false,
-      "camera": null,
+      "camera": {
+        "el": 5,
+        "az": 0,
+        "zoom": 0,
+        "tx": 0,
+        "ty": 160,
+        "tz": 180
+      },
       "description": null,
       "image": null
     },
@@ -105,15 +119,15 @@
         "wy": -46.545,
         "wz": 23.518
       },
-      "durationPct": 20,
+      "durationPct": 10,
       "stoppable": false,
       "camera": {
-        "el": 52.8,
-        "az": 0.03,
-        "zoom": 95,
-        "tx": -3.64,
-        "ty": -699.99,
-        "tz": 388.9
+        "el": 0.4,
+        "az": 0.09,
+        "zoom": 14,
+        "tx": 5.71,
+        "ty": 557.68,
+        "tz": 206.25
       },
       "description": null,
       "image": null
@@ -131,15 +145,15 @@
         "wy": -33.379,
         "wz": 7.99
       },
-      "durationPct": 20,
+      "durationPct": 10,
       "stoppable": false,
       "camera": {
-        "el": 15.6,
-        "az": 0,
-        "zoom": 95,
-        "tx": 9.21,
-        "ty": -1065.45,
-        "tz": 60.28
+        "el": 0.4,
+        "az": 0.09,
+        "zoom": 14,
+        "tx": 5.71,
+        "ty": 700,
+        "tz": 206.25
       },
       "description": null,
       "image": null
@@ -157,15 +171,15 @@
         "wy": -23.837,
         "wz": -2.557
       },
-      "durationPct": 20,
+      "durationPct": 10,
       "stoppable": false,
       "camera": {
-        "el": 14,
-        "az": -0.01,
-        "zoom": 95,
-        "tx": 7.16,
-        "ty": -1137.16,
-        "tz": -227.42
+        "el": -15.6,
+        "az": 0.09,
+        "zoom": 14,
+        "tx": 5.71,
+        "ty": 700,
+        "tz": 206.25
       },
       "description": null,
       "image": null
@@ -183,7 +197,7 @@
         "wy": -13.639,
         "wz": -13.011
       },
-      "durationPct": 20,
+      "durationPct": 10,
       "stoppable": false,
       "camera": {
         "el": 22.65,
@@ -622,5 +636,5 @@
       "image": null
     }
   ],
-  "defaultSpeedMultiplier": 2
+  "defaultSpeedMultiplier": 1
 }

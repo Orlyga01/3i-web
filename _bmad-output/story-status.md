@@ -1,7 +1,7 @@
 # 3i-web — Story Status Tracker
 
 **Project:** 3i-web
-**Last updated:** 2026-03-17
+**Last updated:** 2026-03-19
 **Maintained by:** All agents — update this file whenever a story's implementation status changes.
 
 > **Rule:** Any agent (dev, PM, QA, architect) that completes, partially completes, or discovers a status change for any story **must** update the relevant row in this file before ending their session. The status values are defined below.
@@ -105,7 +105,7 @@
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
-| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added the slideshow shell, iframe hosting, keyboard/nav controls, intro flyover, and player embeds; the old `solar_comet` slide has now been removed and replaced with a manual-start `2I/Borisov` player slide plus an autoplaying `Oumuamua` player slide |
+| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added the slideshow shell, iframe hosting, keyboard/nav controls, intro flyover, and player embeds; the old `solar_comet` slide has now been removed and replaced with a manual-start `2I/Borisov` player slide plus an autoplaying `Oumuamua` player slide, and the manifest now includes a Starship image-to-video transition slide immediately after `SPHEREx` |
 | 5.2 | Wow! Signal Opening Slide | 🚧 In Progress | Added a dedicated final `Wow! Signal` slide with the historical printout image and `12 Aug 1977` date; manifest now keeps it as the last slide |
 | 5.3 | Comets 101 Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
 | 5.4 | Gravity & Orbit Basics Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
@@ -371,3 +371,4 @@
 | 2026-03-17 | Widened the 3I tail reveal clip band so the far end of the growing tail stays fully visible instead of being cut off | dev agent |
 | 2026-03-17 | Removed the extra circular core and nucleus glow from the flying 3I object so only the object sprite remains visible without a second halo ring behind it | dev agent |
 | 2026-03-17 | Reverted the temporary `3i_tail2.png` experiment and restored the requested `3i_tail.png` sprite with the original `240,240` anchor for the 3I tail window | dev agent |
+| 2026-03-19 | Added a new `Starship Transition` slideshow slide after `SPHEREx` that shows the requested Starship image for 4 seconds, then crossfades into a muted embedded YouTube clip from `3s` through `11s` | dev agent |

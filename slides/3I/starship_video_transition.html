@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" data-i18n-ready="false">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Starship Transition</title>
+  <link rel="preconnect" href="https://www.youtube.com">
+  <link rel="preconnect" href="https://www.google.com">
+  <link rel="preconnect" href="https://i.ytimg.com">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+    }
+
+    body {
+      font-family: Georgia, serif;
+      color: #fff;
+    }
+
+    html[data-i18n-ready="false"] body {
+      visibility: hidden;
+    }
+
+    .slide-shell {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+    }
+
+    .panel {
+      position: absolute;
+      inset: 0;
+      transition: opacity 700ms ease;
+    }
+
+    .image-panel {
+      opacity: 1;
+      background: #000;
+    }
+
+    .image-panel img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      background: #000;
+    }
+
+    .video-panel {
+      opacity: 0;
+      pointer-events: none;
+      background: #000;
+    }
+
+    .video-panel iframe,
+    .video-panel .video-host {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #000;
+    }
+
+    .slide-shell.show-video .image-panel {
+      opacity: 0;
+    }
+
+    .slide-shell.show-video .video-panel {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <main id="slide-shell" class="slide-shell" aria-label="Starship transition slide">
+    <section class="panel image-panel" aria-hidden="false">
+      <img
+        id="starship-image"
+        src="https://b1982122.smushcdn.com/1982122/wp-content/uploads/sites/3/2025/04/SpaceX-Starship-prototype-staniless-steel-dreamstime_xl_161480094.jpg?lossy=1&strip=1&webp=1"
+        alt="Starship prototype"
+      >
+    </section>
+    <section class="panel video-panel" aria-hidden="true">
+      <div
+        id="starship-video-frame"
+        class="video-host"
+        aria-label="Starship short muted clip"
+      ></div>
+    </section>
+  </main>
+
+  <script src="../../translations.js"></script>
+  <script>
+    (async function bootstrapStarshipTransitionSlide() {
+      const AppTranslations = window.AppTranslations || {};
+      const locale = AppTranslations.getLocaleFromSearch?.(window.location.search) || "en";
+      AppTranslations.setDocumentLocale?.(locale);
+
+      const slideShell = document.getElementById("slide-shell");
+      const imageEl = document.getElementById("starship-image");
+      const videoFrame = document.getElementById("starship-video-frame");
+      const videoPanel = document.querySelector(".video-panel");
+      const imagePanel = document.querySelector(".image-panel");
+      let transitionTriggered = false;
+      let playerReady = false;
+      let player = null;
+
+      const read = fallback => AppTranslations.translate?.(fallback, { locale, fallback }) || fallback;
+
+      function revealVideo() {
+        if (!slideShell || !videoFrame) return;
+        slideShell.classList.add("show-video");
+        if (imagePanel) imagePanel.setAttribute("aria-hidden", "true");
+        if (videoPanel) videoPanel.setAttribute("aria-hidden", "false");
+      }
+
+      function playVideoSegment() {
+        if (!playerReady || !player) return;
+        try {
+          player.mute?.();
+          player.seekTo?.(3, true);
+          player.playVideo?.();
+        } catch (error) {
+          // If the player API is not ready enough yet, leave the shell visible.
+        }
+      }
+
+      function triggerTransition() {
+        transitionTriggered = true;
+        if (playerReady) {
+          revealVideo();
+          playVideoSegment();
+        }
+      }
+
+      function loadYouTubeApi() {
+        if (window.YT?.Player) {
+          return Promise.resolve(window.YT);
+        }
+        if (window.__starshipYouTubeApiPromise) {
+          return window.__starshipYouTubeApiPromise;
+        }
+
+        window.__starshipYouTubeApiPromise = new Promise((resolve, reject) => {
+          const priorReady = window.onYouTubeIframeAPIReady;
+          window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
+            if (typeof priorReady === "function") {
+              priorReady();
+            }
+            resolve(window.YT);
+          };
+
+          const script = document.createElement("script");
+          script.src = "https://www.youtube.com/iframe_api";
+          script.async = true;
+          script.onerror = () => reject(new Error("Failed to load YouTube iframe API."));
+          document.head.appendChild(script);
+        });
+
+        return window.__starshipYouTubeApiPromise;
+      }
+
+      async function prepareVideoPlayer() {
+        if (!videoFrame) return;
+        try {
+          const YT = await loadYouTubeApi();
+          player = new YT.Player(videoFrame, {
+            videoId: "b5T6XC6OhUw",
+            playerVars: {
+              controls: 0,
+              disablekb: 1,
+              end: 11,
+              playsinline: 1,
+              rel: 0,
+              start: 3,
+            },
+            events: {
+              onReady() {
+                playerReady = true;
+                player.mute?.();
+                if (transitionTriggered) {
+                  revealVideo();
+                  playVideoSegment();
+                }
+              },
+            },
+          });
+        } catch (error) {
+          // Keep the still image visible if YouTube cannot be prepared.
+        }
+      }
+
+      prepareVideoPlayer();
+      window.setTimeout(triggerTransition, 4000);
+
+      try {
+        await AppTranslations.loadTranslations?.();
+        document.title = read("Starship Transition");
+        if (slideShell) {
+          slideShell.setAttribute("aria-label", read("Starship transition slide"));
+        }
+        if (imageEl) {
+          imageEl.alt = read("Starship prototype");
+        }
+        if (videoFrame) {
+          videoFrame.setAttribute("aria-label", read("Starship short muted clip"));
+        }
+      } catch (error) {
+        // Keep the slide functional even if translations fail to load.
+      } finally {
+        document.documentElement.dataset.i18nReady = "true";
+      }
+    }());
+
+    (function requestBestEffortFullscreen() {
+      const target = document.documentElement;
+      const request =
+        target.requestFullscreen ||
+        target.webkitRequestFullscreen ||
+        target.msRequestFullscreen;
+      if (!request) return;
+
+      window.addEventListener("load", () => {
+        try {
+          request.call(target);
+        } catch (error) {
+          // Browsers usually require a user gesture here; fail silently.
+        }
+      }, { once: true });
+    }());
+  </script>
+</body>
+</html>
