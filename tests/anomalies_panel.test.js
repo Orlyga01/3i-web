@@ -116,6 +116,37 @@ describe('anomalies_panel', () => {
         ])).toBe('Combined probability: 1 out of 500,000');
     });
 
+    test('localizes the combined probability line for Hebrew', () => {
+        global.document = {
+            location: { search: '?lang=he' },
+            readyState: 'loading',
+            addEventListener() {},
+        };
+        global.AppTranslations = {
+            getLocaleFromSearch() {
+                return 'he';
+            },
+            translate(sourceText, options) {
+                if (sourceText === 'Combined probability: 1 out of {{n}}') {
+                    return `הסתברות משולבת: 1 מתוך ${options.params.n}`;
+                }
+                return options.fallback;
+            },
+        };
+
+        jest.resetModules();
+        const { formatCombinedProbabilityLine: formatHebrewCombinedProbabilityLine } = require('../anomalies_panel');
+
+        expect(formatHebrewCombinedProbabilityLine([
+            { probability: 'P = 0.002' },
+            { probability: 'P < 0.001' },
+        ])).toBe('הסתברות משולבת: 1 מתוך 500,000');
+
+        delete global.document;
+        delete global.AppTranslations;
+        jest.resetModules();
+    });
+
     test('keeps typewriter pacing presentation-friendly', () => {
         expect(getTypewriterStepSize(20)).toBe(1);
         expect(getTypewriterStepSize(100)).toBe(2);
@@ -132,6 +163,62 @@ describe('anomalies_panel', () => {
         });
 
         expect(buildStandaloneHref('3I')).toBe('anomalies_panel?designation=3I');
+        expect(buildStandaloneHref('3I', 'he')).toBe('anomalies_panel?designation=3I&lang=he');
         expect(buildStandaloneHref('')).toBe('anomalies_panel');
+    });
+
+    test('localizes dataset copy through AppTranslations when available', () => {
+        global.AppTranslations = {
+            translate(sourceText, fallback) {
+                if (sourceText === 'Original title') return 'כותרת';
+                if (sourceText === 'Original subtitle') return 'כותרת משנה';
+                if (sourceText === 'No P yet') return 'עדיין אין הסתברות';
+                if (sourceText === 'Original anomaly') return 'אנומליה מתורגמת';
+                return fallback;
+            },
+        };
+
+        jest.resetModules();
+        const { localizeDatasetCopy } = require('../anomalies_panel');
+
+        expect(localizeDatasetCopy({
+            title: 'Original title',
+            subtitle: 'Original subtitle',
+            entries: [
+                { triggerDate: '2025-10-31', anomaly: 'Original anomaly', probability: 'No P yet' },
+            ],
+        })).toEqual({
+            title: 'כותרת',
+            subtitle: 'כותרת משנה',
+            entries: [
+                {
+                    index: 0,
+                    dateLabel: '',
+                    triggerDate: '2025-10-31',
+                    category: '',
+                    anomaly: 'אנומליה מתורגמת',
+                    probability: 'עדיין אין הסתברות',
+                    explanation: '',
+                    consensusNote: '',
+                    skip: false,
+                },
+            ],
+            visibleEntries: [
+                {
+                    index: 0,
+                    dateLabel: '',
+                    triggerDate: '2025-10-31',
+                    category: '',
+                    anomaly: 'אנומליה מתורגמת',
+                    probability: 'עדיין אין הסתברות',
+                    explanation: '',
+                    consensusNote: '',
+                    skip: false,
+                },
+            ],
+        });
+
+        delete global.AppTranslations;
+        jest.resetModules();
     });
 });

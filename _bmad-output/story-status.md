@@ -105,7 +105,7 @@
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
-| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added the slideshow shell, iframe hosting, keyboard/nav controls, intro flyover, and player embeds; the old `solar_comet` slide has now been removed and replaced with a manual-start `2I/Borisov` player slide plus an autoplaying `Oumuamua` player slide, and the manifest now includes a Starship image-to-video transition slide immediately after `SPHEREx` |
+| 5.1 | Intro Slideshow Shell & Navigation | 🚧 In Progress | Added the slideshow shell, iframe hosting, keyboard/nav controls, intro flyover, and player embeds; the old `solar_comet` slide has now been removed and replaced with a manual-start `2I/Borisov` player slide plus an autoplaying `Oumuamua` player slide, and the manifest now includes both an Avi Loeb image-transition slide before `Dark Side of the Moon Laser Show` and a Starship image-to-video transition slide immediately after `SPHEREx` |
 | 5.2 | Wow! Signal Opening Slide | 🚧 In Progress | Added a dedicated final `Wow! Signal` slide with the historical printout image and `12 Aug 1977` date; manifest now keeps it as the last slide |
 | 5.3 | Comets 101 Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
 | 5.4 | Gravity & Orbit Basics Slide | 🚫 Cancelled | Removed from Epic 5 slideshow scope and deleted standalone slide by user request |
@@ -163,7 +163,7 @@
 |---|---|---|---|
 | 8.1 | Shared Translation JSON & Runtime Loader | ✅ Done | Replaced the nested translation store with flat `name` + `translations` entries and a startup-built locale map in `translations.js` |
 | 8.2 | Index Language Selector & Link Propagation | ✅ Done | Added a language selector to `index.html`, localized index copy, and propagated `lang` through generated page links |
-| 8.3 | Runtime Translation for Presentation, Player, and Solar System | ✅ Done | Switched to source-text lookups, fixed presentation slide routing so clean slide URLs keep `lang`, and applied the Hebrew-only Fredoka font through the shared translation runtime |
+| 8.3 | Runtime Translation for Presentation, Player, and Solar System | ✅ Done | Switched to source-text lookups, fixed presentation slide routing so clean slide URLs keep `lang`, applied the Hebrew-only Fredoka font through the shared translation runtime, and now localize the 3I anomalies panel dataset/title rows at load time while keeping the Hebrew Probability column on the right |
 | 8.4 | Hebrew Seed Content for 3I Descriptions and More Info | ✅ Done | Preserved the Hebrew seed set for 3I slides, trajectory descriptions, and the `2025-12-13` more-info page in the new flat translation catalog |
 
 **Progress: 4 / 4 stories complete**
@@ -204,6 +204,8 @@
 
 | Date | Change | By |
 |---|---|---|
+| 2026-03-19 | Increased anomalies-panel typography for readability and added a Hebrew-targeted test covering the translated combined-probability line | dev agent |
+| 2026-03-19 | Localized the 3I anomalies panel dataset/title text through the shared translation runtime, preserved `lang` in standalone anomalies URLs, and forced the Hebrew anomalies table to keep the Probability column on the right | dev agent |
 | 2026-03-16 | Fixed the shared comet renderer to forward the new horizontal sprite anchor too, so the measured `3I` tail-image nucleus point actually applies during live playback and not just in the preview path | dev agent |
 | 2026-03-16 | Used the measured `3i_tail.png` bright-nucleus point at `240px,240px` inside the `533x800` image to set a precise `3I` tail-sprite anchor (`anchorX`/`anchorY`) instead of a vertical-only approximation | dev agent |
 | 2026-03-16 | Re-anchored the bundled `3I` long-tail sprite to the actual bright nucleus area high in `assets/3i_tail.png`, so the object position tracks the image’s brightest spot instead of the vertical midpoint | dev agent |
@@ -372,3 +374,4 @@
 | 2026-03-17 | Removed the extra circular core and nucleus glow from the flying 3I object so only the object sprite remains visible without a second halo ring behind it | dev agent |
 | 2026-03-17 | Reverted the temporary `3i_tail2.png` experiment and restored the requested `3i_tail.png` sprite with the original `240,240` anchor for the 3I tail window | dev agent |
 | 2026-03-19 | Added a new `Starship Transition` slideshow slide after `SPHEREx` that shows the requested Starship image for 4 seconds, then crossfades into a muted embedded YouTube clip from `3s` through `11s` | dev agent |
+| 2026-03-19 | Added a new Avi Loeb slideshow slide before `Dark Side of the Moon Laser Show` that crossfades after 2 seconds from the requested YouTube thumbnail to the Avi Loeb portrait image | dev agent |

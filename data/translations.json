@@ -1287,6 +1287,174 @@
         "en": "Fetch is unavailable in this environment.",
         "he": "Fetch אינו זמין בסביבה זו."
       }
+    },
+    {
+      "name": "3I/ATLAS — Anomalies Organized by Likelihood",
+      "translations": {
+        "en": "3I/ATLAS — Anomalies Organized by Likelihood",
+        "he": "3I/ATLAS — אנומליות מסודרות לפי סבירות"
+      }
+    },
+    {
+      "name": "Source: Avi Loeb, Medium — Nov 23, 2025  ·  Updated with new findings through Mar 2026  ·  Sorted chronologically by date first noted  ·  Loeb Scale: 3/10",
+      "translations": {
+        "en": "Source: Prof Avi Loeb, Medium — Nov 23, 2025  ·  Updated with new findings through Mar 2026  ·  Sorted chronologically by date first noted  ·  Loeb Scale: 3/10",
+        "he": "מקור: פרופ' אבי לואב, Medium — 23 בנובמבר 2025  ·  עודכן עם ממצאים חדשים עד מרץ 2026  ·  ממוין כרונולוגית לפי תאריך הזיהוי הראשון  ·  סולם לואב: 3/10"
+      }
+    },
+    {
+      "name": "Retrograde orbit aligned within 5° of ecliptic plane",
+      "translations": {
+        "en": "Retrograde orbit aligned within 5° of ecliptic plane",
+        "he": "מסלול רטרוגרדי מיושר בתוך 5° למישור המילקה"
+      }
+    },
+    {
+      "name": "Arrival timing fine-tuned past Mars, Venus & Jupiter",
+      "translations": {
+        "en": "Arrival timing fine-tuned past Mars, Venus & Jupiter",
+        "he": "תזמון ההגעה מכויל במדויק מעבר למאדים, נוגה וצדק"
+      }
+    },
+    {
+      "name": "Estimated 2.6 Km diameter",
+      "translations": {
+        "en": "Estimated 2.6 Km diameter",
+        "he": "קוטר מוערך של 2.6 ק\"מ"
+      }
+    },
+    {
+      "name": "Nickel/iron ratio matches industrial alloys; anomalous cyanide ratio",
+      "translations": {
+        "en": "Nickel/iron ratio matches industrial alloys; anomalous cyanide ratio",
+        "he": "יחס ניקל/ברזל תואם סגסוגות תעשייתיות; יחס ציאניד חריג"
+      }
+    },
+    {
+      "name": "Arrival direction aligns with the \"Wow! Signal\" within 9°",
+      "translations": {
+        "en": "Arrival direction aligns with the \"Wow! Signal\" within 9°",
+        "he": "כיוון ההגעה תואם את \"אות ה-Wow!\" בתוך 9°"
+      }
+    },
+    {
+      "name": "Sunward jet (anti-tail) — physically real, not perspective",
+      "translations": {
+        "en": "Sunward jet (anti-tail) — physically real, not perspective",
+        "he": "סילון לכיוון השמש (זנב נגדי) — תופעה פיזית אמיתית, לא עניין של פרספקטיבה"
+      }
+    },
+    {
+      "name": "Extreme negative polarization (smooth metalic/ice surfaces) — unprecedented for any comet",
+      "translations": {
+        "en": "Extreme negative polarization (smooth metalic/ice surfaces) — unprecedented for any comet",
+        "he": "קיטוב שלילי קיצוני (משטחי מתכת/קרח חלקים) — חסר תקדים לכל שביט"
+      }
+    },
+    {
+      "name": "Only 4% water in gas plume",
+      "translations": {
+        "en": "Only 4% water in gas plume",
+        "he": "רק 4% מים בענן הגז"
+      }
+    },
+    {
+      "name": "Brightened faster than any known comet; bluer than the Sun",
+      "translations": {
+        "en": "Brightened faster than any known comet; bluer than the Sun",
+        "he": "התבהר מהר יותר מכל שביט מוכר; כחול יותר מהשמש"
+      }
+    },
+    {
+      "name": "Non-gravitational acceleration without visible breakup",
+      "translations": {
+        "en": "Non-gravitational acceleration without visible breakup",
+        "he": "האצה לא-כבידתית בלי התפרקות נראית לעין"
+      }
+    },
+    {
+      "name": "Jets require unreasonably large surface area for a natural comet",
+      "translations": {
+        "en": "Jets require unreasonably large surface area for a natural comet",
+        "he": "הסילונים דורשים שטח פנים גדול באופן לא סביר עבור שביט טבעי"
+      }
+    },
+    {
+      "name": "Perijove matches Jupiter's Hill radius exactly",
+      "translations": {
+        "en": "Perijove matches Jupiter's Hill radius exactly",
+        "he": "הפריג'וב תואם בדיוק לרדיוס היל של צדק"
+      }
+    },
+    {
+      "name": "Jets maintain pointing direction despite object's rotation",
+      "translations": {
+        "en": "Jets maintain pointing direction despite object's rotation",
+        "he": "הסילונים שומרים על כיוון קבוע למרות סיבוב הגוף"
+      }
+    },
+    {
+      "name": "Tri-carbon jet misaligned from all other molecular jets",
+      "translations": {
+        "en": "Tri-carbon jet misaligned from all other molecular jets",
+        "he": "סילון תלת-פחמן אינו מיושר עם כל שאר הסילונים המולקולריים"
+      }
+    },
+    {
+      "name": "Methane detected post-perihelion — a biosignature gas",
+      "translations": {
+        "en": "Methane detected post-perihelion — a biosignature gas",
+        "he": "מתאן זוהה אחרי הפריהליון — גז ביוסיגנטורי"
+      }
+    },
+    {
+      "name": "No radio technosignature detected (counter-evidence)",
+      "translations": {
+        "en": "No radio technosignature detected (counter-evidence)",
+        "he": "לא זוהתה טכנוסיגניצ'ר רדיו (ראיית נגד)"
+      }
+    },
+    {
+      "name": "Three symmetric jets exactly 120° apart",
+      "translations": {
+        "en": "Three symmetric jets exactly 120° apart",
+        "he": "שלושה סילונים סימטריים במרחק של בדיוק 120° זה מזה"
+      }
+    },
+    {
+      "name": "Isotope ratios unlike any known Solar System body",
+      "translations": {
+        "en": "Isotope ratios unlike any known Solar System body",
+        "he": "יחסי איזוטופים שאינם דומים לשום גוף מוכר במערכת השמש"
+      }
+    },
+    {
+      "name": "No P yet",
+      "translations": {
+        "en": "No P yet",
+        "he": "עדיין אין הסתברות"
+      }
+    },
+    {
+      "name": "P — no P yet",
+      "translations": {
+        "en": "P — no P yet",
+        "he": "P — עדיין אין הסתברות"
+      }
+    },
+    {
+      "name": "Null result",
+      "translations": {
+        "en": "Null result",
+        "he": "תוצאה שלילית"
+      }
+    },
+    {
+      "name": "Play",
+      "translations": {
+        "en": "Play",
+        "he": "נגן"
+      }
     }
   ]
 }

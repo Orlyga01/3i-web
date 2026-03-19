@@ -10,6 +10,11 @@
       "src": "slides/3I/intro_video.html"
     },
     {
+      "id": "avi-loeb-transition",
+      "title": "Avi Loeb Transition",
+      "src": "slides/3I/avi_loeb_transition.html"
+    },
+    {
       "id": "dark-side-laser-show",
       "title": "Dark Side of the Moon Laser Show",
       "src": "slides/3I/dark_side_laser_show.html"
@@ -25,14 +30,24 @@
       "src": "slides/3I/starship_video_transition.html"
     },
     {
+      "id": "solar_plate",
+      "title": "Solar plate",
+      "src": "trajectory_player"
+    },
+    {
       "id": "oumuamua-trajectory-player",
       "title": "Oumuamua Trajectory Player",
-      "src": "trajectory_player?designation=Oumuamua&source=web&autoplay=1"
+      "src": "trajectory_player?designation=Oumuamua&source=web&autoplay=0"
     },
     {
       "id": "borisov-trajectory-player",
       "title": "2I/Borisov Trajectory Player",
       "src": "trajectory_player?designation=2I%2FBorisov&source=web"
+    },
+    {
+      "id": "wow-signal-1977",
+      "title": "Wow! Signal - 12 Aug 1977",
+      "src": "slides/3I/wow_signal_1977.html"
     },
     {
       "id": "comparison-video",
@@ -43,11 +58,6 @@
       "id": "comet-tail-formation",
       "title": "How a Comet Tail Forms",
       "src": "slides/3I/comet_tail.html"
-    },
-    {
-      "id": "wow-signal-1977",
-      "title": "Wow! Signal - 12 Aug 1977",
-      "src": "slides/3I/wow_signal_1977.html"
     },
     {
       "id": "jupiter-hill-radius",

@@ -10,13 +10,14 @@
     'use strict';
 
     const root = typeof globalThis !== 'undefined' ? globalThis : this;
-    const AppTranslations = root.AppTranslations || {};
-    const anpLocale = () => (typeof document !== 'undefined' && AppTranslations.getLocaleFromSearch)
-        ? AppTranslations.getLocaleFromSearch(document?.location?.search || '')
+    const getAppTranslations = () => root.AppTranslations || {};
+    const anpLocale = () => (typeof document !== 'undefined' && getAppTranslations().getLocaleFromSearch)
+        ? getAppTranslations().getLocaleFromSearch(document?.location?.search || '')
         : 'en';
     function anpT(name, fallback = '', params = null) {
-        const source = fallback || (typeof name === 'string' ? name : '');
-        return AppTranslations.translate?.(source, { locale: anpLocale(), params, fallback: source }) || source;
+        const sourceName = typeof name === 'string' ? name : '';
+        const fallbackText = fallback || sourceName;
+        return getAppTranslations().translate?.(sourceName, { locale: anpLocale(), params, fallback: fallbackText }) || fallbackText;
     }
 
     const normalizeDataset = typeof AnomaliesShared.normalizeDataset === 'function'
@@ -77,6 +78,27 @@
         return {
             sanitizedName,
             path: `data/${sanitizedName}/anomalies.json`,
+        };
+    }
+
+    function localizeAnomalyEntry(entry) {
+        const source = entry && typeof entry === 'object' ? entry : {};
+        return {
+            ...source,
+            anomaly: anpT(source.anomaly, source.anomaly || ''),
+            probability: anpT(source.probability, source.probability || ''),
+        };
+    }
+
+    function localizeDatasetCopy(dataset) {
+        const model = normalizeDataset(dataset);
+        const localizedEntries = model.entries.map(localizeAnomalyEntry);
+        return {
+            ...model,
+            title: anpT(model.title, model.title || ''),
+            subtitle: anpT(model.subtitle, model.subtitle || ''),
+            entries: localizedEntries,
+            visibleEntries: localizedEntries.filter(entry => !entry.skip && entry.triggerDate),
         };
     }
 
@@ -152,7 +174,7 @@
             );
         }
 
-        return normalizeDataset(payload);
+        return localizeDatasetCopy(payload);
     }
 
     function hasRevealableProbability(entry) {
@@ -559,10 +581,13 @@
         return new AnomaliesPanelController(root, options);
     }
 
-    function buildStandaloneHref(designation) {
+    function buildStandaloneHref(designation, locale = '') {
         const params = new URLSearchParams();
         if (String(designation || '').trim()) {
             params.set('designation', String(designation).trim());
+        }
+        if (String(locale || '').trim()) {
+            params.set('lang', String(locale).trim());
         }
         const suffix = params.toString();
         return suffix ? `anomalies_panel?${suffix}` : 'anomalies_panel';
@@ -587,9 +612,9 @@
 
     async function bootstrapStandalonePage() {
         if (typeof document === 'undefined') return;
-        await AppTranslations.loadTranslations?.();
-        const locale = AppTranslations.getLocaleFromSearch?.(document?.location?.search || '') || 'en';
-        AppTranslations.setDocumentLocale?.(locale);
+        await getAppTranslations().loadTranslations?.();
+        const locale = getAppTranslations().getLocaleFromSearch?.(document?.location?.search || '') || 'en';
+        getAppTranslations().setDocumentLocale?.(locale);
         const pageRoot = document.getElementById('anp-page');
         if (!pageRoot) return;
 
@@ -627,7 +652,7 @@
                 const dataset = await loadAnomaliesDataset(designation);
                 panel.setDataset(dataset);
                 if (typeof history !== 'undefined' && history.replaceState) {
-                    history.replaceState(null, '', buildStandaloneHref(designation));
+                    history.replaceState(null, '', buildStandaloneHref(designation, locale));
                 }
                 setStandaloneStatus(
                     dataset.entries.length
@@ -701,6 +726,7 @@
         AnomaliesLoadError,
         readDesignationFromUrl,
         buildAnomaliesPath,
+        localizeDatasetCopy,
         createUnavailableDataset,
         loadAnomaliesDataset,
         hasRevealableProbability,
