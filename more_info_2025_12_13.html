@@ -28,6 +28,8 @@
       margin: 0;
       padding: 24px;
       font-family: Arial, Helvetica, sans-serif;
+      font-size: 17px;
+      line-height: 1.6;
       color: var(--text);
       background:
         radial-gradient(circle at top, rgba(39, 86, 160, 0.22), transparent 28%),
@@ -87,7 +89,7 @@
     .hero-media-title {
       display: none;
       padding: 12px 14px 0;
-      font: 600 20px Georgia, serif;
+      font: 600 24px Georgia, serif;
       color: var(--text);
       background: rgba(8, 18, 38, 0.96);
     }
@@ -142,8 +144,8 @@
       border-radius: 999px;
       background: rgba(28, 77, 156, 0.22);
       color: var(--text);
-      padding: 8px 14px;
-      font-size: 12px;
+      padding: 10px 16px;
+      font-size: 14px;
       letter-spacing: 0.6px;
       cursor: pointer;
     }
@@ -223,7 +225,7 @@
     }
 
     .material-card h3 {
-      font-size: 15px;
+      font-size: 18px;
       margin-bottom: 6px;
     }
 
@@ -235,7 +237,7 @@
 
     .material-meta {
       color: rgba(255, 224, 141, 0.95);
-      font-size: 11px;
+      font-size: 14px;
       margin-bottom: 0;
     }
 
@@ -251,7 +253,7 @@
     .footnote {
       color: var(--muted);
       line-height: 1.6;
-      font-size: 14px;
+      font-size: 16px;
     }
 
     .hero-media-list {
@@ -259,7 +261,7 @@
       padding-left: 22px;
       color: var(--text);
       line-height: 1.7;
-      font-size: 16px;
+      font-size: 19px;
     }
 
     .hero-media-list li+li {
@@ -267,7 +269,7 @@
     }
 
     .hero-media-term {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
       color: var(--text);
     }
@@ -277,7 +279,7 @@
       padding-left: 18px;
       color: var(--muted);
       line-height: 1.55;
-      font-size: 13px;
+      font-size: 15px;
     }
 
     .comparison-list strong {
@@ -291,6 +293,7 @@
       background: rgba(44, 35, 12, 0.28);
       color: rgba(245, 233, 193, 0.94);
       line-height: 1.6;
+      font-size: 17px;
     }
 
     a {
@@ -392,15 +395,10 @@
         <img id="hero-image" src="assets/materials.jpg" alt="3I/ATLAS materials image">
         <div id="hero-image-copy" class="hero-media-copy">
           <ul class="hero-media-list">
-            <li id="hero-bullet-1">
-              Scientists mixed water, hydrogen, ammonia, and methane, simulating early Earth's atmosphere, zapped it
-              with electrical sparks, and shockingly produced amino acids, the building blocks of life, from scratch.
-            </li>
+            <li id="hero-bullet-1">Scientists mixed water, hydrogen, ammonia, and methane, simulating early Earth's atmosphere, zapped it with electrical sparks, and shockingly produced amino acids, the building blocks of life, from scratch.</li>
             <li>
               <span id="hero-bullet-2-label" class="hero-media-term">Panspermia:</span>
-              <span id="hero-bullet-2-copy">The theory that life's ingredients, or even life itself, can travel across the galaxy carried by objects
-              like comets, asteroids, or interstellar visitors like 3I/ATLAS, potentially seeding life on other planets.
-              </span>
+              <span id="hero-bullet-2-copy">The theory that life's ingredients, or even life itself, can travel across the galaxy carried by objects like comets, asteroids, or interstellar visitors like 3I/ATLAS, potentially seeding life on other planets.</span>
             </li>
           </ul>
         </div>
@@ -421,6 +419,8 @@
       const defaultHeroImageAlt = '3I/ATLAS materials image';
       const experimentImageSrc = 'https://media-cldnry.s-nbcnews.com/image/upload/t_fit-1000w,f_auto,q_auto:best/msnbc/Components/Photos/070523/070523_millerlab_hmed_12p.jpg';
       const experimentImageAlt = 'Stanley Miller laboratory image referenced by NBC News';
+      let localizedDefaultHeroImageAlt = defaultHeroImageAlt;
+      let localizedExperimentImageAlt = experimentImageAlt;
       const cards = {
         h2o: document.querySelector('[data-material="h2o"]'),
         organics: document.querySelector('[data-material="organics"]'),
@@ -437,12 +437,16 @@
         const read = fallback => AppTranslations.translate?.(fallback, { locale, fallback }) || fallback;
 
         document.title = read(document.title);
-        heroImage.alt = read(defaultHeroImageAlt);
+        localizedDefaultHeroImageAlt = read(defaultHeroImageAlt);
+        localizedExperimentImageAlt = read(experimentImageAlt);
+
+        heroImage.alt = localizedDefaultHeroImageAlt;
+        playButton.setAttribute("aria-label", read(playButton.getAttribute("aria-label")));
+        resetButton.textContent = read(resetButton.textContent);
         document.getElementById("hero-image-title").textContent = read(document.getElementById("hero-image-title").textContent);
         document.getElementById("hero-bullet-1").textContent = read(document.getElementById("hero-bullet-1").textContent);
         document.getElementById("hero-bullet-2-label").textContent = read(document.getElementById("hero-bullet-2-label").textContent);
         document.getElementById("hero-bullet-2-copy").textContent = read(document.getElementById("hero-bullet-2-copy").textContent);
-        experimentImageAlt && (window.__experimentImageAlt = read(experimentImageAlt));
 
         const materialIds = ["co2", "co", "h2o", "cn", "organics", "ch4", "nickel"];
         materialIds.forEach(material => {
@@ -472,7 +476,7 @@
         clearHighlights();
         playButton.disabled = false;
         heroImage.src = defaultHeroImageSrc;
-        heroImage.alt = defaultHeroImageAlt;
+        heroImage.alt = localizedDefaultHeroImageAlt;
         heroMedia.classList.remove('is-experiment-view');
         heroImageTitle.classList.remove('is-visible');
         heroImageCopy.classList.remove('is-visible');
@@ -486,7 +490,7 @@
         resetSequence();
         playButton.disabled = true;
         heroImage.src = experimentImageSrc;
-        heroImage.alt = window.__experimentImageAlt || experimentImageAlt;
+        heroImage.alt = localizedExperimentImageAlt;
         heroMedia.classList.add('is-experiment-view');
         heroImageTitle.classList.add('is-visible');
         heroImageCopy.classList.add('is-visible');

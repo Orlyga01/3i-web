@@ -281,9 +281,9 @@ const TP_DEFAULT_OBJECT_VISUAL = Object.freeze({
   tailRevealMode: 'full',
 });
 const TP_3I_TAIL_OBJECT_VISUAL = Object.freeze({
-  spriteSrc: 'assets/3i_tail.png',
+  spriteSrc: 'assets/3i_tail_1.png',
   imageBaseTailAngleRad: 55 * (Math.PI / 180),
-  anchorX: 240 / 533,
+  anchorX: 312 / 533,
   anchorY: 240 / 800,
   alignToSun: true,
   tailDirectionSign: -1,
@@ -292,7 +292,12 @@ const TP_3I_TAIL_OBJECT_VISUAL = Object.freeze({
   showCoreGlow: false,
   showNucleusGlow: false,
   showColorRing: false,
-  tailRevealMode: 'tail-start',
+  tailRevealMode: 'full',
+  underlaySpriteSrc: 'assets/3i_tail.png',
+  underlayImageBaseTailAngleRad: 55 * (Math.PI / 180),
+  underlayAnchorX: 312 / 533,
+  underlayAnchorY: 240 / 800,
+  underlayTailRevealMode: 'tail-start',
 });
 const TP_BORISOV_OBJECT_VISUAL = Object.freeze({
   spriteSrc: 'assets/comet.png',
@@ -374,7 +379,9 @@ function getObjectSpinRotation(designation, phase = 0, dateValue = null) {
 
 function getObjectTailReveal(designation, sunDistanceAu = 0, dateValue = null) {
   const config = getObjectVisualConfig(designation, dateValue);
-  if (config.tailRevealMode === 'tail-start') return get3iTailReveal(dateValue);
+  if (config.tailRevealMode === 'tail-start' || config.underlayTailRevealMode === 'tail-start') {
+    return get3iTailReveal(dateValue);
+  }
   if (config.tailRevealMode !== 'sunDistance') return 1;
   const near = Number(config.tailRevealNearAu);
   const far = Number(config.tailRevealFarAu);
@@ -387,6 +394,12 @@ function getObjectTailReveal(designation, sunDistanceAu = 0, dateValue = null) {
 function resolveObjectSprite(designation, dateValue = null) {
   const spriteSrc = getObjectVisualConfig(designation, dateValue).spriteSrc;
   return typeof window.getSharedSpriteImage === 'function'
+    ? window.getSharedSpriteImage(spriteSrc)
+    : null;
+}
+
+function resolveSpriteBySrc(spriteSrc) {
+  return typeof window.getSharedSpriteImage === 'function' && typeof spriteSrc === 'string'
     ? window.getSharedSpriteImage(spriteSrc)
     : null;
 }
@@ -504,7 +517,34 @@ class PlaybackController {
       const tint = this.currentAppearance?.rgb || getNamedVisualColorRgb(TP_DEFAULT_VISUAL_COLOR);
       const currentVisual = getObjectVisualConfig(this.designation, this.currentDate);
       const currentObjectSprite = resolveObjectSprite(this.designation, this.currentDate);
+      const currentUnderlaySprite = resolveSpriteBySrc(currentVisual.underlaySpriteSrc);
       const currentObjectScale = getObjectRenderScale(this.designation, this.currentDate);
+      const currentTailReveal = getObjectTailReveal(this.designation, this.currentSunDistance, this.currentDate);
+      if (currentUnderlaySprite) {
+        drawComet(
+          this.currentWorldPosition.wx,
+          this.currentWorldPosition.wy,
+          this.currentWorldPosition.wz,
+          objectAlpha,
+          `${tint.r},${tint.g},${tint.b}`,
+          {
+            sizeMultiplier: 0.95 * currentObjectScale,
+            image: currentUnderlaySprite,
+            imageBaseTailAngle: currentVisual.underlayImageBaseTailAngleRad ?? currentVisual.imageBaseTailAngleRad,
+            anchorX: currentVisual.underlayAnchorX ?? currentVisual.anchorX,
+            anchorY: currentVisual.underlayAnchorY ?? currentVisual.anchorY,
+            tailReveal: currentTailReveal,
+            tailRevealMode: currentVisual.underlayTailRevealMode ?? currentVisual.tailRevealMode,
+            tailRevealAngle: currentVisual.underlayImageBaseTailAngleRad ?? currentVisual.imageBaseTailAngleRad,
+            alignToSun: currentVisual.alignToSun,
+            tailDirectionSign: currentVisual.tailDirectionSign,
+            rotationOffset: getObjectSpinRotation(this.designation, this.engine.pulsePhase, this.currentDate),
+            preserveSpriteColor: currentVisual.preserveSpriteColor,
+            showCoreGlow: false,
+            showNucleusGlow: false,
+          }
+        );
+      }
       drawComet(
         this.currentWorldPosition.wx,
         this.currentWorldPosition.wy,
@@ -517,7 +557,7 @@ class PlaybackController {
           imageBaseTailAngle: currentVisual.imageBaseTailAngleRad,
           anchorX: currentVisual.anchorX,
           anchorY: currentVisual.anchorY,
-          tailReveal: getObjectTailReveal(this.designation, this.currentSunDistance, this.currentDate),
+          tailReveal: currentVisual.tailRevealMode === 'full' ? 1 : currentTailReveal,
           tailRevealMode: currentVisual.tailRevealMode,
           tailRevealAngle: currentVisual.imageBaseTailAngleRad,
           alignToSun: currentVisual.alignToSun,
@@ -803,6 +843,12 @@ class PlaybackController {
       return;
     }
 
+    if (shouldHandleContinueShortcut(event.code, this.state)) {
+      event.preventDefault();
+      this.continueFromStop();
+      return;
+    }
+
     if (event.code === 'Enter' && (this.state === 'stopped-at-point' || this.state === 'stopped-manual')) {
       event.preventDefault();
     }
@@ -1017,7 +1063,9 @@ class ControlBar {
     this.stopAllCheckbox = document.getElementById('tp-stop-all-checkbox');
     this.continueBtn = document.getElementById('tp-continue-btn');
     this.fullscreenBtn = document.getElementById('tp-fullscreen-btn');
+    this.toggleBtn = document.getElementById('tp-controls-toggle');
     this.controller = null;
+    this.controlsHidden = false;
   }
 
   connect(controller) {
@@ -1042,6 +1090,7 @@ class ControlBar {
       controller.pauseAtEveryPoint = Boolean(this.stopAllCheckbox.checked);
     });
     this.continueBtn?.addEventListener('click', () => controller.continueFromStop());
+    this.toggleBtn?.addEventListener('click', () => this.toggleControlsVisibility());
 
     this.speedSlider.addEventListener('input', () => {
       if (areSecondaryControlsDisabled(controller.state)) {
@@ -1064,6 +1113,19 @@ class ControlBar {
 
   setContinueVisible(visible) {
     this.continueBtn?.classList.toggle('visible', Boolean(visible));
+  }
+
+  setControlsHidden(hidden) {
+    this.controlsHidden = Boolean(hidden);
+    document.body?.setAttribute('data-tp-controls-hidden', this.controlsHidden ? 'true' : 'false');
+    if (!this.toggleBtn) return;
+    this.toggleBtn.textContent = this.controlsHidden ? '+' : '×';
+    this.toggleBtn.setAttribute('aria-label', this.controlsHidden ? 'Show lower controls' : 'Hide lower controls');
+    this.toggleBtn.title = this.controlsHidden ? 'Show lower controls' : 'Hide lower controls';
+  }
+
+  toggleControlsVisibility() {
+    this.setControlsHidden(!this.controlsHidden);
   }
 
   syncInitialValues(controller) {
@@ -1779,7 +1841,28 @@ function renderLivePreview(canvasEl, appearance, designation = '', dateValue = n
     const previewTailDirection = -3 * Math.PI / 4;
     const objectVisual = getObjectVisualConfig(designation, dateValue);
     const objectSprite = resolveObjectSprite(designation, dateValue);
+    const underlaySprite = resolveSpriteBySrc(objectVisual.underlaySpriteSrc);
     const previewScale = Math.min(getObjectRenderScale(designation, dateValue), 1.2);
+    const tailReveal = getObjectTailReveal(designation, 0, dateValue);
+    if (underlaySprite) {
+      window.drawCometBillboard(previewCtx, {
+        x: width / 2,
+        y: height / 2,
+        size: Math.min(width, height) * 0.68 * previewScale,
+        rotationAngle: objectVisual.alignToSun ? (previewTailDirection - (objectVisual.underlayImageBaseTailAngleRad ?? objectVisual.imageBaseTailAngleRad)) : 0,
+        alpha: 0.98,
+        tint,
+        image: underlaySprite,
+        tailReveal,
+        tailRevealMode: objectVisual.underlayTailRevealMode ?? objectVisual.tailRevealMode,
+        tailRevealAngle: objectVisual.underlayImageBaseTailAngleRad ?? objectVisual.imageBaseTailAngleRad,
+        anchorX: objectVisual.underlayAnchorX ?? objectVisual.anchorX,
+        anchorY: objectVisual.underlayAnchorY ?? objectVisual.anchorY,
+        preserveSpriteColor: objectVisual.preserveSpriteColor,
+        showCoreGlow: false,
+        showNucleusGlow: false,
+      });
+    }
     window.drawCometBillboard(previewCtx, {
       x: width / 2,
       y: height / 2,
@@ -1788,7 +1871,7 @@ function renderLivePreview(canvasEl, appearance, designation = '', dateValue = n
       alpha: 0.98,
       tint,
       image: objectSprite || undefined,
-      tailReveal: getObjectTailReveal(designation, 0, dateValue),
+      tailReveal: objectVisual.tailRevealMode === 'full' ? 1 : tailReveal,
       tailRevealMode: objectVisual.tailRevealMode,
       tailRevealAngle: objectVisual.imageBaseTailAngleRad,
       anchorX: objectVisual.anchorX,
@@ -1935,6 +2018,11 @@ function getAnomaliesDateForPoint(point) {
 
 function shouldHandleAnomalyPlayShortcut(state, hasPendingAnomalyStep) {
   return Boolean(hasPendingAnomalyStep && state !== 'playing');
+}
+
+function shouldHandleContinueShortcut(code, state) {
+  return (code === 'Digit1' || code === 'Numpad1')
+    && (state === 'stopped-at-point' || state === 'stopped-manual');
 }
 
 function setSubtitle(text) {

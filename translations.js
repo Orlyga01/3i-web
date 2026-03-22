@@ -40,9 +40,41 @@
         return 'data/translations.json';
     }
 
+    function resolveSupportedLocale(value) {
+        const normalized = String(value || '').trim().toLowerCase().replace(/_/g, '-');
+        if (!normalized) return '';
+        if (SUPPORTED_LOCALES.has(normalized)) return normalized;
+        const baseLocale = normalized.split('-')[0];
+        return SUPPORTED_LOCALES.has(baseLocale) ? baseLocale : '';
+    }
+
     function normalizeLocale(value) {
-        const normalized = String(value || '').trim().toLowerCase();
-        return SUPPORTED_LOCALES.has(normalized) ? normalized : DEFAULT_LOCALE;
+        return resolveSupportedLocale(value) || DEFAULT_LOCALE;
+    }
+
+    function getDocumentLocaleHint() {
+        if (typeof document === 'undefined') return '';
+        const rawLang = String(document.documentElement?.lang || '').trim();
+        const locale = resolveSupportedLocale(rawLang);
+        return locale && locale !== DEFAULT_LOCALE ? locale : '';
+    }
+
+    function getNavigatorLocaleHint() {
+        const candidates = [];
+        if (Array.isArray(root.navigator?.languages)) {
+            candidates.push(...root.navigator.languages);
+        }
+        candidates.push(root.navigator?.language, root.navigator?.userLanguage);
+
+        for (const candidate of candidates) {
+            const locale = resolveSupportedLocale(candidate);
+            if (locale) return locale;
+        }
+        return '';
+    }
+
+    function getPreferredLocale() {
+        return getDocumentLocaleHint() || getNavigatorLocaleHint() || DEFAULT_LOCALE;
     }
 
     function getLocaleFromSearch(search) {
@@ -50,7 +82,11 @@
             ? search
             : (typeof location !== 'undefined' ? location.search : '');
         const params = new URLSearchParams(source);
-        return normalizeLocale(params.get('lang'));
+        if (params.has('lang')) {
+            return normalizeLocale(params.get('lang'));
+        }
+        const requestedLocale = resolveSupportedLocale(params.get('lang'));
+        return requestedLocale || getPreferredLocale();
     }
 
     function getCurrentLocale() {

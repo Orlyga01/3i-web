@@ -11,9 +11,16 @@
 
     const root = typeof globalThis !== 'undefined' ? globalThis : this;
     const getAppTranslations = () => root.AppTranslations || {};
-    const anpLocale = () => (typeof document !== 'undefined' && getAppTranslations().getLocaleFromSearch)
-        ? getAppTranslations().getLocaleFromSearch(document?.location?.search || '')
-        : 'en';
+    const anpLocale = () => {
+        const translations = getAppTranslations();
+        if (translations.getCurrentLocale) {
+            return translations.getCurrentLocale();
+        }
+        if (typeof document !== 'undefined' && translations.getLocaleFromSearch) {
+            return translations.getLocaleFromSearch(document?.location?.search || '');
+        }
+        return 'en';
+    };
     function anpT(name, fallback = '', params = null) {
         const sourceName = typeof name === 'string' ? name : '';
         const fallbackText = fallback || sourceName;

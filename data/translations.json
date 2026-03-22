@@ -918,6 +918,20 @@
       }
     },
     {
+      "name": "Play material comparison",
+      "translations": {
+        "en": "Play material comparison",
+        "he": "נגן השוואת חומרים"
+      }
+    },
+    {
+      "name": "Reset",
+      "translations": {
+        "en": "Reset",
+        "he": "איפוס"
+      }
+    },
+    {
       "name": "Stanley Miller laboratory image referenced by NBC News",
       "translations": {
         "en": "Stanley Miller laboratory image referenced by NBC News",

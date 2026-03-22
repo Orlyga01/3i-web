@@ -173,9 +173,9 @@ const DEFAULT_OBJECT_VISUAL = Object.freeze({
     tailRevealMode: 'full',
 });
 const TAIL_OBJECT_VISUAL = Object.freeze({
-    spriteSrc: 'assets/3i_tail.png',
+    spriteSrc: 'assets/3i_tail_1.png',
     imageBaseTailAngleRad: 55 * (Math.PI / 180),
-    anchorX: 240 / 533,
+    anchorX: 312 / 533,
     anchorY: 240 / 800,
     alignToSun: true,
     tailDirectionSign: -1,
@@ -184,7 +184,12 @@ const TAIL_OBJECT_VISUAL = Object.freeze({
     showCoreGlow: false,
     showNucleusGlow: false,
     showColorRing: false,
-    tailRevealMode: 'tail-start',
+    tailRevealMode: 'full',
+    underlaySpriteSrc: 'assets/3i_tail.png',
+    underlayImageBaseTailAngleRad: 55 * (Math.PI / 180),
+    underlayAnchorX: 312 / 533,
+    underlayAnchorY: 240 / 800,
+    underlayTailRevealMode: 'tail-start',
 });
 const BORISOV_OBJECT_VISUAL = Object.freeze({
     spriteSrc: 'assets/comet.png',
@@ -279,7 +284,7 @@ function getObjectSpinRotation(designation, phase = 0, dateValue = null) {
 
 function getObjectTailReveal(designation, sunDistanceAu = 0, dateValue = null) {
     const config = getObjectVisualConfig(designation, dateValue);
-    if (config.tailRevealMode === 'tail-start') {
+    if (config.tailRevealMode === 'tail-start' || config.underlayTailRevealMode === 'tail-start') {
         const date = parseDate(dateValue);
         const start = parseDate(TAIL_START_DATE);
         const end = parseDate(TAIL_END_DATE);
@@ -657,6 +662,11 @@ function shouldHandleAnomalyPlayShortcut(state, hasPendingAnomalyStep) {
     return Boolean(hasPendingAnomalyStep && state !== 'playing');
 }
 
+function shouldHandleContinueShortcut(code, state) {
+    return (code === 'Digit1' || code === 'Numpad1')
+        && (state === 'stopped-at-point' || state === 'stopped-manual');
+}
+
 function normalizeAnnotationDescription(description) {
     return typeof description === 'string' ? description.trim() : '';
 }
@@ -798,6 +808,7 @@ module.exports = {
     shouldShowReferenceConnector,
     getAnomaliesDateForPoint,
     shouldHandleAnomalyPlayShortcut,
+    shouldHandleContinueShortcut,
     normalizeAnnotationDescription,
     isAbsoluteImageUrl,
     resolveAnnotationImageSrc,

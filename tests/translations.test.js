@@ -3,6 +3,7 @@
 const {
     buildTranslationMap,
     getHebrewFontCss,
+    getLocaleFromSearch,
     normalizeLocale,
     translate,
     formatTemplate,
@@ -14,6 +15,7 @@ const {
 describe('translation helpers', () => {
     test('normalizes unsupported locales to english', () => {
         expect(normalizeLocale('he')).toBe('he');
+        expect(normalizeLocale('he-IL')).toBe('he');
         expect(normalizeLocale('EN')).toBe('en');
         expect(normalizeLocale('fr')).toBe('en');
     });
@@ -44,6 +46,42 @@ describe('translation helpers', () => {
     test('appends lang to internal hrefs', () => {
         expect(withLangParam('trajectory_player?designation=3I', 'he'))
             .toBe('trajectory_player?designation=3I&lang=he');
+    });
+
+    test('falls back to browser locale when lang is missing', () => {
+        const originalNavigator = global.navigator;
+        try {
+            Object.defineProperty(global, 'navigator', {
+                configurable: true,
+                value: { language: 'he-IL', languages: ['he-IL', 'en-US'] },
+            });
+
+            expect(getLocaleFromSearch('')).toBe('he');
+        } finally {
+            Object.defineProperty(global, 'navigator', {
+                configurable: true,
+                value: originalNavigator,
+            });
+        }
+    });
+
+    test('explicit lang query overrides browser fallback', () => {
+        const originalNavigator = global.navigator;
+        try {
+            Object.defineProperty(global, 'navigator', {
+                configurable: true,
+                value: { language: 'he-IL', languages: ['he-IL', 'en-US'] },
+            });
+
+            expect(getLocaleFromSearch('?lang=en')).toBe('en');
+            expect(getLocaleFromSearch('?lang=he-IL')).toBe('he');
+            expect(getLocaleFromSearch('?lang=fr')).toBe('en');
+        } finally {
+            Object.defineProperty(global, 'navigator', {
+                configurable: true,
+                value: originalNavigator,
+            });
+        }
     });
 
     test('translates point descriptions and preserves base more_info data', () => {

@@ -240,7 +240,7 @@
         "wz": 30
       },
       "durationPct": 100,
-      "stoppable": true,
+      "stoppable": false,
       "camera": {
         "el": 5.4,
         "az": 1.14,
@@ -409,10 +409,10 @@
       "more_info": {
         "images": [
           {
-            "url": "https://c.ndtvimg.com/2025-11/5mrdu7s8_interstellar-object-3iatlas_625x300_10_November_25.jpeg?downsize=773:435"
+            "url": "https://miro.medium.com/v2/resize:fit:720/format:webp/1*SBgYRjky78TScNE5Rvfvog.png"
           },
           {
-            "url": "https://miro.medium.com/v2/resize:fit:720/format:webp/1*SBgYRjky78TScNE5Rvfvog.png"
+            "url": "https://c.ndtvimg.com/2025-11/5mrdu7s8_interstellar-object-3iatlas_625x300_10_November_25.jpeg?downsize=773:435"
           }
         ]
       },
@@ -471,7 +471,7 @@
       "description": null,
       "image": "https://www.futura-sciences.com/en/wp-content/uploads/2025/12/Hubble_reobserves_3I_ATLAS_pillars-1.jpeg",
       "more_info": {
-        "page_name": "more_info_2025_12_13.html"
+        "page_name": "more_info_2025_12_13"
       }
     },
     {

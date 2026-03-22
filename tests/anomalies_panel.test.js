@@ -118,12 +118,13 @@ describe('anomalies_panel', () => {
 
     test('localizes the combined probability line for Hebrew', () => {
         global.document = {
-            location: { search: '?lang=he' },
+            location: { search: '' },
             readyState: 'loading',
             addEventListener() {},
+            documentElement: { lang: 'he' },
         };
         global.AppTranslations = {
-            getLocaleFromSearch() {
+            getCurrentLocale() {
                 return 'he';
             },
             translate(sourceText, options) {

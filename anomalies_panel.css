@@ -208,7 +208,10 @@ html[lang="he"] .anp-probability-cell {
 .anp-combined-cell {
   text-align: center;
   font-size: 16px;
+  line-height: 1.45;
   letter-spacing: 0.3px;
+  white-space: normal;
+  overflow-wrap: anywhere;
   border-top: 1px solid rgba(255, 214, 144, 0.18);
 }
 

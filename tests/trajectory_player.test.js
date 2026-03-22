@@ -53,6 +53,7 @@ const {
     shouldShowReferenceConnector,
     getAnomaliesDateForPoint,
     shouldHandleAnomalyPlayShortcut,
+    shouldHandleContinueShortcut,
     normalizeAnnotationDescription,
     isAbsoluteImageUrl,
     resolveAnnotationImageSrc,
@@ -298,9 +299,9 @@ describe('animation helpers', () => {
         expect(is3iTailWindow('3I', '2026-02-28')).toBe(true);
         expect(is3iTailWindow('3I', '2026-03-01')).toBe(false);
         expect(getObjectVisualConfig('3I', '2025-11-13')).toEqual({
-            spriteSrc: 'assets/3i_tail.png',
+            spriteSrc: 'assets/3i_tail_1.png',
             imageBaseTailAngleRad: 55 * (Math.PI / 180),
-            anchorX: 240 / 533,
+            anchorX: 312 / 533,
             anchorY: 240 / 800,
             alignToSun: true,
             tailDirectionSign: -1,
@@ -309,7 +310,12 @@ describe('animation helpers', () => {
             showCoreGlow: false,
             showNucleusGlow: false,
             showColorRing: false,
-            tailRevealMode: 'tail-start',
+            tailRevealMode: 'full',
+            underlaySpriteSrc: 'assets/3i_tail.png',
+            underlayImageBaseTailAngleRad: 55 * (Math.PI / 180),
+            underlayAnchorX: 312 / 533,
+            underlayAnchorY: 240 / 800,
+            underlayTailRevealMode: 'tail-start',
         });
         expect(getObjectRenderScale('3I', '2025-11-13')).toBeCloseTo(1, 6);
         expect(getObjectRenderScale('3I', '2026-02-28')).toBeCloseTo(1.85, 6);
@@ -641,6 +647,13 @@ describe('animation helpers', () => {
         expect(shouldHandleAnomalyPlayShortcut('stopped-at-point', true)).toBe(true);
         expect(shouldHandleAnomalyPlayShortcut('playing', true)).toBe(false);
         expect(shouldHandleAnomalyPlayShortcut('paused', false)).toBe(false);
+    });
+
+    test('routes 1-key continue only at stopped states that expose Continue', () => {
+        expect(shouldHandleContinueShortcut('Digit1', 'stopped-at-point')).toBe(true);
+        expect(shouldHandleContinueShortcut('Numpad1', 'stopped-manual')).toBe(true);
+        expect(shouldHandleContinueShortcut('Digit1', 'paused')).toBe(false);
+        expect(shouldHandleContinueShortcut('Enter', 'stopped-at-point')).toBe(false);
     });
 
     test('normalizes annotation description whitespace', () => {

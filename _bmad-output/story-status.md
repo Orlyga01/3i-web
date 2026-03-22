@@ -1,7 +1,7 @@
 # 3i-web — Story Status Tracker
 
 **Project:** 3i-web
-**Last updated:** 2026-03-19
+**Last updated:** 2026-03-21
 **Maintained by:** All agents — update this file whenever a story's implementation status changes.
 
 > **Rule:** Any agent (dev, PM, QA, architect) that completes, partially completes, or discovers a status change for any story **must** update the relevant row in this file before ending their session. The status values are defined below.
@@ -60,9 +60,9 @@
 | Story | Title | Status | Notes |
 |---|---|---|---|
 | 3.1 | Player Page Shell & URL Loading | ✅ Done | Added player shell, URL loader, friendly error states, manual-start playback wiring, explicit player-owned object sprite selection so solar-comet asset changes no longer leak into `trajectory_player`, and a corrected `3igreen_1` tail-angle calibration so the player sprite points sunward as intended |
-| 3.2 | Animation Engine (Spline + Camera Lerp) | ✅ Done | Catmull-Rom playback, per-frame date/AU interpolation, pan-aware camera lerp, and object-specific player visuals including slower ringless `Oumuamua` rendering and 3I-only progressive tail reveal implemented |
+| 3.2 | Animation Engine (Spline + Camera Lerp) | ✅ Done | Catmull-Rom playback, per-frame date/AU interpolation, pan-aware camera lerp, and object-specific player visuals including slower ringless `Oumuamua` rendering plus the bundled `3I` tail-window layering of `assets/3i_tail_1.png` over the growing `assets/3i_tail.png` underlay |
 | 3.3 | Motion Trail | ✅ Done | Glowing projected trail now accumulates during playback and resets cleanly on restart / point jumps |
-| 3.4 | Playback Controls & Keyboard Shortcuts | ✅ Done | Wired ⏮⏪⏸▶⏩ controls, disabled edge states, screen-click stop with Continue-only resume, and Space/←/→/F shortcuts |
+| 3.4 | Playback Controls & Keyboard Shortcuts | ✅ Done | Wired ⏮⏪⏸▶⏩ controls, disabled edge states, screen-click stop with Continue-only resume, plus Space/←/→/F and `1`-to-Continue shortcuts; lower playback chrome can now be collapsed from the player |
 | 3.5 | Speed Ruler | 🚧 In Progress | Playback pacing rebased, supported trajectory-level default speed overrides now start `2I/Borisov` and `Oumuamua` at `3×`, and the total-duration readout is still pending |
 | 3.6 | Stop-at-Points Mode | 🚧 In Progress | Stoppable pauses plus temporary any-point option implemented; single overlay now stays live and swaps to point images on stop |
 | 3.7 | Timeline Scrubber | 🔲 Pending | Drag-to-seek + notch markers; depends on 3.2, 3.4 |
@@ -161,10 +161,10 @@
 
 | Story | Title | Status | Notes |
 |---|---|---|---|
-| 8.1 | Shared Translation JSON & Runtime Loader | ✅ Done | Replaced the nested translation store with flat `name` + `translations` entries and a startup-built locale map in `translations.js` |
+| 8.1 | Shared Translation JSON & Runtime Loader | ✅ Done | Replaced the nested translation store with flat `name` + `translations` entries and a startup-built locale map in `translations.js`, now including browser-locale fallback when `lang` is missing |
 | 8.2 | Index Language Selector & Link Propagation | ✅ Done | Added a language selector to `index.html`, localized index copy, and propagated `lang` through generated page links |
 | 8.3 | Runtime Translation for Presentation, Player, and Solar System | ✅ Done | Switched to source-text lookups, fixed presentation slide routing so clean slide URLs keep `lang`, applied the Hebrew-only Fredoka font through the shared translation runtime, and now localize the 3I anomalies panel dataset/title rows at load time while keeping the Hebrew Probability column on the right |
-| 8.4 | Hebrew Seed Content for 3I Descriptions and More Info | ✅ Done | Preserved the Hebrew seed set for 3I slides, trajectory descriptions, and the `2025-12-13` more-info page in the new flat translation catalog |
+| 8.4 | Hebrew Seed Content for 3I Descriptions and More Info | ✅ Done | Preserved the Hebrew seed set for 3I slides, trajectory descriptions, and the `2025-12-13` more-info page in the new flat translation catalog, including its remaining control strings and image alt text |
 
 **Progress: 4 / 4 stories complete**
 
@@ -204,6 +204,9 @@
 
 | Date | Change | By |
 |---|---|---|
+| 2026-03-20 | Reverted the failed bundled `3I` tail-feather experiments and switched the Nov-13 tail window to a two-layer render: `assets/3i_tail_1.png` as the visible object/head sprite over a growing `assets/3i_tail.png` underlay | dev agent |
+| 2026-03-19 | Fixed anomalies-panel locale detection so Hebrew combined-probability copy follows the shared document locale, and let the combined-probability row wrap cleanly on narrow layouts | dev agent |
+| 2026-03-20 | Added a collapsible lower trajectory-player control chrome via a bottom-right `×`/`+` toggle, and mapped the `1` key to the existing Continue action when playback is stopped at a resumable point | dev agent |
 | 2026-03-19 | Increased anomalies-panel typography for readability and added a Hebrew-targeted test covering the translated combined-probability line | dev agent |
 | 2026-03-19 | Localized the 3I anomalies panel dataset/title text through the shared translation runtime, preserved `lang` in standalone anomalies URLs, and forced the Hebrew anomalies table to keep the Probability column on the right | dev agent |
 | 2026-03-16 | Fixed the shared comet renderer to forward the new horizontal sprite anchor too, so the measured `3I` tail-image nucleus point actually applies during live playback and not just in the preview path | dev agent |
@@ -338,6 +341,10 @@
 | 2026-03-12 | Updated trajectory-player screen-click behavior so canvas clicks can stop playback but cannot resume it; resume now uses the existing Continue control | dev agent |
 | 2026-03-12 | Added Epic 6 Story 6.3 and started a custom `2025-12-13` More Info science page with play-triggered material highlights | dev agent |
 | 2026-03-12 | Completed Epic 6 Story 6.3 with a custom `2025-12-13` science page, external media, hosting support, and verification | dev agent |
+| 2026-03-21 | Finished the remaining `2025-12-13` page localization by translating its control strings and keeping localized image alt text across reset/play states | dev agent |
+| 2026-03-21 | Updated `translations.js` to accept locale variants like `he-IL` and fall back to browser locale when `lang` is missing, so standalone translated pages can open in Hebrew without a query parameter | dev agent |
+| 2026-03-21 | Switched the 3I Dec-13 custom page handoff to the clean URL `more_info_2025_12_13` so hosting redirects do not interfere with `lang` query propagation | dev agent |
+| 2026-03-21 | Increased typography on `more_info_2025_12_13.html` so the custom Dec-13 science page reads larger across buttons, hero copy, and material cards | dev agent |
 | 2026-03-13 | Tuned trajectory-player object rendering to remove pulse/blink behavior, reduce the live ring, and make the comet sprite read more solid on screen | dev agent |
 | 2026-03-13 | Added Epic 4 Story 4.8 with a shared localStorage kill switch; homepage now hides local source choices and editor/player bypass local drafts when the flag is off | dev agent |
 | 2026-03-14 | Compacted the trajectory-player floating stats box by removing its fixed minimum width and switching the attached date label to a numeric 2-digit-year format; marked Story 3.9 in progress because the live stats feature now exists in code but still differs from the original top-right spec | dev agent |

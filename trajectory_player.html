@@ -545,6 +545,12 @@
       justify-content: center;
     }
 
+    body[data-tp-controls-hidden="true"] #tp-continue-btn.visible,
+    body[data-tp-controls-hidden="true"] #tp-timeline-shell.visible,
+    body[data-tp-controls-hidden="true"] #tp-controls.visible {
+      display: none !important;
+    }
+
     #tp-timeline-shell {
       position: fixed;
       left: 50%;
@@ -610,6 +616,37 @@
 
     #tp-controls.visible {
       display: flex;
+    }
+
+    #tp-controls-toggle {
+      position: fixed;
+      right: 22px;
+      bottom: 30px;
+      z-index: 14;
+      min-width: 38px;
+      min-height: 38px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(100, 160, 255, 0.28);
+      background: rgba(0, 8, 28, 0.84);
+      color: rgba(210, 230, 255, 0.94);
+      font-size: 22px;
+      line-height: 1;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.24);
+    }
+
+    #tp-controls.visible ~ #tp-controls-toggle,
+    body[data-tp-controls-hidden="true"] #tp-controls-toggle {
+      display: inline-flex;
+    }
+
+    #tp-controls-toggle:hover {
+      background: rgba(18, 48, 92, 0.92);
+      border-color: rgba(145, 200, 255, 0.44);
     }
 
     #tp-controls-left,
@@ -746,6 +783,8 @@
         <button id="tp-fullscreen-btn" class="tp-icon-btn" type="button">⛶</button>
       </div>
     </div>
+
+    <button id="tp-controls-toggle" type="button" aria-label="Hide lower controls" title="Hide lower controls">×</button>
   </div>
 
   <script src="app_config.js"></script>

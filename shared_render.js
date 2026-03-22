@@ -216,13 +216,12 @@ function getRecoloredCometImage(image, tint) {
   return scratch;
 }
 
-function drawTintedSprite(targetCtx, image, x, y, width, height, alpha, tint, sourceRect) {
-  const variant = getRecoloredCometImage(image, tint);
+function drawSpriteImage(targetCtx, drawable, x, y, width, height, alpha, sourceRect) {
   targetCtx.save();
   targetCtx.globalAlpha = alpha;
   if (sourceRect) {
     targetCtx.drawImage(
-      variant,
+      drawable,
       sourceRect.x,
       sourceRect.y,
       sourceRect.width,
@@ -233,9 +232,14 @@ function drawTintedSprite(targetCtx, image, x, y, width, height, alpha, tint, so
       height,
     );
   } else {
-    targetCtx.drawImage(variant, x, y, width, height);
+    targetCtx.drawImage(drawable, x, y, width, height);
   }
   targetCtx.restore();
+}
+
+function drawTintedSprite(targetCtx, image, x, y, width, height, alpha, tint, sourceRect) {
+  const variant = getRecoloredCometImage(image, tint);
+  drawSpriteImage(targetCtx, variant, x, y, width, height, alpha, sourceRect);
 }
 
 function drawCometBillboard(targetCtx, options = {}) {
@@ -326,11 +330,15 @@ function drawCometBillboard(targetCtx, options = {}) {
         targetCtx.rect(clipRect.x, clipRect.y, clipRect.width, clipRect.height);
         targetCtx.clip();
       }
-      targetCtx.globalAlpha = alpha;
-      targetCtx.drawImage(
+      drawSpriteImage(
+        targetCtx,
         image,
-        0, srcY, imgW, srcH,
-        destX, destY, drawW, destH,
+        destX,
+        destY,
+        drawW,
+        destH,
+        alpha,
+        { x: 0, y: srcY, width: imgW, height: srcH }
       );
       targetCtx.restore();
       return;
