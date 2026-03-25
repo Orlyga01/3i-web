@@ -345,6 +345,8 @@
 | 2026-03-21 | Updated `translations.js` to accept locale variants like `he-IL` and fall back to browser locale when `lang` is missing, so standalone translated pages can open in Hebrew without a query parameter | dev agent |
 | 2026-03-21 | Switched the 3I Dec-13 custom page handoff to the clean URL `more_info_2025_12_13` so hosting redirects do not interfere with `lang` query propagation | dev agent |
 | 2026-03-21 | Increased typography on `more_info_2025_12_13.html` so the custom Dec-13 science page reads larger across buttons, hero copy, and material cards | dev agent |
+| 2026-03-21 | Fixed the hosting export list so `site/` now includes `translations.js`, `presentation.html`, `presentation.js`, and anomalies-panel assets instead of deploying an incomplete bundle | dev agent |
+| 2026-03-21 | Completed the hosting export fix by adding `anomalies_shared.js` and the `slides/` directory, so Firebase now ships the shared anomalies runtime and presentation slide files too | dev agent |
 | 2026-03-13 | Tuned trajectory-player object rendering to remove pulse/blink behavior, reduce the live ring, and make the comet sprite read more solid on screen | dev agent |
 | 2026-03-13 | Added Epic 4 Story 4.8 with a shared localStorage kill switch; homepage now hides local source choices and editor/player bypass local drafts when the flag is off | dev agent |
 | 2026-03-14 | Compacted the trajectory-player floating stats box by removing its fixed minimum width and switching the attached date label to a numeric 2-digit-year format; marked Story 3.9 in progress because the live stats feature now exists in code but still differs from the original top-right spec | dev agent |

@@ -6,17 +6,24 @@ const path = require('path');
 const PUBLIC_ROOT_FILES = Object.freeze([
     'index.html',
     'object_motion.html',
+    'presentation.html',
     'trajectory_player.html',
     'more_info_2025_12_13.html',
     'solar_system.html',
+    'anomalies_panel.html',
     'styles.css',
+    'anomalies_panel.css',
     'more_info_modal.css',
     'app_config.js',
     'app_config_shared.js',
     'index.js',
+    'translations.js',
     'more_info_shared.js',
     'more_info_modal.js',
+    'anomalies_shared.js',
+    'anomalies_panel.js',
     'object_motion.js',
+    'presentation.js',
     'trajectory_player.js',
     'solar_system.js',
     'shared_render.js',
@@ -26,6 +33,7 @@ const PUBLIC_ROOT_FILES = Object.freeze([
 const PUBLIC_DIRECTORIES = Object.freeze([
     'assets',
     'data',
+    'slides',
 ]);
 
 function ensureCleanDirectory(targetDirectory) {

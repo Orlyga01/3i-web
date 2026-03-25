@@ -18,7 +18,7 @@ describe('prepare-hosting script', () => {
     test('copies only the public web files into site/', () => {
         const projectRoot = makeTempProject();
 
-        for (const fileName of ['index.html', 'app_config.js', 'app_config_shared.js', 'index.js', 'styles.css', 'more_info_2025_12_13.html', 'firebase.json', 'package.json']) {
+        for (const fileName of ['index.html', 'app_config.js', 'app_config_shared.js', 'index.js', 'styles.css', 'more_info_2025_12_13.html', 'translations.js', 'presentation.html', 'presentation.js', 'anomalies_shared.js', 'firebase.json', 'package.json']) {
             fs.writeFileSync(path.join(projectRoot, fileName), fileName, 'utf8');
         }
 
@@ -28,6 +28,8 @@ describe('prepare-hosting script', () => {
         fs.mkdirSync(path.join(projectRoot, 'data', '3I'), { recursive: true });
         fs.writeFileSync(path.join(projectRoot, 'data', 'objects.json'), '{"objects":["3I"]}', 'utf8');
         fs.writeFileSync(path.join(projectRoot, 'data', '3I', 'trajectory.json'), '{}', 'utf8');
+        fs.mkdirSync(path.join(projectRoot, 'slides', '3I'), { recursive: true });
+        fs.writeFileSync(path.join(projectRoot, 'slides', '3I', 'intro_video.html'), 'slide', 'utf8');
 
         fs.mkdirSync(path.join(projectRoot, 'tests'), { recursive: true });
         fs.writeFileSync(path.join(projectRoot, 'tests', 'secret.txt'), 'nope', 'utf8');
@@ -41,15 +43,24 @@ describe('prepare-hosting script', () => {
             'index.js',
             'styles.css',
             'more_info_2025_12_13.html',
+            'translations.js',
+            'presentation.html',
+            'presentation.js',
+            'anomalies_shared.js',
         ]));
-        expect(result.copiedDirectories).toEqual(expect.arrayContaining(['assets', 'data']));
+        expect(result.copiedDirectories).toEqual(expect.arrayContaining(['assets', 'data', 'slides']));
 
         expect(fs.existsSync(path.join(projectRoot, 'site', 'index.html'))).toBe(true);
         expect(fs.existsSync(path.join(projectRoot, 'site', 'app_config.js'))).toBe(true);
         expect(fs.existsSync(path.join(projectRoot, 'site', 'app_config_shared.js'))).toBe(true);
         expect(fs.existsSync(path.join(projectRoot, 'site', 'more_info_2025_12_13.html'))).toBe(true);
+        expect(fs.existsSync(path.join(projectRoot, 'site', 'translations.js'))).toBe(true);
+        expect(fs.existsSync(path.join(projectRoot, 'site', 'presentation.html'))).toBe(true);
+        expect(fs.existsSync(path.join(projectRoot, 'site', 'presentation.js'))).toBe(true);
+        expect(fs.existsSync(path.join(projectRoot, 'site', 'anomalies_shared.js'))).toBe(true);
         expect(fs.existsSync(path.join(projectRoot, 'site', 'assets', 'logo.png'))).toBe(true);
         expect(fs.existsSync(path.join(projectRoot, 'site', 'data', '3I', 'trajectory.json'))).toBe(true);
+        expect(fs.existsSync(path.join(projectRoot, 'site', 'slides', '3I', 'intro_video.html'))).toBe(true);
         expect(fs.existsSync(path.join(projectRoot, 'site', 'firebase.json'))).toBe(false);
         expect(fs.existsSync(path.join(projectRoot, 'site', 'tests'))).toBe(false);
     });
@@ -58,21 +69,28 @@ describe('prepare-hosting script', () => {
         expect(PUBLIC_ROOT_FILES).toEqual(expect.arrayContaining([
             'index.html',
             'object_motion.html',
+            'presentation.html',
             'trajectory_player.html',
             'more_info_2025_12_13.html',
+            'anomalies_panel.html',
             'styles.css',
+            'anomalies_panel.css',
             'more_info_modal.css',
             'app_config.js',
             'app_config_shared.js',
             'index.js',
+            'translations.js',
             'more_info_shared.js',
             'more_info_modal.js',
+            'anomalies_shared.js',
+            'anomalies_panel.js',
+            'presentation.js',
         ]));
 
         for (const removedFile of ['solar_comet.html', 'atlas_journey.html', 'atlas_main.js', 'atlas_data.js']) {
             expect(PUBLIC_ROOT_FILES).not.toContain(removedFile);
         }
 
-        expect(PUBLIC_DIRECTORIES).toEqual(['assets', 'data']);
+        expect(PUBLIC_DIRECTORIES).toEqual(['assets', 'data', 'slides']);
     });
 });
